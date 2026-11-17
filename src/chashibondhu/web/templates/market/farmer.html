@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ farmer.full_name }} — চাষীবন্ধু{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <a class="cb-hint" href="/market"><i class="fa-solid fa-arrow-left"></i> {{ t('বাজারে ফিরুন', 'Back to market') }}</a>
+  <section class="cb-fhead" style="margin-top:10px">
+    <div class="cb-avatar">{% if farmer.avatar_path %}<img src="{{ farmer.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+    <div class="cb-fhead-txt"><p class="cb-greet">{{ t('কৃষক', 'Farmer') }}</p><h1>{{ farmer.full_name }}</h1>
+      {% if farmer.district_code %}<p class="cb-hint"><i class="fa-solid fa-location-dot"></i> <span data-area-name="{{ farmer.upazila_code or farmer.district_code }}">{{ farmer.upazila_code or farmer.district_code }}</span></p>{% endif %}</div>
+    {% if user and user.role == 'customer' %}
+    <form method="post" action="/farmers/{{ farmer.id }}/follow"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="cb-btn {{ 'cb-btn-line' if following else 'cb-btn-main' }}" type="submit" aria-pressed="{{ 'true' if following else 'false' }}"><i class="fa-solid fa-{{ 'user-check' if following else 'user-plus' }}"></i>{{ t('প্রিয় কৃষক', 'Favourite farmer') if following else t('কৃষককে প্রিয় করুন', 'Follow farmer') }}</button></form>
+    {% elif not user %}
+    <a class="cb-btn cb-btn-line" href="/login?as=customer&next=/market/farmer/{{ farmer.id }}">{{ t('প্রিয় করতে লগইন করুন', 'Log in to follow') }}</a>
+    {% endif %}
+  </section>
+  <h2>{{ t('এই কৃষকের পণ্য', 'Products from this farmer') }}</h2>
+  {% if listings %}<div class="cb-grid">{% for l in listings %}{% include "market/_card.html" %}{% endfor %}</div>
+  {% else %}<p class="cb-hint">{{ t('এখন কোনো পণ্য নেই।', 'No products right now.') }}</p>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

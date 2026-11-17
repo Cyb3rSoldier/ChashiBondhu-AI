@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'কার্ট — চাষীবন্ধু' }}{% endblock %}
+{% set PM = {'unavailable': ('এখন বিক্রি হচ্ছে না — সরিয়ে দিন', 'No longer for sale — please remove'), 'preorder': ('আগাম ফসল — এখন কেনা যায় না', 'Pre-harvest — not for sale yet'), 'below_min': ('সর্বনিম্ন অর্ডারের চেয়ে কম', 'Below the minimum order'), 'no_stock': ('এত পরিমাণ নেই — কমান', 'Not enough stock — lower it')} %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <div class="cb-head-row"><h1>{{ t('আমার কার্ট', 'My cart') }}</h1><a class="cb-btn cb-btn-line" href="/market">{{ t('আরও কিনুন', 'Keep shopping') }}</a></div>
+  {% if lines %}
+  <div class="cb-cols">
+    <section class="cb-cardlist">
+      {% for ln in lines %}
+      {% set U = L.UN.get(ln.unit, (ln.unit, ln.unit)) %}
+      <div class="cb-item{{ ' cb-item-bad' if ln.problem else '' }}">
+        <div class="cb-item-top">
+          {% if ln.image_path %}<img src="{{ ln.image_path }}" alt="">{% else %}<span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+          <div><b><a href="/market/{{ ln.id }}">{{ ln.title }}</a></b>
+            <small>{{ ln.farmer_name }} · ৳{{ num(ln.price_now) }} / {{ t(U[0], U[1]) }}{% if ln.discount_price %} <s>৳{{ num(ln.price_per_unit) }}</s>{% endif %}</small>
+            <small>{{ t('আছে', 'In stock') }} {{ num(ln.stock) }} · {{ t('সর্বনিম্ন', 'Min') }} {{ num(ln.min_order) }}</small>
+            {% if ln.problem %}<small class="cb-bad-text"><i class="fa-solid fa-triangle-exclamation"></i> {{ t(PM[ln.problem][0], PM[ln.problem][1]) }}</small>{% endif %}</div>
+          <b>৳{{ num(ln.line_total) }}</b>
+        </div>
+        <div class="cb-item-actions">
+          <form method="post" action="/cart/update" class="cb-offer"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ ln.id }}">
+            <label class="cb-sr" for="q{{ ln.id }}">{{ t('পরিমাণ', 'Quantity') }}</label>
+            <input class="cb-input" id="q{{ ln.id }}" name="qty" inputmode="decimal" value="{{ ln.want|float|round(2) }}" style="max-width:110px;min-height:42px">
+            <button class="cb-mini">{{ t('বদলান', 'Update') }}</button></form>
+          <form method="post" action="/cart/remove"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ ln.id }}"><button class="cb-mini danger"><i class="fa-solid fa-trash"></i>{{ t('সরান', 'Remove') }}</button></form>
+          <form method="post" action="/cart/later"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ ln.id }}"><button class="cb-mini"><i class="fa-regular fa-heart"></i>{{ t('পরে কিনব', 'Save for later') }}</button></form>
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    <aside class="cb-box cb-sum">
+      <h2>{{ t('হিসাব', 'Summary') }}</h2>
+      <dl class="cb-pv">
+        <dt>{{ t('পণ্যের দাম', 'Subtotal') }}</dt><dd>৳{{ num(subtotal) }}</dd>
+        {% if discount > 0 %}<dt>{{ t('ছাড় (ইতিমধ্যে বাদ)', 'Discount (already applied)') }}</dt><dd>−৳{{ num(discount) }}</dd>{% endif %}
+        <dt>{{ t('ডেলিভারি চার্জ', 'Delivery charge') }}</dt><dd>৳{{ num(fee) }}</dd>
+        <dt><b>{{ t('মোট', 'Total') }}</b></dt><dd><b>৳{{ num(total) }}</b></dd>
+      </dl>
+      {% if farmers > 1 %}<p class="cb-hint">{{ t('এই অর্ডারে', 'This order has products from') }} {{ num(farmers) }} {{ t('জন কৃষকের পণ্য আছে। প্রত্যেক কৃষক শুধু নিজের অংশ দেখবেন।', 'farmers. Each farmer sees only their own items.') }}</p>{% endif %}
+      {% if blocked %}<p class="cb-bad-text">{{ t('লাল চিহ্নের সমস্যাগুলো ঠিক করুন।', 'Fix the items marked in red first.') }}</p>
+      {% else %}<a class="cb-btn cb-btn-main" href="/checkout" style="width:100%"><i class="fa-solid fa-lock"></i>{{ t('অর্ডার করতে এগিয়ে যান', 'Go to checkout') }}</a>{% endif %}
+    </aside>
+  </div>
+  {% else %}
+  <div class="cb-empty-box"><i class="fa-solid fa-cart-shopping"></i>{{ t('কার্ট খালি।', 'Your cart is empty.') }}<br><br><a class="cb-btn cb-btn-main" href="/market">{{ t('বাজারে যান', 'Go to market') }}</a></div>
+  {% endif %}
+</div>
+{% endblock %}

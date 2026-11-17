@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'অর্ডার — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <h1>{{ t('অর্ডার নিশ্চিত করুন', 'Confirm your order') }}</h1>
+  <div class="cb-cols">
+    <form class="cb-box cb-form" method="post" action="/checkout" data-once>
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="token" value="{{ token }}">
+      <div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label>
+        <input class="cb-input" id="full_name" name="full_name" required maxlength="100" value="{{ me.full_name or '' }}"></div>
+      <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
+        <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ (me.phone or '')|replace('+880', '0') }}"></div>
+      <div class="cb-field"><label for="delivery_address">{{ t('ডেলিভারির ঠিকানা', 'Delivery location') }}</label>
+        <textarea class="cb-textarea" id="delivery_address" name="delivery_address" required maxlength="300" data-ph-bn="যেমন: লটাখোলা, দোহার, ঢাকা" data-ph-en="e.g. Lotakhole, Dohar, Dhaka">{{ me.address or '' }}</textarea></div>
+      <div class="cb-field"><label for="note">{{ t('কৃষকের জন্য নোট (ইচ্ছামতো)', 'Note for the farmer (optional)') }}</label>
+        <input class="cb-input" id="note" name="note" maxlength="500"></div>
+      <div class="cb-field"><span class="cb-label">{{ t('টাকা দেওয়ার উপায়', 'Payment method') }}</span>
+        <label class="cb-check"><input type="radio" name="payment" value="cod" checked><span><i class="fa-solid fa-money-bill"></i>{{ t('ক্যাশ অন ডেলিভারি (পণ্য হাতে পেয়ে টাকা)', 'Cash on delivery (pay when you receive)') }}</span></label>
+        <p class="cb-hint">{{ t('বিকাশ, নগদ, রকেট পেমেন্ট এখনো যুক্ত হয়নি, তাই দেখানো হচ্ছে না।', 'bKash, Nagad and Rocket are not connected yet, so they are not shown.') }}</p></div>
+      <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-check"></i>{{ t('অর্ডার দিন', 'Place order') }} — ৳{{ num(total) }}</button>
+    </form>
+    <aside class="cb-box cb-sum">
+      <h2>{{ t('অর্ডারের হিসাব', 'Order summary') }}</h2>
+      <ul class="cb-list">{% for ln in lines %}<li class="cb-row"><div><b>{{ ln.title }}</b><small>{{ num(ln.want) }} × ৳{{ num(ln.price_now) }} · {{ ln.farmer_name }}</small></div><b>৳{{ num(ln.line_total) }}</b></li>{% endfor %}</ul>
+      <dl class="cb-pv" style="margin-top:12px">
+        <dt>{{ t('পণ্যের দাম', 'Subtotal') }}</dt><dd>৳{{ num(subtotal) }}</dd>
+        {% if discount > 0 %}<dt>{{ t('ছাড়', 'Discount') }}</dt><dd>−৳{{ num(discount) }}</dd>{% endif %}
+        <dt>{{ t('ডেলিভারি চার্জ', 'Delivery charge') }}</dt><dd>৳{{ num(fee) }}</dd>
+        <dt><b>{{ t('মোট দিতে হবে', 'Total payable') }}</b></dt><dd><b>৳{{ num(total) }}</b></dd>
+      </dl>
+      <p class="cb-hint">{{ t('দাম ও স্টক অর্ডারের সময় আবার যাচাই করা হবে।', 'Price and stock are checked again when you place the order.') }}</p>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/market.js?v=1"></script>{% endblock %}

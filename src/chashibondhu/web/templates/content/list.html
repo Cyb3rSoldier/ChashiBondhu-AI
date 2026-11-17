@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ 'কৃষি লেখা ও খবর — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <h1>{{ t('কৃষি লেখা ও খবর', 'Farming articles & news') }}</h1>
+  {% if rows %}<ul class="cb-list">{% for p in rows %}
+    <li class="cb-row"><div><b><a href="/articles/{{ p.id }}">{{ p.title }}</a></b>
+      <small>{{ t(kinds[p.kind][0], kinds[p.kind][1]) }} · {{ p.published_at.strftime('%Y-%m-%d') }}{% if p.source_name %} · {{ t('উৎস', 'Source') }}: {{ p.source_name }}{% endif %}</small>
+      {% if p.summary %}<small>{{ p.summary }}</small>{% endif %}</div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('এখনো কিছু প্রকাশ হয়নি।', 'Nothing published yet.') }}</p>{% endif %}
+</div>
+{% endblock %}

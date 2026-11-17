@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice {{ o.order_number }} — ChashiBondhu</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: "Hind Siliguri", system-ui, sans-serif; color: #1D2B1A; margin: 0; background: #F3F6EF; }
+  .inv { max-width: 780px; margin: 24px auto; background: #fff; padding: 32px; border-radius: 16px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #14532D; padding-bottom: 14px; }
+  .brand { font-size: 28px; font-weight: 700; color: #14532D; } .muted { color: #5B6B57; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; } th, td { text-align: left; padding: 8px; border-bottom: 1px solid #DDE5D6; }
+  td.r, th.r { text-align: right; } .tot td { border: 0; font-weight: 700; }
+  .bar { max-width: 780px; margin: 16px auto 0; display: flex; gap: 8px; }
+  .bar button, .bar a { font: inherit; padding: 10px 18px; border-radius: 10px; border: 0; background: #14532D; color: #fff; cursor: pointer; text-decoration: none; }
+  @media print { .bar { display: none; } body { background: #fff; } .inv { margin: 0; border-radius: 0; } }
+</style></head>
+<body>
+<div class="bar"><button type="button" onclick="window.print()">ডাউনলোড / প্রিন্ট (PDF) — Download / Print</button><a href="/customer/orders/{{ o.order_number }}">ফিরে যান / Back</a></div>
+<div class="inv">
+  <div class="top"><div><div class="brand">চাষীবন্ধু · ChashiBondhu</div><div class="muted">কৃষক থেকে সরাসরি · Direct from farmers · hello@chashibondhu.com</div></div>
+    <div style="text-align:right"><b>ইনভয়েস / Invoice</b><br>{{ o.order_number }}<br><span class="muted">{{ (o.created_at|string)[:16] }}</span></div></div>
+  <p><b>{{ o.customer_name }}</b><br>{{ o.phone }}<br>{{ o.delivery_address }}</p>
+  <table><thead><tr><th>পণ্য / Item</th><th>কৃষক / Farmer</th><th class="r">পরিমাণ / Qty</th><th class="r">দাম / Price</th><th class="r">মোট / Total</th></tr></thead>
+    <tbody>{% for it in o['items'] %}<tr><td>{{ it.title }}{% if it.farmer_status == 'rejected' %} <span class="muted">(বাতিল / cancelled)</span>{% endif %}</td><td>{{ it.farmer_name }}</td>
+      <td class="r">{{ it.quantity }} {{ it.unit }}</td><td class="r">৳{{ it.unit_price }}</td><td class="r">৳{{ it.line_total }}</td></tr>{% endfor %}
+      <tr class="tot"><td colspan="4" class="r">পণ্যের দাম / Subtotal</td><td class="r">৳{{ o.subtotal }}</td></tr>
+      <tr class="tot"><td colspan="4" class="r">ডেলিভারি / Delivery</td><td class="r">৳{{ o.delivery_fee }}</td></tr>
+      <tr class="tot"><td colspan="4" class="r">মোট / Total</td><td class="r">৳{{ o.total }}</td></tr></tbody></table>
+  <p class="muted">পেমেন্ট / Payment: ক্যাশ অন ডেলিভারি / Cash on delivery — {{ {'unpaid': 'বাকি / unpaid', 'paid': 'পরিশোধিত / paid', 'refunded': 'ফেরত / refunded'}[o.payment_status] }}.
+    {% if o.status == 'cancelled' %}<b>এই অর্ডার বাতিল / This order is cancelled.</b>{% endif %}</p>
+</div></body></html>

@@ -1,0 +1,309 @@
+def list_my_listings(farmer_id: int) -> list[dict]:
+    return fetch_all("SELECT * FROM listings WHERE farmer_id = %s AND status <> 'archived' "
+                     "ORDER BY status = 'hidden', created_at DESC", (farmer_id,))
+
+def get_my_listing(farmer_id: int, listing_id: int) -> dict | None:
+    return fetch_one("SELECT * FROM listings WHERE id = %s AND farmer_id = %s AND status <> 'archived'",
+                     (listing_id, farmer_id))
+
+def create_listing(farmer_id: int, data: dict, image_path: str | None,
+                   district_code: str | None, upazila_code: str | None) -> int:
+    cols = list(LISTING_FIELDS) + ["image_path", "district_code", "upazila_code", "farmer_id"]
+    vals = [data[k] for k in LISTING_FIELDS] + [image_path, district_code, upazila_code, farmer_id]
+    r = fetch_one(f"INSERT INTO listings ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
+                  "RETURNING id", tuple(vals))
+    return int(r["id"])
+
+def update_listing(farmer_id: int, listing_id: int, data: dict, image_path: str | None) -> int:
+    sets = [f"{k} = %s" for k in LISTING_FIELDS]
+    vals = [data[k] for k in LISTING_FIELDS]
+    if image_path:
+        sets.append("image_path = %s")
+        vals.append(image_path)
+    return execute(f"UPDATE listings SET {', '.join(sets)} WHERE id = %s AND farmer_id = %s "
+                   "AND status <> 'archived'", tuple(vals + [listing_id, farmer_id]))
+
+def set_listing_status(farmer_id: int, listing_id: int, status: str) -> int:
+    return execute("UPDATE listings SET status = %s WHERE id = %s AND farmer_id = %s AND status <> 'archived'",
+                   (status, listing_id, farmer_id))
+
+def archive_listing(farmer_id: int, listing_id: int) -> int:
+    """"Delete" for the farmer = soft delete. Old orders keep their link; the market stops showing it."""
+    return execute("UPDATE listings SET status = 'archived', archived_at = now() "
+                   "WHERE id = %s AND farmer_id = %s AND status <> 'archived'", (listing_id, farmer_id))
+
+def public_listings(limit: int = 8) -> list[dict]:
+    return fetch_all("SELECT l.id, l.title, l.crop_id, l.unit, l.price_per_unit, l.quantity, l.listing_type, "
+                     "l.available_from, l.image_path, l.is_organic, l.district_code, u.full_name AS farmer_name "
+                     "FROM listings l JOIN users u ON u.id = l.farmer_id "
+                     "WHERE l.status = 'active' AND u.status = 'active' ORDER BY l.created_at DESC LIMIT %s",
+                     (limit,))
+
+def market_listings(q: str, crop_id: str | None, listing_type: str | None, limit: int = 24) -> list[dict]:
+    """Active listings filtered by search text (title), crop and type. Same columns as public_listings."""
+    sql = ("SELECT l.id, l.title, l.crop_id, l.unit, l.price_per_unit, l.quantity, l.listing_type, "
+           "l.available_from, l.image_path, l.is_organic, l.district_code, u.full_name AS farmer_name "
+           "FROM listings l JOIN users u ON u.id = l.farmer_id "
+           "WHERE l.status = 'active' AND u.status = 'active'")
+    params: list = []
+    if q:
+        safe = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        sql += " AND l.title ILIKE %s"
+        params.append(f"%{safe}%")
+    if crop_id:
+        sql += " AND l.crop_id = %s"
+        params.append(crop_id)
+    if listing_type:
+        sql += " AND l.listing_type = %s"
+        params.append(listing_type)
+    sql += " ORDER BY l.created_at DESC LIMIT %s"
+    params.append(int(limit))
+    return fetch_all(sql, tuple(params))
+
+def farmer_order_items(farmer_id: int, period: str = "all") -> list[dict]:
+    """Only THIS farmer's items. Customer phone/address are shown only after the farmer confirms."""
+    sql = ("SELECT oi.*, o.order_number, o.status AS order_status, o.payment_status, o.payment_method, "
+           "o.created_at, u.full_name AS customer_name, "
+           "CASE WHEN oi.farmer_status IN ('accepted', 'packed', 'handed_over') THEN o.delivery_address END "
+           "AS delivery_address, "
+           "CASE WHEN oi.farmer_status IN ('accepted', 'packed', 'handed_over') THEN o.phone END AS customer_phone "
+           "FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN users u ON u.id = o.customer_id "
+           "WHERE oi.farmer_id = %s")
+    params: list = [farmer_id]
+    if period in ORDER_PERIODS:
+        sql += " AND o.created_at >= now() - %s::interval"
+        params.append(ORDER_PERIODS[period])
+    sql += " ORDER BY o.created_at DESC LIMIT 200"
+    return fetch_all(sql, tuple(params))
+
+def listing_by_client(farmer_id: int, client_id: str) -> dict | None:
+    return fetch_one("SELECT id FROM listings WHERE farmer_id = %s AND client_id = %s", (farmer_id, client_id))
+
+def create_listing_once(farmer_id: int, data: dict, image_path: str | None, district_code: str | None,
+                        upazila_code: str | None, client_id: str) -> dict:
+    """Idempotent product create for offline drafts (same client_id -> same product, never a duplicate)."""
+    old = fetch_one("SELECT id FROM listings WHERE farmer_id = %s AND client_id = %s", (farmer_id, client_id))
+    if old:
+        return {"id": old["id"], "duplicate": True}
+    cols = list(LISTING_FIELDS) + ["image_path", "district_code", "upazila_code", "farmer_id", "client_id"]
+    vals = [data[k] for k in LISTING_FIELDS] + [image_path, district_code, upazila_code, farmer_id, client_id]
+    r = fetch_one(f"INSERT INTO listings ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
+                  "ON CONFLICT (farmer_id, client_id) WHERE client_id IS NOT NULL DO NOTHING RETURNING id", tuple(vals))
+    if r is None:
+        r = fetch_one("SELECT id FROM listings WHERE farmer_id = %s AND client_id = %s", (farmer_id, client_id))
+        return {"id": r["id"], "duplicate": True}
+    return {"id": r["id"], "duplicate": False}
+
+def market_search(f: dict, known_crops: set[str], page: int = 1) -> tuple[list[dict], int]:
+    """Public market. f keys: q, section(fresh|tools), category, district, min, max, avail(now|preorder),
+    organic(bool), sort(new|price_asc|price_desc|best). Returns (rows, total count)."""
+    where, params = MARKET_FROM, []
+    s_where, s_params, rank, rank_params = _search_sql(f.get("q") or "", known_crops)
+    where += s_where
+    params += s_params
+    if f.get("section") == "tools":
+        where += " AND l.category = 'tools_equipment'"
+    elif f.get("section") == "fresh":
+        where += " AND l.category <> 'tools_equipment'"
+    if f.get("category"):
+        where += " AND l.category = %s"
+        params.append(f["category"])
+    if f.get("district"):
+        where += " AND l.district_code = %s"
+        params.append(f["district"])
+    if f.get("min") is not None:
+        where += f" AND {EFFECTIVE_PRICE} >= %s"
+        params.append(f["min"])
+    if f.get("max") is not None:
+        where += f" AND {EFFECTIVE_PRICE} <= %s"
+        params.append(f["max"])
+    if f.get("avail") == "now":
+        where += " AND l.listing_type = 'available' AND l.quantity > 0"
+    elif f.get("avail") == "preorder":
+        where += " AND l.listing_type = 'expected'"
+    if f.get("organic"):
+        where += " AND l.farming_method = 'organic'"
+    order = {"price_asc": f"{EFFECTIVE_PRICE} ASC, l.id DESC", "price_desc": f"{EFFECTIVE_PRICE} DESC, l.id DESC",
+             "new": "l.created_at DESC"}.get(f.get("sort") or "", None)
+    if order is None:
+        order = f"({rank}) DESC, l.created_at DESC" if f.get("q") else "l.created_at DESC"
+        order_params = rank_params if f.get("q") else []
+    else:
+        order_params = []
+    total = fetch_one(f"SELECT count(*) AS n {where}", tuple(params))["n"]
+    rows = fetch_all(f"SELECT {MARKET_COLS} {where} ORDER BY {order} LIMIT %s OFFSET %s",
+                     tuple(params + order_params + [PAGE_SIZE, (max(page, 1) - 1) * PAGE_SIZE]))
+    return rows, int(total)
+
+def market_districts() -> list[str]:
+    return [r["district_code"] for r in fetch_all(f"SELECT DISTINCT l.district_code {MARKET_FROM} "
+                                                  "AND l.district_code IS NOT NULL ORDER BY 1")]
+
+def get_market_listing(listing_id: int) -> dict | None:
+    return fetch_one(f"SELECT {MARKET_COLS}, l.description, l.extra_info, l.status {MARKET_FROM} AND l.id = %s",
+                     (listing_id,))
+
+def related_listings(item: dict, limit: int = 6) -> list[dict]:
+    return fetch_all(f"SELECT {MARKET_COLS} {MARKET_FROM} AND l.id <> %s AND "
+                     "((l.crop_id IS NOT NULL AND l.crop_id = %s) OR l.category = %s) "
+                     "ORDER BY (l.crop_id = %s) DESC NULLS LAST, l.created_at DESC LIMIT %s",
+                     (item["id"], item.get("crop_id"), item["category"], item.get("crop_id"), limit))
+
+def create_customer(full_name: str, phone: str, password_hash: str, district_code: str | None,
+                    upazila_code: str | None, address: str | None) -> int:
+    r = fetch_one("INSERT INTO users (role, full_name, phone, password_hash, district_code, upazila_code, address) "
+                  "VALUES ('customer', %s, %s, %s, %s, %s, %s) RETURNING id",
+                  (full_name, phone, password_hash, district_code, upazila_code, address))
+    return int(r["id"])
+
+def get_customer(user_id: int) -> dict | None:
+    return fetch_one("SELECT id, full_name, phone, district_code, upazila_code, address, avatar_path, created_at "
+                     "FROM users WHERE id = %s AND role IN ('customer', 'admin')", (user_id,))
+
+def update_customer(user_id: int, full_name: str, district_code: str | None, upazila_code: str | None,
+                    address: str | None) -> int:
+    return execute("UPDATE users SET full_name = %s, district_code = %s, upazila_code = %s, address = %s "
+                   "WHERE id = %s", (full_name, district_code, upazila_code, address, user_id))
+
+def cart(customer_id: int) -> list[dict]:
+    """Cart lines with the CURRENT price/stock (prices are never stored in the cart)."""
+    return fetch_all(f"""
+        SELECT c.id AS cart_id, c.quantity AS want, l.id, l.title, l.unit, l.price_per_unit, l.discount_price,
+               {EFFECTIVE_PRICE} AS price_now, l.quantity AS stock, l.min_order, l.status, l.listing_type,
+               l.image_path, l.farmer_id, u.full_name AS farmer_name, u.status AS farmer_status
+        FROM cart_items c JOIN listings l ON l.id = c.listing_id JOIN users u ON u.id = l.farmer_id
+        WHERE c.customer_id = %s ORDER BY u.full_name, c.added_at""", (customer_id,))
+
+def cart_count(customer_id: int) -> int:
+    return int(fetch_one("SELECT count(*) AS n FROM cart_items WHERE customer_id = %s", (customer_id,))["n"])
+
+def cart_set(customer_id: int, listing_id: int, qty, add: bool = False) -> str:
+    """Add (add=True: increase) or set a cart quantity after checking the listing. Returns 'ok' or a reason."""
+    with connect() as conn:
+        line = conn.execute("SELECT l.id, l.status, l.listing_type, l.quantity AS stock, l.min_order, "
+                            "u.status AS farmer_status, l.farmer_id FROM listings l JOIN users u ON u.id = l.farmer_id "
+                            "WHERE l.id = %s", (listing_id,)).fetchone()
+        if not line:
+            return "unavailable"
+        if line["farmer_id"] == customer_id:
+            return "own"
+        if add:
+            cur = conn.execute("SELECT quantity FROM cart_items WHERE customer_id = %s AND listing_id = %s",
+                               (customer_id, listing_id)).fetchone()
+            qty = qty + (cur["quantity"] if cur else 0)
+        why = line_problem(line, qty)
+        if why:
+            return why
+        conn.execute("INSERT INTO cart_items (customer_id, listing_id, quantity) VALUES (%s, %s, %s) "
+                     "ON CONFLICT (customer_id, listing_id) DO UPDATE SET quantity = EXCLUDED.quantity",
+                     (customer_id, listing_id, qty))
+        return "ok"
+
+def cart_remove(customer_id: int, listing_id: int) -> int:
+    return execute("DELETE FROM cart_items WHERE customer_id = %s AND listing_id = %s", (customer_id, listing_id))
+
+def place_order(customer_id: int, delivery_address: str, phone: str, note: str | None,
+                delivery_fee) -> dict:
+    """Checkout in ONE transaction. Prices and stock are re-read from the database (never from the browser).
+    Returns {"ok": True, "order_number"} or {"ok": False, "problems": [(title, reason)]}."""
+    with connect() as conn:
+        lines = conn.execute(f"""
+            SELECT c.quantity AS want, l.id, l.title, l.unit, {EFFECTIVE_PRICE} AS price_now, l.quantity AS stock,
+                   l.min_order, l.status, l.listing_type, l.farmer_id, u.status AS farmer_status
+            FROM cart_items c JOIN listings l ON l.id = c.listing_id JOIN users u ON u.id = l.farmer_id
+            WHERE c.customer_id = %s ORDER BY l.id FOR UPDATE OF c, l""", (customer_id,)).fetchall()
+        if not lines:
+            return {"ok": False, "problems": [("", "empty")]}
+        problems = [(ln["title"], why) for ln in lines if (why := line_problem(ln, ln["want"]))]
+        problems += [(ln["title"], "own") for ln in lines if ln["farmer_id"] == customer_id]
+        if problems:
+            return {"ok": False, "problems": problems}
+        subtotal = sum((ln["price_now"] * ln["want"]).quantize(Decimal("0.01")) for ln in lines)
+        total = subtotal + delivery_fee
+        order = conn.execute("INSERT INTO orders (customer_id, payment_method, subtotal, delivery_fee, total, "
+                             "delivery_address, phone, note) VALUES (%s, 'cod', %s, %s, %s, %s, %s, %s) "
+                             "RETURNING id, order_number", (customer_id, subtotal, delivery_fee, total,
+                                                            delivery_address, phone, note)).fetchone()
+        farmers = set()
+        for ln in lines:
+            conn.execute("INSERT INTO order_items (order_id, listing_id, farmer_id, title, unit, unit_price, quantity, "
+                         "line_total) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                         (order["id"], ln["id"], ln["farmer_id"], ln["title"], ln["unit"], ln["price_now"], ln["want"],
+                          (ln["price_now"] * ln["want"]).quantize(Decimal("0.01"))))
+            farmers.add(ln["farmer_id"])
+        for fid in farmers:
+            conn.execute("INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key) VALUES "
+                         "(%s, 'order', 'নতুন অর্ডার এসেছে / New order', %s, '/farmer/orders', %s) "
+                         "ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING",
+                         (fid, order["order_number"], f"neworder:{order['id']}"))
+        conn.execute("DELETE FROM cart_items WHERE customer_id = %s", (customer_id,))
+        return {"ok": True, "order_number": order["order_number"]}
+
+def customer_orders(customer_id: int, period: str = "all") -> list[dict]:
+    sql = ("SELECT o.*, (SELECT count(*) FROM order_items i WHERE i.order_id = o.id) AS item_count, "
+           "(SELECT string_agg(i.title, ', ' ORDER BY i.id) FROM order_items i WHERE i.order_id = o.id) AS titles "
+           "FROM orders o WHERE o.customer_id = %s")
+    params: list = [customer_id]
+    if period in CUSTOMER_PERIODS:
+        sql += " AND o.created_at >= now() - %s::interval"
+        params.append(CUSTOMER_PERIODS[period])
+    return fetch_all(sql + " ORDER BY o.created_at DESC LIMIT 200", tuple(params))
+
+def customer_order(customer_id: int, order_number: str) -> dict | None:
+    """One order with its items. Farmer phone only after that farmer confirmed the item."""
+    o = fetch_one("SELECT o.*, u.full_name AS customer_name FROM orders o JOIN users u ON u.id = o.customer_id "
+                  "WHERE o.order_number = %s AND o.customer_id = %s", (order_number, customer_id))
+    if not o:
+        return None
+    o["items"] = fetch_all("SELECT i.*, f.full_name AS farmer_name, f.district_code AS farmer_district, "
+                           "CASE WHEN i.farmer_status IN ('accepted', 'packed', 'handed_over') THEN f.phone END "
+                           "AS farmer_phone, l.status AS listing_status, l.image_path "
+                           "FROM order_items i JOIN users f ON f.id = i.farmer_id "
+                           "LEFT JOIN listings l ON l.id = i.listing_id WHERE i.order_id = %s ORDER BY i.id", (o["id"],))
+    return o
+
+def customer_stats(customer_id: int) -> dict:
+    return fetch_one("""
+        SELECT count(*) AS total_orders,
+               count(*) FILTER (WHERE status IN ('pending', 'confirmed', 'shipped')) AS pending_orders,
+               count(*) FILTER (WHERE status = 'delivered') AS completed_orders,
+               COALESCE(sum(total) FILTER (WHERE status = 'delivered'), 0) AS spent
+        FROM orders WHERE customer_id = %s""", (customer_id,)) or {}
+
+def cancel_order(customer_id: int, order_number: str) -> str:
+    """The customer may cancel only while no farmer has confirmed anything."""
+    with connect() as conn:
+        o = conn.execute("SELECT id, status FROM orders WHERE order_number = %s AND customer_id = %s FOR UPDATE",
+                         (order_number, customer_id)).fetchone()
+        if not o:
+            return "not_found"
+        if o["status"] != "pending":
+            return "too_late"
+        busy = conn.execute("SELECT 1 FROM order_items WHERE order_id = %s AND farmer_status IN "
+                            "('accepted', 'packed', 'handed_over') LIMIT 1", (o["id"],)).fetchone()
+        if busy:
+            return "too_late"
+        conn.execute("UPDATE orders SET status = 'cancelled' WHERE id = %s", (o["id"],))
+        return "ok"
+
+def reorder(customer_id: int, order_number: str) -> dict:
+    """Put still-available items back in the cart at TODAY's price and stock. Returns added/skipped titles."""
+    o = customer_order(customer_id, order_number)
+    if not o:
+        return {"added": [], "skipped": []}
+    added, skipped = [], []
+    for it in o["items"]:
+        if not it["listing_id"]:
+            skipped.append(it["title"])
+            continue
+        res = cart_set(customer_id, it["listing_id"], it["quantity"])
+        if res == "no_stock":
+            line = fetch_one("SELECT quantity, min_order FROM listings WHERE id = %s", (it["listing_id"],))
+            if line and line["quantity"] >= line["min_order"]:
+                res = cart_set(customer_id, it["listing_id"], line["quantity"])
+        (added if res == "ok" else skipped).append(it["title"])
+    return {"added": added, "skipped": skipped}
+
+def list_notifications(user_id: int, limit: int = 100) -> list[dict]:
+    return fetch_all("SELECT * FROM notifications WHERE user_id = %s ORDER BY created_at DESC LIMIT %s",
+                     (user_id, limit))

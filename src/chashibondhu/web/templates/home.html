@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% set active = 'home' %}
+{% block body_class %}cb-home{% endblock %}
+{% block content %}
+{# ---------- hero: photo background, real numbers only ---------- #}
+<section class="cb-hero2">
+  <div class="cb-wrap cb-hero2-in">
+    <p class="cb-hero2-pill"><span class="cb-dot"></span>{{ t('বাংলাদেশের কৃষকের প্ল্যাটফর্ম', "Bangladeshi farmers' platform") }}</p>
+    <h1>{{ t('কৃষকের হাত থেকে', 'From the farmer') }}<span class="cb-hero2-accent">{{ t('সরাসরি আপনার কাছে!', 'straight to you!') }}</span></h1>
+    <p class="cb-hero2-lead">{{ t('চাষীবন্ধু কৃষককে সরাসরি ক্রেতার সাথে যুক্ত করে।', 'ChashiBondhu connects farmers directly with buyers.') }}<br>{{ t('টাটকা পণ্য, ন্যায্য দাম, মাঝে কোনো দালাল নেই।', 'Fresh products, fair prices, no middlemen.') }}</p>
+
+    <div class="cb-hero2-cta">
+      <a class="cb-btn cb-btn-main" href="/market"><i class="fa-solid fa-basket-shopping"></i>{{ t('বাজার দেখুন', 'See the market') }}</a>
+      {% if not user %}
+      <a class="cb-btn cb-btn-glass" href="/register"><i class="fa-solid fa-seedling"></i>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a>
+      {% elif user.role == 'farmer' %}
+      <a class="cb-btn cb-btn-glass" href="/farmer"><i class="fa-solid fa-gauge"></i>{{ t('আমার ড্যাশবোর্ড', 'My dashboard') }}</a>
+      {% endif %}
+    </div>
+
+    {% if not user or user.role in ('farmer', 'admin') %}
+    <form class="cb-ask cb-hero2-ask" action="/assistant" method="get" role="search">
+      <a class="cb-round soft" href="/assistant?photo=1" aria-label="ছবি পাঠান / Send a photo"><i class="fa-solid fa-camera"></i></a>
+      <label class="cb-sr" for="heroQ">{{ t('প্রশ্ন', 'Question') }}</label>
+      <input id="heroQ" name="q" maxlength="500" autocomplete="off" data-ph-bn="চাষের প্রশ্ন করুন, যেমন: আলুর পাতা হলুদ কেন?" data-ph-en="Ask a farming question, e.g. why are potato leaves yellow?">
+      <button class="cb-round gold" type="submit" aria-label="জিজ্ঞেস করুন / Ask"><i class="fa-solid fa-arrow-up"></i></button>
+    </form>
+    {% if not user %}<p class="cb-hero2-note">{{ t('কৃষি সহকারী ব্যবহারের জন্য কৃষক হিসেবে লগইন করতে হবে (বিনা খরচে)।', 'The farm assistant needs a free farmer login.') }}</p>{% endif %}
+    {% endif %}
+
+    {% if counts %}
+    <ul class="cb-hero2-facts" aria-label="numbers">
+      <li><b>{{ num(counts.farmers) }}</b><span>{{ t('সক্রিয় কৃষক', 'Active farmers') }}</span></li>
+      <li><b>{{ num(counts.listings) }}</b><span>{{ t('বিক্রির পণ্য', 'Products for sale') }}</span></li>
+      <li><b>{{ num(counts.districts) }}</b><span>{{ t('জেলা থেকে কৃষক', 'Districts with farmers') }}</span></li>
+    </ul>
+    {% endif %}
+  </div>
+</section>
+
+{# ---------- market: real listings from the database ---------- #}
+<section class="cb-sec" id="market">
+  <div class="cb-wrap">
+    <div class="cb-center-head">
+      <p class="cb-pill">{{ t('টাটকা পণ্য', 'Fresh produce') }}</p>
+      <h2 class="cb-h2">{{ t('কৃষকের মাঠ থেকে', "From farmers' fields") }}</h2>
+      <p class="cb-sub">{{ t('দাম ঠিক করেন কৃষক নিজে।', 'Farmers set their own prices.') }} <a href="/market" style="color:var(--cb-paddy);font-weight:700">{{ t('পুরো বাজার দেখুন →', 'See the full market →') }}</a></p>
+    </div>
+
+    <form class="cb-filter" method="get" action="/#market" role="search">
+      <label class="cb-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <span class="cb-sr">{{ t('খুঁজুন', 'Search') }}</span>
+        <input name="q" maxlength="60" value="{{ f.q }}" data-ph-bn="পণ্য খুঁজুন, যেমন: আলু" data-ph-en="Search products, e.g. potato">
+      </label>
+      <select class="cb-select" name="type" aria-label="ধরন / Type">
+        <option value=""{% if not f.type %} selected{% endif %}>সব ধরন / All</option>
+        <option value="available"{% if f.type == 'available' %} selected{% endif %}>এখন পাওয়া যায় / Available now</option>
+        <option value="expected"{% if f.type == 'expected' %} selected{% endif %}>আগাম ফসল / Pre-order</option>
+      </select>
+      {% if f.crop %}<input type="hidden" name="crop" value="{{ f.crop }}">{% endif %}
+      <button class="cb-btn cb-btn-main" type="submit">{{ t('খুঁজুন', 'Search') }}</button>
+      {% if f.q or f.type or f.crop %}<a class="cb-btn cb-btn-line" href="/#market">{{ t('মুছুন', 'Reset') }}</a>{% endif %}
+    </form>
+
+    <nav class="cb-cats cb-cats-center" aria-label="ফসল / Crops">
+      <a class="cb-cat" href="/?{% if f.q %}q={{ f.q|urlencode }}&{% endif %}{% if f.type %}type={{ f.type }}&{% endif %}#market"{% if not f.crop %} aria-current="true"{% endif %}>{{ t('সব', 'All') }}</a>
+      {% for c in crops %}
+      <a class="cb-cat" href="/?crop={{ c.crop_id }}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.type %}&type={{ f.type }}{% endif %}#market"{% if f.crop == c.crop_id %} aria-current="true"{% endif %}>{{ t(c.name_bn, c.name_en) }}</a>
+      {% endfor %}
+    </nav>
+
+    {% if listings %}
+    <div class="cb-grid">{% for l in listings %}{% include "_listing_card.html" %}{% endfor %}</div>
+    {% elif f.q or f.type or f.crop %}
+    <div class="cb-empty-box"><i class="fa-solid fa-magnifying-glass"></i>{{ t('এই খোঁজে কোনো পণ্য পাওয়া যায়নি। অন্য কিছু খুঁজুন বা "মুছুন" চাপুন।', 'No products match this search. Try something else or press "Reset".') }}</div>
+    {% else %}
+    <div class="cb-empty-box"><i class="fa-solid fa-basket-shopping"></i>{{ t('এখনো কোনো পণ্য নেই। কৃষকেরা যোগ দিলে এখানে দেখা যাবে।', 'No products yet. They will appear here when farmers list them.') }}</div>
+    {% endif %}
+  </div>
+</section>
+
+{# ---------- AI assistant (farmers + admins) ---------- #}
+{% if not user or user.role in ('farmer', 'admin') %}
+<section class="cb-sec cb-sec-tint">
+  <div class="cb-wrap">
+    <div class="cb-center-head">
+      <p class="cb-pill">{{ t('কৃষি সহকারী', 'Farm assistant') }}</p>
+      <h2 class="cb-h2">{{ t('চাষের প্রশ্নের উত্তর, বই থেকে', 'Farming answers, from the handbook') }}</h2>
+      <p class="cb-sub">{{ t('বাংলা, ইংরেজি বা বাংলিশে প্রশ্ন করুন। উত্তর আসে বিএআরআই কৃষি প্রযুক্তি হাতবই থেকে।', 'Ask in Bangla, English or Banglish. Answers come from the BARI farming handbook.') }}</p>
+    </div>
+    <div class="cb-tiles cb-tiles-2">
+      <a class="cb-tile" href="/assistant">
+        <span class="cb-state live">{{ t('চালু', 'Live') }}</span>
+        <span class="cb-ic ic-green"><i class="fa-solid fa-comments"></i></span>
+        <h3>{{ t('প্রশ্ন করুন', 'Ask a question') }}</h3>
+        <p>{{ t('উত্তরের সাথে বইয়ের পৃষ্ঠা নম্বর দেখা যায়। না জানলে কৃষি অফিসে যেতে বলে।', 'Answers show the handbook page. If unsure, it tells you to visit the agriculture office.') }}</p>
+      </a>
+      <a class="cb-tile" href="/assistant?photo=1">
+        <span class="cb-state live">{{ t('চালু', 'Live') }}</span>
+        <span class="cb-ic ic-gold"><i class="fa-solid fa-camera"></i></span>
+        <h3>{{ t('ছবি দিয়ে সমস্যা দেখুন', 'Check a problem by photo') }}</h3>
+        <p>{{ t('পাতার ছবি দিন — সম্ভাব্য সমস্যা আর বইয়ের তথ্য দেখুন।', 'Send a leaf photo — see possible problems and handbook advice.') }}</p>
+      </a>
+    </div>
+    {% if not user %}<p class="cb-hint" style="text-align:center;margin-top:14px">{{ t('কৃষক হিসেবে লগইন করলে ব্যবহার করা যাবে।', 'Available after a farmer login.') }}</p>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+{# ---------- how it works (a real sequence) ---------- #}
+<section class="cb-sec">
+  <div class="cb-wrap">
+    <h2 class="cb-h2">{{ t('কৃষক কীভাবে ব্যবহার করবেন', 'How farmers use ChashiBondhu') }}</h2>
+    <div class="cb-steps">
+      <div class="cb-step"><h3>{{ t('পরামর্শ নিন', 'Get advice') }}</h3><p>{{ t('প্রশ্ন করুন বা ছবি দিন। উত্তর বই থেকে।', 'Ask or send a photo. Answers from the handbook.') }}</p></div>
+      <div class="cb-step"><h3>{{ t('খামারের হিসাব রাখুন', 'Track your farm') }}</h3><p>{{ t('কোন জমিতে কী লাগালেন, কবে তুলবেন।', 'What you planted where, and when to harvest.') }}</p></div>
+      <div class="cb-step"><h3>{{ t('সরাসরি বিক্রি করুন', 'Sell directly') }}</h3><p>{{ t('পণ্য বা আগাম ফসল তালিকায় দিন, দাম আপনার।', 'List produce or an expected harvest at your own price.') }}</p></div>
+    </div>
+  </div>
+</section>
+
+{% if not user %}
+<section class="cb-wrap" style="padding-bottom:20px">
+  <div class="cb-band">
+    <div>
+      <h2>{{ t('আপনি কি কৃষক?', 'Are you a farmer?') }}</h2>
+      <p>{{ t('বিনা খরচে যোগ দিন। নিজের দামে ফসল বিক্রি করুন — মাঠ থেকেই।', 'Join for free. Sell your harvest at your own price — even from the field.') }}</p>
+    </div>
+    <div class="cb-hero-links">
+      <a class="cb-btn cb-btn-gold" href="/register"><i class="fa-solid fa-user-plus"></i>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a>
+      <a class="cb-btn cb-btn-line" href="/login?as=farmer">{{ t('লগইন', 'Log in') }}</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

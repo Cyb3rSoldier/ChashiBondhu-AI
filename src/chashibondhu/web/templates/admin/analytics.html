@@ -1,0 +1,26 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'বিশ্লেষণ — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('বিশ্লেষণ ও এক্সপোর্ট', 'Analytics & export') }}</h1>
+<p class="cb-hint">{{ t('সব সংখ্যা ডাটাবেসের আসল রেকর্ড থেকে, শুধু মোট হিসাব (কারও ব্যক্তিগত তথ্য নয়)। তারিখ বাংলাদেশ সময়ে।', 'All numbers come from real database records, as totals only (no personal data). Dates are Bangladesh time.') }}</p>
+<form class="cb-form" method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+  <div class="cb-field"><label for="report">{{ t('রিপোর্ট', 'Report') }}</label><select class="cb-select" id="report" name="report">{% for k, v in reports.items() %}<option value="{{ k }}"{% if report == k %} selected{% endif %} data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="from">{{ t('থেকে', 'From') }}</label><input class="cb-input" type="date" id="from" name="from" value="{{ d_from }}"></div>
+  <div class="cb-field"><label for="to">{{ t('পর্যন্ত', 'To') }}</label><input class="cb-input" type="date" id="to" name="to" value="{{ d_to }}"></div>
+  <button class="cb-btn cb-btn-main" type="submit">{{ t('দেখুন', 'Show') }}</button>
+  <a class="cb-mini" href="/admin-analytics/{{ report }}.csv?from={{ d_from }}&to={{ d_to }}"><i class="fa-solid fa-file-csv"></i>CSV</a>
+</form>
+<p class="cb-hint">{{ t('সর্বোচ্চ ১ বছরের তথ্য একসাথে।', 'Up to 1 year at a time.') }}{% if report in ('categories', 'districts') %} {{ t('এই রিপোর্টে "চালু" সংখ্যা আজকের অবস্থা।', 'In this report, "active" counts are as of today.') }}{% endif %}</p>
+<div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse">
+  <thead><tr>{% for h in headers %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for r in rows %}<tr>{% for h in headers %}<td>{{ r[h] if r[h] is not none else '—' }}</td>{% endfor %}</tr>
+  {% else %}<tr><td colspan="{{ headers|length }}" class="cb-hint">{{ t('এই সময়ে কোনো তথ্য নেই।', 'No data in this period.') }}</td></tr>{% endfor %}</tbody></table></div>
+{% if report == 'ai' %}
+<section class="cb-box" style="margin-top:16px"><h2>{{ t('যে AI উত্তর "কাজে লাগেনি" বলা হয়েছে', 'AI answers marked "not helpful"') }}</h2>
+  {% for x in ai_bad %}<div style="border-bottom:1px solid var(--cb-line, #ddd);padding:8px 0">
+    <p style="margin:0"><b>{{ t('প্রশ্ন', 'Question') }}:</b> {{ x.question or '—' }}</p>
+    <p style="margin:4px 0;white-space:pre-line"><b>{{ t('উত্তর', 'Answer') }}:</b> {{ (x.answer or '')[:600] }}</p>
+    <small class="cb-hint">{{ x.model or '—' }}{% if x.status %} · {{ x.status }}{% endif %} · {{ x.created_at.strftime('%Y-%m-%d') }}{% if x.comment %} · “{{ x.comment }}”{% endif %}</small></div>
+  {% else %}<p class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</p>{% endfor %}</section>
+{% endif %}
+{% endblock %}

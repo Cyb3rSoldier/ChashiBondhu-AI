@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — চাষীবন্ধু{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px;max-width:820px">
+  <a class="cb-hint" href="/articles"><i class="fa-solid fa-arrow-left"></i> {{ t('সব লেখা', 'All articles') }}</a>
+  <article>
+    <p class="cb-hint">{{ t(kinds[post.kind][0], kinds[post.kind][1]) }} · {{ post.published_at.strftime('%Y-%m-%d') }}</p>
+    <h1>{{ post.title }}</h1>
+    {% if post.summary %}<p class="cb-sub">{{ post.summary }}</p>{% endif %}
+    <div style="white-space:pre-line;line-height:1.7">{{ post.body }}</div>
+    {% if post.media_url %}<p><a class="cb-btn cb-btn-line" href="{{ post.media_url }}" target="_blank" rel="noopener noreferrer nofollow"><i class="fa-solid fa-circle-play"></i>{{ t('ভিডিও দেখুন', 'Watch the video') }}</a></p>{% endif %}
+    {% if post.source_name %}<p class="cb-hint">{{ t('উৎস', 'Source') }}: {% if post.source_url %}<a href="{{ post.source_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ post.source_name }}</a>{% else %}{{ post.source_name }}{% endif %}</p>{% endif %}
+  </article>
+</div>
+{% endblock %}

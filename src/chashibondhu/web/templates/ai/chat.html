@@ -1,0 +1,133 @@
+{# Shared chat page for Fosholi (ফসলি) and Dr. Krishi (ড. কৃষি). Everything per assistant is in A below. #}
+{% extends "base.html" %}
+{% if assistant == 'drkrishi' %}
+{% set A = {
+  'name': 'ড. কৃষি', 'name_en': 'Dr. Krishi', 'icon': 'fa-user-doctor', 'ask': '/app/drkrishi/ask', 'new': '/app/drkrishi/new',
+  'images': '1', 'sub': 'আপনার স্মার্ট কৃষি সহকারী', 'sub_en': 'Your smart farming assistant',
+  'desc': 'ফসলের রোগ শনাক্তকরণ, কৃষি পরামর্শ ও আবহাওয়ার তথ্য—সব এক জায়গায়।',
+  'desc_en': 'Crop disease check, farming advice and weather — all in one place.',
+  'hello': 'আসসালামু আলাইকুম! আমি ড. কৃষি।', 'hello_en': 'Hello! I am Dr. Krishi.',
+  'intro': 'আপনার ফসলের সমস্যা বুঝতে, সম্ভাব্য রোগ চিনতে এবং কৃষি পরামর্শ দিতে আমি সাহায্য করতে পারি।',
+  'intro_en': 'I can help you understand crop problems, spot possible diseases and give farming advice.',
+  'placeholder': 'আপনার ফসল বা কৃষি সমস্যা সম্পর্কে লিখুন...',
+  'cards': [
+    {'icon': 'fa-leaf', 'tone': 'g', 'act': 'photo', 'bn': 'ফসলের রোগ শনাক্ত করুন', 'en': 'Check a crop disease',
+     'd': 'ফসলের আক্রান্ত অংশের ছবি দিয়ে সম্ভাব্য রোগ ও প্রতিকার জানুন।', 'de': 'Send a photo of the affected part to learn the possible disease and what to do.'},
+    {'icon': 'fa-seedling', 'tone': 'y', 'act': 'type', 'fill': '', 'bn': 'কৃষি পরামর্শ নিন', 'en': 'Get farming advice',
+     'd': 'সার, সেচ, মাটি, বীজ ও চাষাবাদ নিয়ে প্রশ্ন করুন।', 'de': 'Ask about fertilizer, irrigation, soil, seeds and farming.'},
+    {'icon': 'fa-cloud-sun-rain', 'tone': 'b', 'act': 'send', 'q': 'আজ ও আগামী কয়েক দিনের আবহাওয়া কেমন?', 'bn': 'আবহাওয়ার তথ্য জানুন', 'en': 'See the weather',
+     'd': 'আপনার এলাকার আবহাওয়া, বৃষ্টি ও কাজের উপযোগী পরামর্শ দেখুন।', 'de': 'Weather, rain and farm-work tips for your area.'},
+    {'icon': 'fa-bug', 'tone': 'o', 'act': 'photo', 'fill': 'এই পোকাটা কী? ফসলের কী ক্ষতি করে?', 'bn': 'পোকামাকড় শনাক্ত করুন', 'en': 'Identify a pest',
+     'd': 'ক্ষতিকর পোকার ছবি দিয়ে জানুন সেটা কী হতে পারে।', 'de': 'Send a photo of the insect to learn what it may be.'}],
+  'common': ['ধানের পাতায় হলুদ দাগ কেন হয়?', 'টমেটো গাছের পাতা কুঁকড়ে যাচ্ছে কেন?', 'আলুর গাছের পাতা পচে গেলে কী করব?',
+             'জমিতে পানি জমে থাকলে কী সমস্যা হয়?', 'আগামী কয়েক দিনে বৃষ্টির সম্ভাবনা আছে কি?', 'পোকামাকড় থেকে ফসল রক্ষা করব কীভাবে?',
+             'কম খরচে জৈব সার তৈরি করব কীভাবে?', 'এই মাসে সাধারণত কত বৃষ্টি হয়?']} %}
+{% else %}
+{% set A = {
+  'name': 'ফসলি', 'name_en': 'Fosholi', 'icon': 'fa-book-open', 'ask': '/app/fosholi/ask', 'new': '/app/fosholi/new',
+  'images': '', 'sub': 'আপনার কৃষি সহায়ক, কৃষি জ্ঞানের বিশ্বস্ত সঙ্গী', 'sub_en': 'Your trusted farming-knowledge companion',
+  'desc': 'উত্তর আসে বারি কৃষি প্রযুক্তি হাতবই থেকে।', 'desc_en': 'Answers come from the BARI farming technology handbook.',
+  'hello': 'আসসালামু আলাইকুম! আমি ফসলি।', 'hello_en': 'Hello! I am Fosholi.',
+  'intro': 'চাষের নিয়ম, সার, সেচ, জাত, রোগ-পোকা বা ফসল তোলা — হাতবই দেখে উত্তর দিই।',
+  'intro_en': 'Cultivation, fertilizer, irrigation, varieties, pests or harvest — I answer from the handbook.',
+  'placeholder': 'চাষ, সার, সেচ, জাত বা রোগ নিয়ে প্রশ্ন লিখুন...',
+  'cards': [
+    {'icon': 'fa-tractor', 'tone': 'g', 'act': 'type', 'fill': 'আলু চাষ কীভাবে শুরু করব?', 'bn': 'চাষের নিয়ম', 'en': 'How to grow',
+     'd': 'জমি তৈরি, বোনার সময় ও পরিচর্যা জানুন।', 'de': 'Land preparation, sowing time and care.'},
+    {'icon': 'fa-droplet', 'tone': 'b', 'act': 'type', 'fill': 'টমেটোতে কখন সেচ দিতে হয়?', 'bn': 'সার ও সেচ', 'en': 'Fertilizer & water',
+     'd': 'কোন ফসলে কখন সার ও সেচ লাগে।', 'de': 'When each crop needs fertilizer and water.'},
+    {'icon': 'fa-bug', 'tone': 'o', 'act': 'type', 'fill': 'ধানের মাজরা পোকা দমন কীভাবে করব?', 'bn': 'রোগ ও পোকা', 'en': 'Diseases & pests',
+     'd': 'লক্ষণ, প্রতিকার ও প্রতিরোধ।', 'de': 'Signs, control and prevention.'},
+    {'icon': 'fa-wheat-awn', 'tone': 'y', 'act': 'type', 'fill': 'সরিষার ভালো জাত কোনগুলো?', 'bn': 'জাত ও বীজ', 'en': 'Varieties & seeds',
+     'd': 'ভালো জাত ও বীজ বাছাই।', 'de': 'Good varieties and seed choice.'}],
+  'common': ['ধানের জন্য কোন সার কখন ব্যবহার করব?', 'আলুর নাবি ধসা রোগ হলে কী করব?', 'মসুর ডাল কখন বুনতে হয়?',
+             'পেঁয়াজের বীজ কীভাবে রাখব?', 'তরমুজ চাষে কী কী যত্ন লাগে?', 'ভুট্টার জমি কীভাবে তৈরি করব?',
+             'মুগ ডালের ভালো জাত কোনগুলো?', 'বোরো ধানের চারা কত দিনে রোপণ করব?']} %}
+{% endif %}
+{% block title %}{{ A.name }} — চাষীবন্ধু{% endblock %}
+{% block body_class %}cb-ai-page{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/ai_chat.css?v=3">{% endblock %}
+{% block content %}
+<div class="aic" id="aiApp" data-assistant="{{ assistant }}" data-ask="{{ A.ask }}" data-new="{{ A.new }}"
+     data-images="{{ A.images }}" data-start="{{ start_q }}" data-conv="{{ conv_id }}">
+  <script type="application/json" id="aiHistory">{{ history_json | tojson }}</script>
+
+  {# ---------------------------------------------------------------- sidebar #}
+  <aside class="aic-side" id="aiSide" aria-label="{{ 'কথোপকথনের তালিকা / Conversations' }}">
+    <div class="aic-brand">
+      <span class="aic-av" aria-hidden="true"><i class="fa-solid {{ A.icon }}"></i></span>
+      <div><b>{{ A.name }}</b><small>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</small></div>
+      <button class="aic-ico aic-only-mobile" type="button" data-ai-side-close aria-label="{{ 'বন্ধ করুন / Close' }}"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <button class="aic-newbtn" type="button" data-ai-new><i class="fa-solid fa-plus"></i>{{ t('নতুন চ্যাট', 'New chat') }}</button>
+    <label class="aic-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <span class="cb-sr">{{ t('চ্যাট খুঁজুন', 'Search chats') }}</span>
+      <input type="search" data-ai-search maxlength="80" placeholder="{{ 'চ্যাট খুঁজুন… / Search' }}"></label>
+    <nav class="aic-list" data-ai-list aria-live="polite"><p class="aic-muted">…</p></nav>
+    <div class="aic-me">
+      <span class="aic-me-av" aria-hidden="true">{{ (user.name or '?')[:1] }}</span>
+      <div><b>{{ user.name }}</b><small>{{ t('কৃষক', 'Farmer') if user.role == 'farmer' else t('অ্যাডমিন', 'Admin') }}</small></div>
+      <a class="aic-ico" href="{{ '/farmer/profile' if user.role == 'farmer' else '/admin' }}" aria-label="{{ 'সেটিংস / Settings' }}" title="{{ 'সেটিংস / Settings' }}"><i class="fa-solid fa-gear"></i></a>
+    </div>
+  </aside>
+  <div class="aic-scrim" data-ai-scrim hidden></div>
+
+  {# ---------------------------------------------------------------- main #}
+  <section class="aic-main">
+    <header class="aic-head">
+      <button class="aic-ico" type="button" data-ai-side-toggle aria-label="{{ 'চ্যাটের তালিকা / Chat list' }}" aria-controls="aiSide"><i class="fa-solid fa-bars-staggered"></i></button>
+      <span class="aic-av aic-av-lg" aria-hidden="true"><i class="fa-solid {{ A.icon }}"></i></span>
+      <div class="aic-title"><h1>{{ A.name }}</h1><p>{{ t(A.sub, A.sub_en) }}</p></div>
+      <a class="aic-switch" href="/assistant"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>{{ t('সহায়ক বদলান', 'Switch') }}</span></a>
+    </header>
+    {% if A.images %}
+    <div class="aic-area">
+      <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+      <label for="aiArea">{{ t('এলাকা (আবহাওয়ার জন্য)', 'Area (for weather)') }}</label>
+      <select id="aiArea" data-ai-area>
+        <option value="{{ home_area }}" data-en="{{ 'My registered area' if home_area else '— choose a district —' }}">{{ 'আমার নিবন্ধিত এলাকা' if home_area else '— জেলা বেছে নিন —' }}</option>
+        {% for d in districts %}<option value="{{ d.code }}" data-en="{{ d.name_en }}">{{ d.name_bn }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="aic-scroll" data-ai-scroll>
+      <div class="aic-welcome" data-ai-welcome hidden>
+        <span class="aic-av aic-av-xl" aria-hidden="true"><i class="fa-solid {{ A.icon }}"></i></span>
+        <h2>{{ t(A.hello, A.hello_en) }}</h2>
+        <p class="aic-lead">{{ t(A.intro, A.intro_en) }}</p>
+        <p class="aic-muted">{{ t(A.desc, A.desc_en) }}</p>
+        <div class="aic-cards">
+          {% for c in A.cards %}
+          <button class="aic-card aic-t-{{ c.tone }}" type="button" data-act="{{ c.act }}" data-q="{{ c.q or '' }}" data-fill="{{ c.fill or '' }}">
+            <span class="aic-card-ic" aria-hidden="true"><i class="fa-solid {{ c.icon }}"></i></span>
+            <b>{{ t(c.bn, c.en) }}</b><span>{{ t(c.d, c.de) }}</span>
+          </button>
+          {% endfor %}
+        </div>
+        <h3 class="aic-h3"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i> {{ t('কৃষকরা সাধারণত যা জানতে চান', 'What farmers often ask') }}</h3>
+        <div class="aic-chips">{% for q in A.common %}<button class="aic-chip" type="button" data-q="{{ q }}">{{ q }}</button>{% endfor %}</div>
+      </div>
+      <div class="aic-log" id="aiLog" aria-live="polite"></div>
+    </div>
+
+    {# ---------------------------------------------------------------- composer #}
+    <div class="aic-compose">
+      <div class="aic-preview" data-ai-preview hidden></div>
+      <form id="aiForm" class="aic-form" autocomplete="off">
+        {% if A.images %}
+        <label class="aic-tool" title="{{ 'ছবি দিন / Add photo' }}"><i class="fa-solid fa-camera"></i>
+          <input type="file" accept="image/*" data-ai-file class="cb-sr" aria-label="{{ 'ছবি দিন / Add photo' }}"></label>
+        {% endif %}
+        <label class="cb-sr" for="aiQ">{{ t('আপনার প্রশ্ন', 'Your question') }}</label>
+        <textarea id="aiQ" name="q" maxlength="500" rows="1" placeholder="{{ A.placeholder }}"></textarea>
+        <button class="aic-tool" type="button" data-ai-mic aria-label="{{ 'বলে প্রশ্ন করুন / Speak' }}" title="{{ 'বলে প্রশ্ন করুন / Speak' }}"><i class="fa-solid fa-microphone"></i></button>
+        <button class="aic-send" type="submit" aria-label="{{ 'পাঠান / Send' }}"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+      <p class="aic-status" data-ai-status role="status"></p>
+      <p class="aic-fine">{{ t('এআই ভুল করতে পারে। ওষুধ বা সার দেওয়ার আগে কৃষি অফিসে নিশ্চিত হোন।', 'AI can be wrong. Check with the agriculture office before using any medicine or fertilizer.') }}</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/ai_chat.js?v=3" defer></script>{% endblock %}

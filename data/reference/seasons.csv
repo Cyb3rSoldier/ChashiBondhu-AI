@@ -1,0 +1,4 @@
+﻿season_id,name_en,name_bn,start_month,start_day,end_month,end_day,source_id,source_locator,status,verified_by,verified_on,notes
+rabi,Rabi,রবি,,,,,BBS_AGRI_YEARBOOK,,draft,,,"Fill dates from the official definition, then verify."
+kharif1,Kharif-1,খরিফ-১,,,,,BBS_AGRI_YEARBOOK,,draft,,,"Fill dates from the official definition, then verify."
+kharif2,Kharif-2,খরিফ-২,,,,,BBS_AGRI_YEARBOOK,,draft,,,"Fill dates from the official definition, then verify."

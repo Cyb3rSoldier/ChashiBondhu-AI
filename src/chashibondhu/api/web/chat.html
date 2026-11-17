@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="bn" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>চাষীবন্ধু সহকারী</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
+<style>
+/* ---------- colour tokens: paddy green, mustard flower, river soil ---------- */
+:root {
+  color-scheme: light;
+  --bg: #EEF4E6;          /* young paddy wash */
+  --surface: #FFFFFF;
+  --surface-2: #E3EDD8;
+  --line: #CBDABE;
+  --ink: #1D2B1A;
+  --ink-2: #4C5E47;
+  --paddy: #2E7A33;       /* primary */
+  --paddy-ink: #FFFFFF;
+  --mustard: #E6B800;     /* send button, highlights */
+  --mustard-ink: #2A2200;
+  --soil: #8A5A33;        /* book / source */
+  --soil-bg: #F6EADF;
+  --warn: #9A5B00;
+  --warn-bg: #FFF2D6;
+  --bad: #B3261E;
+  --bad-bg: #FDE7E5;
+  --shadow: 0 1px 2px rgba(29, 43, 26, .08), 0 6px 18px rgba(29, 43, 26, .06);
+  --radius-l: 22px;
+  --radius-m: 14px;
+  --font: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", "Vrinda", system-ui, sans-serif;
+  --font-head: "Tiro Bangla", "Hind Siliguri", "Noto Serif Bengali", serif;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0F170E;
+  --surface: #172316;
+  --surface-2: #1F2E1D;
+  --line: #2E412B;
+  --ink: #E6EFDF;
+  --ink-2: #A8B9A1;
+  --paddy: #6CC070;
+  --paddy-ink: #0F170E;
+  --mustard: #F2C94C;
+  --mustard-ink: #231C00;
+  --soil: #E0A877;
+  --soil-bg: #2A2016;
+  --warn: #F5C46B;
+  --warn-bg: #2E2410;
+  --bad: #F2B8B5;
+  --bad-bg: #3A1614;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--font); font-size: 18px; line-height: 1.6;
+  background: var(--bg); color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--mustard); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+svg { width: 24px; height: 24px; flex: none; }
+
+/* ---------- layout ---------- */
+.app { display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr);
+  height: 100vh; height: 100dvh; }
+.rail { display: none; }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.top {
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-head);
+  font-size: 24px; color: var(--paddy); text-decoration: none; margin-right: auto; }
+.brand-mark { width: 36px; height: 36px; border-radius: 12px; background: var(--paddy);
+  color: var(--paddy-ink); display: grid; place-items: center; }
+.pill-btn {
+  min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); display: inline-flex;
+  align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 16px;
+}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-2); flex: none; }
+.status-dot.ok { background: var(--paddy); }
+.status-dot.bad { background: var(--bad); }
+
+.scroll { flex: 1; min-height: 0; overflow-y: auto; scroll-behavior: smooth; }
+.col { max-width: 760px; margin: 0 auto; padding: 16px 14px 24px; }
+
+/* ---------- welcome ---------- */
+.season {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: var(--radius-m); background: var(--surface-2); color: var(--ink);
+  font-size: 16px;
+}
+.season b { font-weight: 700; }
+.hello { margin: 26px 0 6px; color: var(--paddy); font-weight: 600; font-size: 18px; }
+.headline { font-family: var(--font-head); font-weight: 400; font-size: clamp(32px, 7vw, 46px);
+  line-height: 1.2; margin: 0 0 8px; }
+.lead { color: var(--ink-2); margin: 0 0 22px; max-width: 34em; }
+
+.big-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.big {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px; text-align: left;
+  min-height: 130px; padding: 16px; border-radius: var(--radius-l); border: 0;
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.big .ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; }
+.big .ic svg { width: 30px; height: 30px; }
+.big.photo .ic { background: var(--mustard); color: var(--mustard-ink); }
+.big.ask .ic { background: var(--paddy); color: var(--paddy-ink); }
+.big strong { font-size: 20px; line-height: 1.3; }
+.big span { color: var(--ink-2); font-size: 15px; line-height: 1.4; }
+
+.examples-title { font-size: 16px; color: var(--ink-2); margin: 0 0 8px; }
+.examples { display: flex; flex-direction: column; gap: 8px; }
+.ex {
+  text-align: left; padding: 12px 14px; min-height: 52px; border-radius: var(--radius-m);
+  border: 1px solid var(--line); background: var(--surface); font-size: 17px;
+}
+
+/* ---------- messages ---------- */
+.msgs { display: flex; flex-direction: column; gap: 14px; }
+.msg-user { align-self: flex-end; max-width: 85%; background: var(--paddy); color: var(--paddy-ink);
+  padding: 10px 14px; border-radius: 18px 18px 4px 18px; white-space: pre-wrap; word-wrap: break-word; }
+.msg-user img { display: block; max-width: 220px; max-height: 220px; border-radius: 12px; margin-bottom: 6px; }
+.msg-user small { display: block; opacity: .9; font-size: 14px; }
+
+.card { align-self: stretch; background: var(--surface); border-radius: var(--radius-l);
+  box-shadow: var(--shadow); padding: 14px 16px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.b-book { background: var(--soil-bg); color: var(--soil); }
+.b-mix { background: var(--surface-2); color: var(--paddy); }
+.b-maybe { background: var(--warn-bg); color: var(--warn); }
+.b-bad { background: var(--bad-bg); color: var(--bad); }
+.answer { white-space: pre-wrap; word-wrap: break-word; font-size: 18px; }
+.cands { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.cand { padding: 6px 12px; border-radius: 999px; background: var(--warn-bg); color: var(--warn);
+  font-weight: 600; font-size: 16px; }
+.office { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-m);
+  background: var(--surface-2); font-size: 16px; display: flex; gap: 8px; align-items: flex-start; }
+.office svg { width: 20px; height: 20px; margin-top: 3px; color: var(--paddy); }
+details.src { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.src summary { cursor: pointer; color: var(--soil); font-weight: 600; font-size: 16px;
+  min-height: 40px; display: flex; align-items: center; }
+.src-item { font-size: 15px; color: var(--ink-2); margin: 6px 0 10px; }
+.src-item b { color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px;
+  font-size: 13px; color: var(--ink-2); }
+.meta button { border: 1px solid var(--line); background: transparent; border-radius: 999px;
+  padding: 4px 12px; min-height: 36px; font-size: 14px; }
+.err { background: var(--bad-bg); color: var(--bad); }
+.thinking { display: flex; align-items: center; gap: 10px; color: var(--ink-2); }
+.dots span { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%;
+  background: var(--paddy); animation: blink 1.2s infinite; }
+.dots span:nth-child(2) { animation-delay: .2s; }
+.dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+/* ---------- composer ---------- */
+.composer-wrap { background: var(--bg); padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
+.composer {
+  max-width: 760px; margin: 0 auto; display: flex; align-items: flex-end; gap: 8px;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 26px; padding: 6px;
+}
+.composer:focus-within { border-color: var(--paddy); }
+.composer textarea { flex: 1; border: 0; background: transparent; resize: none; outline: none;
+  padding: 10px 6px; min-height: 48px; max-height: 160px; font-size: 18px; line-height: 1.5; }
+.icon-btn { width: 48px; height: 48px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--ink); flex: none; }
+.send { background: var(--mustard); color: var(--mustard-ink); }
+.send:disabled { opacity: .45; cursor: not-allowed; }
+.hint { max-width: 760px; margin: 4px auto 0; font-size: 13px; color: var(--ink-2); text-align: center; }
+
+/* ---------- bottom nav (phones) ---------- */
+.bnav { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface);
+  border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.bnav button, .rail-nav button {
+  border: 0; background: transparent; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 8px 4px; min-height: 60px; font-size: 13px; color: var(--ink-2); position: relative;
+}
+.bnav button[aria-current="page"], .rail-nav button[aria-current="page"] { color: var(--paddy); font-weight: 700; }
+.bnav button:disabled, .rail-nav button:disabled { opacity: .55; cursor: default; }
+.soon { font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+
+/* ---------- photo sheet ---------- */
+.sheet-back { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: none; z-index: 20;
+  align-items: flex-end; justify-content: center; }
+.sheet-back.open { display: flex; }
+.sheet { width: 100%; max-width: 620px; max-height: 92vh; overflow-y: auto; background: var(--surface);
+  border-radius: 24px 24px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+.sheet h2 { font-family: var(--font-head); font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+.step { font-weight: 700; margin: 16px 0 8px; }
+.crop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.crop {
+  min-height: 56px; border-radius: var(--radius-m); border: 2px solid var(--line); background: var(--surface);
+  padding: 8px 10px; text-align: left; display: flex; flex-direction: column; justify-content: center;
+}
+.crop[aria-pressed="true"] { border-color: var(--paddy); background: var(--surface-2); }
+.crop small { font-size: 12px; color: var(--ink-2); line-height: 1.3; }
+.pick { display: flex; gap: 10px; flex-wrap: wrap; }
+.pick label { flex: 1 1 160px; min-height: 64px; border-radius: var(--radius-m); border: 2px dashed var(--line);
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-weight: 600; }
+.pick input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.preview { margin-top: 10px; display: none; }
+.preview img { max-width: 100%; max-height: 260px; border-radius: var(--radius-m); display: block; }
+.sheet textarea { width: 100%; border: 2px solid var(--line); border-radius: var(--radius-m);
+  background: var(--surface); padding: 10px; min-height: 70px; resize: vertical; }
+.note-small { font-size: 14px; color: var(--ink-2); margin: 6px 0 0; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+.btn { flex: 1; min-height: 54px; border-radius: 999px; border: 0; font-weight: 700; font-size: 18px; }
+.btn-main { background: var(--paddy); color: var(--paddy-ink); }
+.btn-main:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: var(--surface-2); }
+.sheet-msg { margin-top: 10px; color: var(--bad); font-size: 15px; min-height: 1em; }
+
+/* ---------- wide screens ---------- */
+@media (min-width: 900px) {
+  .app { grid-template-columns: 260px 1fr; }
+  .rail { display: flex; flex-direction: column; gap: 6px; background: var(--surface); overflow-y: auto;
+    border-right: 1px solid var(--line); padding: 16px 12px; }
+  .rail .brand { margin: 4px 6px 16px; }
+  .rail-nav { display: flex; flex-direction: column; gap: 4px; }
+  .rail-nav button { flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 52px;
+    padding: 0 12px; border-radius: var(--radius-m); font-size: 17px; text-align: left; }
+  .rail-nav button[aria-current="page"] { background: var(--surface-2); }
+  .rail-nav .soon { margin-left: auto; }
+  .rail-foot { margin-top: auto; font-size: 13px; color: var(--ink-2); padding: 8px; }
+  .top .brand { display: none; }
+  .top { padding-left: 24px; justify-content: flex-end; }
+  .bnav { display: none; }
+  .big-actions { gap: 16px; }
+  .examples { display: grid; grid-template-columns: 1fr 1fr; }
+  .sheet-back { align-items: center; }
+  .sheet { border-radius: 24px; }
+}
+@media (max-width: 520px) {
+  .top { gap: 6px; }
+  .pill-btn { padding: 0 10px; font-size: 15px; }
+  #newChat span { display: none; }
+}
+@media (max-width: 380px) {
+  body { font-size: 17px; }
+  .big { min-height: 118px; padding: 12px; }
+  .big strong { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2 2h3l2.7 12.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-office" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- left rail (wide screens) -->
+  <aside class="rail" aria-label="menu">
+    <a class="brand" href="/chat"><span class="brand-mark"><svg><use href="#i-sprout"/></svg></span><span data-t="brand"></span></a>
+    <nav class="rail-nav">
+      <button type="button" aria-current="page" data-nav="ask"><svg><use href="#i-chat"/></svg><span data-t="navAsk"></span></button>
+      <button type="button" data-nav="photo"><svg><use href="#i-camera"/></svg><span data-t="navPhoto"></span></button>
+      <button type="button" disabled><svg><use href="#i-sprout"/></svg><span data-t="navPlan"></span><span class="soon" data-t="soon"></span></button>
+      <button type="button" disabled><svg><use href="#i-tag"/></svg><span data-t="navPrice"></span><span class="soon" data-t="soon"></span></button>
+      <button type="button" disabled><svg><use href="#i-cart"/></svg><span data-t="navSell"></span><span class="soon" data-t="soon"></span></button>
+    </nav>
+    <div class="rail-foot" data-t="railFoot"></div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <a class="brand" href="/chat"><span class="brand-mark"><svg><use href="#i-sprout"/></svg></span><span data-t="brand"></span></a>
+      <span class="status-dot" id="statusDot" role="img"></span>
+      <button class="pill-btn" type="button" id="newChat"><svg><use href="#i-plus"/></svg><span data-t="newChat"></span></button>
+      <button class="pill-btn" type="button" id="langBtn"></button>
+      <button class="pill-btn" type="button" id="themeBtn"><svg id="themeIcon"><use href="#i-moon"/></svg><span class="sr-only" data-t="theme"></span></button>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <div class="col">
+        <section id="welcome">
+          <div class="season"><svg><use href="#i-calendar"/></svg><div id="seasonText"></div></div>
+          <p class="hello" id="hello"></p>
+          <h1 class="headline" data-t="headline"></h1>
+          <p class="lead" data-t="lead"></p>
+          <div class="big-actions">
+            <button class="big photo" type="button" id="bigPhoto"><span class="ic"><svg><use href="#i-camera"/></svg></span><strong data-t="bigPhotoT"></strong><span data-t="bigPhotoS"></span></button>
+            <button class="big ask" type="button" id="bigAsk"><span class="ic"><svg><use href="#i-chat"/></svg></span><strong data-t="bigAskT"></strong><span data-t="bigAskS"></span></button>
+          </div>
+          <p class="examples-title" data-t="examplesTitle"></p>
+          <div class="examples" id="examples"></div>
+        </section>
+        <section class="msgs" id="msgs" aria-live="polite"></section>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer" autocomplete="off">
+        <button class="icon-btn" type="button" id="camBtn"><svg><use href="#i-camera"/></svg><span class="sr-only" data-t="navPhoto"></span></button>
+        <label class="sr-only" for="q" data-t="placeholder"></label>
+        <textarea id="q" rows="1" maxlength="500"></textarea>
+        <button class="icon-btn send" type="submit" id="sendBtn" disabled><svg><use href="#i-send"/></svg><span class="sr-only" data-t="send"></span></button>
+      </form>
+      <p class="hint" data-t="hint"></p>
+    </div>
+
+    <nav class="bnav" aria-label="menu">
+      <button type="button" aria-current="page" data-nav="ask"><svg><use href="#i-chat"/></svg><span data-t="navAskShort"></span></button>
+      <button type="button" data-nav="photo"><svg><use href="#i-camera"/></svg><span data-t="navPhotoShort"></span></button>
+      <button type="button" disabled><svg><use href="#i-sprout"/></svg><span data-t="navPlanShort"></span><span class="soon" data-t="soon"></span></button>
+      <button type="button" disabled><svg><use href="#i-cart"/></svg><span data-t="navSellShort"></span><span class="soon" data-t="soon"></span></button>
+    </nav>
+  </div>
+</div>
+
+<!-- photo sheet -->
+<div class="sheet-back" id="sheetBack">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle" data-t="sheetTitle"></h2>
+    <p class="note-small" data-t="sheetLead"></p>
+    <p class="step" data-t="step1"></p>
+    <div class="crop-grid" id="cropGrid"></div>
+    <p class="step" data-t="step2"></p>
+    <div class="pick">
+      <label><input type="file" accept="image/*" capture="environment" id="camInput"><svg><use href="#i-camera"/></svg><span data-t="takePhoto"></span></label>
+      <label><input type="file" accept="image/*" id="galInput"><svg><use href="#i-leaf"/></svg><span data-t="fromGallery"></span></label>
+    </div>
+    <div class="preview" id="preview"><img id="previewImg" alt=""></div>
+    <p class="step" data-t="step3"></p>
+    <textarea id="photoNote" maxlength="200"></textarea>
+    <p class="note-small" data-t="privacy"></p>
+    <p class="sheet-msg" id="sheetMsg" role="alert"></p>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" type="button" id="sheetCancel" data-t="cancel"></button>
+      <button class="btn btn-main" type="button" id="sheetSend" disabled data-t="sendPhoto"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= text (Bangla / English) ================= */
+const T = {
+  bn: {
+    brand: "চাষীবন্ধু", newChat: "নতুন", theme: "রং বদলান", langBtn: "English",
+    navAsk: "কৃষি সহকারী", navPhoto: "ফসলের ছবি", navPlan: "কী চাষ করব", navPrice: "বাজার দর",
+    navSell: "বিক্রি ও অর্ডার", navAskShort: "প্রশ্ন", navPhotoShort: "ছবি", navPlanShort: "চাষ",
+    navSellShort: "বিক্রি", soon: "শীঘ্রই",
+    railFoot: "উত্তর আসে বিএআরআই কৃষি প্রযুক্তি হাতবই থেকে। নিশ্চিত হতে স্থানীয় কৃষি অফিসে যোগাযোগ করুন।",
+    headline: "আজ ফসলের কী জানতে চান?",
+    lead: "লিখে প্রশ্ন করুন, অথবা গাছ বা পাতার ছবি পাঠান। উত্তর আসবে কৃষি বই থেকে, সাথে পৃষ্ঠা নম্বর।",
+    bigPhotoT: "ছবি দিয়ে সমস্যা দেখুন", bigPhotoS: "পাতা বা গাছের ছবি তুলুন",
+    bigAskT: "প্রশ্ন লিখুন", bigAskS: "বাংলা, Banglish বা English",
+    examplesTitle: "যেমন জিজ্ঞেস করতে পারেন",
+    examples: ["আলুর পাতা হলুদ হয়ে যাচ্ছে কেন?", "আমন ধান কখন লাগাতে হয়?",
+               "সরিষার ভালো জাত কোনগুলো?", "টমেটো গাছের পাতা কুঁকড়ে যাচ্ছে কেন?",
+               "পেঁয়াজ কখন তুলতে হয়?", "মসুর ডালে কী কী রোগ হয়?"],
+    placeholder: "এখানে প্রশ্ন লিখুন…", send: "পাঠান",
+    hint: "এআই ভুল করতে পারে। ওষুধ বা সারের আগে কৃষি অফিসে জিজ্ঞেস করুন।",
+    greet: ["শুভ রাত্রি", "সুপ্রভাত", "শুভ দুপুর", "শুভ বিকাল", "শুভ সন্ধ্যা"],
+    seasonLabel: "মৌসুম", seasons: { rabi: "রবি মৌসুম", k1: "খরিফ-১ মৌসুম", k2: "খরিফ-২ মৌসুম" },
+    months: ["বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ণ",
+             "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"],
+    thinking: "বই থেকে উত্তর খুঁজছি…", thinkingPhoto: "ছবিটা দেখছি…",
+    st: { verified: "বই থেকে যাচাই করা", verified_and_advice: "বই থেকে + পরামর্শ",
+          advice_only: "পরামর্শ (বইয়ে সরাসরি পাওয়া যায়নি)", need_more_info: "আরও তথ্য দরকার",
+          possible: "হতে পারে", unsure: "নিশ্চিত না", looks_healthy: "সুস্থ মনে হচ্ছে",
+          retake: "আবার ছবি তুলুন", not_plant: "গাছের ছবি না", crop_mismatch: "ফসল মিলছে না" },
+    sources: "সূত্র দেখুন", page: "পৃষ্ঠা", model: "উত্তর দিয়েছে", copy: "কপি", copied: "কপি হয়েছে",
+    office: "নিশ্চিত হতে স্থানীয় কৃষি অফিসে (উপ-সহকারী কৃষি কর্মকর্তা) যোগাযোগ করুন।",
+    likely: { high: "বেশি", medium: "মাঝারি", low: "কম" },
+    errBusy: "এখন অনেক প্রশ্ন আসছে। এক মিনিট পরে আবার চেষ্টা করুন।",
+    errDown: "সহকারী এখন চালু নেই। একটু পরে আবার চেষ্টা করুন।",
+    errNet: "সার্ভারের সাথে যোগাযোগ হচ্ছে না। ইন্টারনেট দেখে আবার চেষ্টা করুন।",
+    errShort: "প্রশ্নটা একটু বড় করে লিখুন।", errOther: "উত্তর আনা যায়নি",
+    sheetTitle: "ছবি দিয়ে ফসলের সমস্যা", sheetLead: "আক্রান্ত পাতা বা গাছের কাছ থেকে, আলোতে পরিষ্কার ছবি তুলুন।",
+    step1: "১. কোন ফসল?", step2: "২. ছবি দিন", step3: "৩. কিছু বলতে চাইলে লিখুন (না লিখলেও চলবে)",
+    takePhoto: "ছবি তুলুন", fromGallery: "গ্যালারি থেকে",
+    noList: "এখনো সমস্যার তালিকা নেই", hasList: "টি সমস্যা চেনে",
+    privacy: "ছবির লোকেশন (GPS) ও অন্য গোপন তথ্য পাঠানোর আগে মুছে ফেলা হয়।",
+    cancel: "বাতিল", sendPhoto: "ছবি পাঠান",
+    needCrop: "আগে ফসল বেছে নিন।", needPhoto: "একটা ছবি দিন।", badPhoto: "ছবিটা খোলা যাচ্ছে না। অন্য ছবি দিন।",
+    cropsFail: "ফসলের তালিকা আনা যায়নি। ছবি-সহায়তা এখন বন্ধ থাকতে পারে।",
+    photoOf: "ছবি", statusOk: "সার্ভার চালু", statusBad: "সার্ভার বন্ধ",
+  },
+  en: {
+    brand: "ChashiBondhu", newChat: "New", theme: "Change theme", langBtn: "বাংলা",
+    navAsk: "Farm assistant", navPhoto: "Crop photo", navPlan: "What to grow", navPrice: "Market prices",
+    navSell: "Sales & orders", navAskShort: "Ask", navPhotoShort: "Photo", navPlanShort: "Plan",
+    navSellShort: "Sell", soon: "Soon",
+    railFoot: "Answers come from the BARI Krishi Projukti Hatboi. Confirm with your local agriculture office.",
+    headline: "What do you want to know about your crop today?",
+    lead: "Type a question, or send a photo of a plant or leaf. Answers come from the farming handbook, with page numbers.",
+    bigPhotoT: "Check a problem by photo", bigPhotoS: "Take a photo of the leaf or plant",
+    bigAskT: "Type a question", bigAskS: "Bangla, Banglish or English",
+    examplesTitle: "You can ask, for example",
+    examples: ["Why are potato leaves turning yellow?", "When should Aman rice be planted?",
+               "Which mustard varieties are good?", "Why are tomato leaves curling?",
+               "When should onions be harvested?", "What diseases affect lentil?"],
+    placeholder: "Type your question…", send: "Send",
+    hint: "AI can make mistakes. Ask the agriculture office before using any pesticide or fertilizer. Answers are mostly in Bangla.",
+    greet: ["Good night", "Good morning", "Good afternoon", "Good afternoon", "Good evening"],
+    seasonLabel: "season", seasons: { rabi: "Rabi season", k1: "Kharif-1 season", k2: "Kharif-2 season" },
+    months: ["Boishakh", "Joishtho", "Asharh", "Shrabon", "Bhadro", "Ashwin", "Kartik", "Ogrohayon",
+             "Poush", "Magh", "Falgun", "Choitro"],
+    thinking: "Searching the handbook…", thinkingPhoto: "Looking at the photo…",
+    st: { verified: "Checked in the handbook", verified_and_advice: "Handbook + advice",
+          advice_only: "Advice (not found directly in the handbook)", need_more_info: "Need more information",
+          possible: "Possible", unsure: "Not sure", looks_healthy: "Looks healthy",
+          retake: "Retake the photo", not_plant: "Not a plant photo", crop_mismatch: "Crop does not match" },
+    sources: "Show sources", page: "page", model: "Answered by", copy: "Copy", copied: "Copied",
+    office: "To be sure, contact your local agriculture office (Sub-Assistant Agriculture Officer).",
+    likely: { high: "high", medium: "medium", low: "low" },
+    errBusy: "Too many questions right now. Please try again in a minute.",
+    errDown: "The assistant is not running right now. Please try again later.",
+    errNet: "Cannot reach the server. Check the internet and try again.",
+    errShort: "Please write a slightly longer question.", errOther: "Could not get an answer",
+    sheetTitle: "Crop problem by photo", sheetLead: "Take a clear photo of the affected leaf or plant, close up, in good light.",
+    step1: "1. Which crop?", step2: "2. Add a photo", step3: "3. Anything to add? (optional)",
+    takePhoto: "Take photo", fromGallery: "From gallery",
+    noList: "No problem list yet", hasList: " problems known",
+    privacy: "Location (GPS) and other hidden photo data are removed before sending.",
+    cancel: "Cancel", sendPhoto: "Send photo",
+    needCrop: "Choose a crop first.", needPhoto: "Add a photo.", badPhoto: "This photo cannot be opened. Try another one.",
+    cropsFail: "Could not load the crop list. Photo help may be off right now.",
+    photoOf: "Photo", statusOk: "Server running", statusBad: "Server not reachable",
+  },
+};
+
+/* ================= small helpers ================= */
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode: ignore */ } },
+};
+let lang = store.get("cb_lang", "bn") === "en" ? "en" : "bn";
+const t = (k) => T[lang][k];
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+const num = (n) => lang === "bn" ? String(n).replace(/[0-9]/g, (d) => BN_DIGITS[d]) : String(n);
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+function icon(name) {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const u = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  u.setAttribute("href", "#i-" + name);
+  s.appendChild(u);
+  return s;
+}
+
+/* ================= Bangla date + season (display only) ================= */
+// Bangladesh revised calendar: year starts 14 April; months 1-6 have 31 days,
+// 7-10 and 12 have 30, Falgun has 29 (30 in a Gregorian leap year).
+function banglaDate(now) {
+  const y = now.getFullYear();
+  const today = Date.UTC(y, now.getMonth(), now.getDate());
+  let startYear = today >= Date.UTC(y, 3, 14) ? y : y - 1;
+  let day = Math.round((today - Date.UTC(startYear, 3, 14)) / 86400000);
+  const leap = (n) => (n % 4 === 0 && n % 100 !== 0) || n % 400 === 0;
+  const lens = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, leap(startYear + 1) ? 30 : 29, 30];
+  let m = 0;
+  while (m < 11 && day >= lens[m]) { day -= lens[m]; m += 1; }
+  return { day: day + 1, month: m, year: startYear - 593 };
+}
+function seasonKey(now) {
+  const md = (now.getMonth() + 1) * 100 + now.getDate();
+  if (md >= 1016 || md <= 315) return "rabi";
+  if (md <= 715) return "k1";
+  return "k2";
+}
+
+/* ================= theme + language ================= */
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  $("themeIcon").firstElementChild.setAttribute("href", theme === "dark" ? "#i-sun" : "#i-moon");
+  store.set("cb_theme", theme);
+}
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.title = lang === "bn" ? "চাষীবন্ধু সহকারী" : "ChashiBondhu assistant";
+  document.querySelectorAll("[data-t]").forEach((n) => { n.textContent = t(n.dataset.t); });
+  $("langBtn").textContent = t("langBtn");
+  $("q").placeholder = t("placeholder");
+  const now = new Date();
+  const b = banglaDate(now);
+  $("seasonText").textContent = "";
+  const strong = el("b", null, `${num(b.day)} ${t("months")[b.month]} ${num(b.year)}`);
+  $("seasonText").append(strong, " · ", t("seasons")[seasonKey(now)]);
+  const h = now.getHours();
+  const g = t("greet");
+  $("hello").textContent = h < 5 ? g[0] : h < 12 ? g[1] : h < 16 ? g[2] : h < 18 ? g[3] : h < 21 ? g[4] : g[0];
+  const ex = $("examples");
+  ex.textContent = "";
+  t("examples").forEach((q) => {
+    const b2 = el("button", "ex", q);
+    b2.type = "button";
+    b2.addEventListener("click", () => ask(q));
+    ex.appendChild(b2);
+  });
+  if (crops) renderCrops();
+  store.set("cb_lang", lang);
+}
+
+/* ================= server status ================= */
+async function checkHealth() {
+  const dot = $("statusDot");
+  try {
+    const r = await fetch("/health", { cache: "no-store" });
+    const ok = r.ok;
+    dot.className = "status-dot " + (ok ? "ok" : "bad");
+    dot.setAttribute("aria-label", ok ? t("statusOk") : t("statusBad"));
+    dot.title = dot.getAttribute("aria-label");
+  } catch {
+    dot.className = "status-dot bad";
+    dot.setAttribute("aria-label", t("statusBad"));
+    dot.title = t("statusBad");
+  }
+}
+
+/* ================= chat ================= */
+const msgs = $("msgs");
+let busy = false;
+function scrollDown() { const s = $("scroll"); s.scrollTop = s.scrollHeight; }
+function hideWelcome() { $("welcome").hidden = true; }
+
+function addUser(text, imgUrl, cropName) {
+  hideWelcome();
+  const b = el("div", "msg-user");
+  if (imgUrl) {
+    const img = el("img");
+    img.src = imgUrl;
+    img.alt = t("photoOf");
+    b.appendChild(img);
+    if (cropName) b.appendChild(el("small", null, cropName));
+  }
+  if (text) b.appendChild(document.createTextNode(text));
+  msgs.appendChild(b);
+  scrollDown();
+}
+function addThinking(key) {
+  const c = el("div", "card thinking");
+  const d = el("span", "dots");
+  d.append(el("span"), el("span"), el("span"));
+  c.append(d, el("span", null, t(key)));
+  msgs.appendChild(c);
+  scrollDown();
+  return c;
+}
+function addError(text) {
+  const c = el("div", "card err", text);
+  c.setAttribute("role", "alert");
+  msgs.appendChild(c);
+  scrollDown();
+}
+function badgeFor(status) {
+  const cls = { verified: "b-book", verified_and_advice: "b-mix", advice_only: "b-maybe",
+                need_more_info: "b-maybe", possible: "b-maybe", unsure: "b-maybe",
+                looks_healthy: "b-mix", retake: "b-bad", not_plant: "b-bad", crop_mismatch: "b-bad" }[status] || "b-mix";
+  const b = el("span", "badge " + cls, (t("st")[status]) || status);
+  if (status === "verified" || status === "verified_and_advice") b.prepend(icon("leaf"));
+  return b;
+}
+function sourcesBlock(sources) {
+  if (!Array.isArray(sources) || !sources.length) return null;
+  const d = el("details", "src");
+  d.appendChild(el("summary", null, `${t("sources")} (${num(sources.length)})`));
+  sources.forEach((s) => {
+    const item = el("div", "src-item");
+    const page = s.printed_page ?? s.pdf_page;
+    const head = el("b", null, `${s.source || ""}${page ? ` · ${t("page")} ${num(page)}` : ""}`);
+    item.appendChild(head);
+    if (s.excerpt) item.appendChild(el("div", null, s.excerpt));
+    d.appendChild(item);
+  });
+  return d;
+}
+function officeBlock() {
+  const o = el("div", "office");
+  o.append(icon("office"), el("span", null, t("office")));
+  return o;
+}
+function metaBlock(model, copyText) {
+  const m = el("div", "meta");
+  if (model) m.appendChild(el("span", null, `${t("model")}: ${model}`));
+  const btn = el("button", null, t("copy"));
+  btn.type = "button";
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(copyText); btn.textContent = t("copied"); }
+    catch { /* clipboard blocked: ignore */ }
+  });
+  m.appendChild(btn);
+  return m;
+}
+function renderAnswer(r) {
+  const c = el("div", "card");
+  c.appendChild(badgeFor(r.status));
+  c.appendChild(el("div", "answer", r.answer || ""));
+  const src = sourcesBlock(r.sources);
+  if (src) c.appendChild(src);
+  if (!/কৃষি অফিস/.test(r.answer || "")) c.appendChild(officeBlock());
+  c.appendChild(metaBlock(r.model, r.answer || ""));
+  msgs.appendChild(c);
+  scrollDown();
+}
+function renderPhoto(r) {
+  const c = el("div", "card");
+  c.appendChild(badgeFor(r.status));
+  const real = (r.candidates || []).filter((x) => x.problem_id !== "healthy");
+  if (r.status === "possible" && real.length) {
+    const box = el("div", "cands");
+    real.forEach((x) => box.appendChild(el("span", "cand", `${x.name_bn} · ${t("likely")[x.likelihood] || x.likelihood}`)));
+    c.appendChild(box);
+  }
+  c.appendChild(el("div", "answer", r.message_bn || ""));
+  const src = sourcesBlock(r.book && r.book.sources);
+  if (src) c.appendChild(src);
+  c.appendChild(metaBlock(r.model, r.message_bn || ""));
+  msgs.appendChild(c);
+  scrollDown();
+}
+async function errorText(r) {
+  if (r.status === 429) return t("errBusy");
+  if (r.status === 503) return t("errDown");
+  let detail = "";
+  try { const j = await r.json(); detail = typeof j.detail === "string" ? j.detail : ""; } catch { /* ignore */ }
+  if (r.status === 422 && !detail) return t("errShort");
+  return `${t("errOther")} (${num(r.status)})${detail ? ": " + detail.slice(0, 160) : ""}`;
+}
+
+async function ask(question) {
+  const q = (question || "").trim();
+  if (busy || q.length < 2) { if (q.length && q.length < 2) addError(t("errShort")); return; }
+  busy = true; updateSend();
+  addUser(q);
+  const wait = addThinking("thinking");
+  try {
+    const r = await fetch("/assistant/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q.slice(0, 500) }),
+    });
+    wait.remove();
+    if (!r.ok) addError(await errorText(r));
+    else renderAnswer(await r.json());
+  } catch {
+    wait.remove();
+    addError(t("errNet"));
+  } finally {
+    busy = false; updateSend();
+  }
+}
+
+/* ================= composer ================= */
+const q = $("q");
+function updateSend() { $("sendBtn").disabled = busy || q.value.trim().length < 2; }
+function grow() { q.style.height = "auto"; q.style.height = Math.min(q.scrollHeight, 160) + "px"; }
+q.addEventListener("input", () => { grow(); updateSend(); });
+q.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("composer").requestSubmit(); }
+});
+$("composer").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = q.value;
+  if (busy || text.trim().length < 2) return;
+  q.value = ""; grow(); ask(text);
+});
+
+/* ================= photo sheet ================= */
+let crops = null;
+let chosenCrop = null;
+let photoBlob = null;
+let photoUrl = null;
+
+async function loadCrops() {
+  try {
+    const r = await fetch("/photo/crops", { cache: "no-store" });
+    if (!r.ok) throw new Error(String(r.status));
+    const list = await r.json();
+    crops = list.sort((a, b) => (b.n_problems - a.n_problems) || a.crop_id.localeCompare(b.crop_id));
+    $("sheetMsg").textContent = "";
+  } catch {
+    crops = [];
+    $("sheetMsg").textContent = t("cropsFail");
+  }
+  renderCrops();
+}
+function renderCrops() {
+  const g = $("cropGrid");
+  g.textContent = "";
+  (crops || []).forEach((c) => {
+    const b = el("button", "crop");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(chosenCrop === c.crop_id));
+    b.appendChild(el("span", null, lang === "bn" ? c.name_bn : c.name_en));
+    b.appendChild(el("small", null, c.n_problems ? `${num(c.n_problems)}${t("hasList")}` : t("noList")));
+    b.addEventListener("click", () => { chosenCrop = c.crop_id; renderCrops(); updatePhotoSend(); });
+    g.appendChild(b);
+  });
+}
+function updatePhotoSend() { $("sheetSend").disabled = !(chosenCrop && photoBlob) || busy; }
+function openSheet() {
+  $("sheetBack").classList.add("open");
+  if (crops === null) loadCrops();
+  setTimeout(() => $("sheetCancel").focus(), 30);
+}
+function closeSheet() { $("sheetBack").classList.remove("open"); }
+
+// Shrink the photo in the browser (max 1600 px, JPEG): faster on slow mobile data and
+// the canvas copy carries no EXIF/GPS. The server also cleans and shrinks it again.
+async function shrink(file) {
+  let src;
+  try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch {
+    src = await new Promise((ok, bad) => {
+      const img = new Image();
+      img.onload = () => ok(img); img.onerror = bad;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  const w = src.width, h = src.height, scale = Math.min(1, 1600 / Math.max(w, h));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+  cv.getContext("2d").drawImage(src, 0, 0, cv.width, cv.height);
+  return await new Promise((ok, bad) => cv.toBlob((b) => (b ? ok(b) : bad(new Error("toBlob"))), "image/jpeg", 0.85));
+}
+async function onFile(e) {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  $("sheetMsg").textContent = "";
+  try {
+    photoBlob = await shrink(f);
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photoUrl = URL.createObjectURL(photoBlob);
+    $("previewImg").src = photoUrl;
+    $("previewImg").alt = t("photoOf");
+    $("preview").style.display = "block";
+  } catch {
+    photoBlob = null;
+    $("preview").style.display = "none";
+    $("sheetMsg").textContent = t("badPhoto");
+  }
+  updatePhotoSend();
+}
+$("camInput").addEventListener("change", onFile);
+$("galInput").addEventListener("change", onFile);
+
+async function sendPhoto() {
+  if (!chosenCrop) { $("sheetMsg").textContent = t("needCrop"); return; }
+  if (!photoBlob) { $("sheetMsg").textContent = t("needPhoto"); return; }
+  const crop = (crops || []).find((c) => c.crop_id === chosenCrop);
+  const note = $("photoNote").value.trim().slice(0, 200);
+  const form = new FormData();
+  form.append("crop_id", chosenCrop);
+  form.append("image", photoBlob, "photo.jpg");
+  form.append("note", note);
+  closeSheet();
+  addUser(note, photoUrl, crop ? (lang === "bn" ? crop.name_bn : crop.name_en) : "");
+  busy = true; updateSend(); updatePhotoSend();
+  const wait = addThinking("thinkingPhoto");
+  try {
+    const r = await fetch("/photo/diagnose", { method: "POST", body: form });
+    wait.remove();
+    if (!r.ok) addError(await errorText(r));
+    else renderPhoto(await r.json());
+  } catch {
+    wait.remove();
+    addError(t("errNet"));
+  } finally {
+    busy = false; updateSend();
+    photoBlob = null; photoUrl = null;          // the chat keeps its own copy of the image URL
+    $("preview").style.display = "none"; $("photoNote").value = "";
+    updatePhotoSend();
+  }
+}
+
+/* ================= wiring ================= */
+$("bigPhoto").addEventListener("click", openSheet);
+$("camBtn").addEventListener("click", openSheet);
+$("bigAsk").addEventListener("click", () => q.focus());
+$("sheetCancel").addEventListener("click", closeSheet);
+$("sheetSend").addEventListener("click", sendPhoto);
+$("sheetBack").addEventListener("click", (e) => { if (e.target === $("sheetBack")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+document.querySelectorAll("[data-nav]").forEach((b) => b.addEventListener("click", () => {
+  if (b.dataset.nav === "photo") openSheet(); else q.focus();
+}));
+$("newChat").addEventListener("click", () => {
+  msgs.textContent = ""; $("welcome").hidden = false; $("scroll").scrollTop = 0; q.focus();
+});
+$("langBtn").addEventListener("click", () => { lang = lang === "bn" ? "en" : "bn"; applyLang(); checkHealth(); });
+$("themeBtn").addEventListener("click", () => {
+  applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+
+const savedTheme = store.get("cb_theme", "");
+applyTheme(savedTheme || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+applyLang();
+checkHealth();
+setInterval(checkHealth, 60000);
+</script>
+</body>
+</html>

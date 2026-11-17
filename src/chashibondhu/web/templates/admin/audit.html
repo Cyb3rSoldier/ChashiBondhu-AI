@@ -1,0 +1,23 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'অডিট লগ — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('অডিট লগ', 'Audit log') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<p class="cb-hint">{{ t('এই রেকর্ড কেউ বদলাতে বা মুছতে পারে না — ডাটাবেস নিজেই আটকায়।', 'Nobody can change or delete these records — the database itself blocks it.') }}</p>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="action">{{ t('কাজ (শুরু)', 'Action (starts with)') }}</label><input class="cb-input" id="action" name="action" value="{{ f.action }}" placeholder="user." style="max-width:150px"></div>
+  <div class="cb-field"><label for="actor">{{ t('অ্যাডমিন আইডি', 'Admin ID') }}</label><input class="cb-input" id="actor" name="actor" value="{{ f.actor or '' }}" style="max-width:110px"></div>
+  <div class="cb-field"><label for="target_type">{{ t('লক্ষ্য', 'Target') }}</label><input class="cb-input" id="target_type" name="target_type" value="{{ f.target_type }}" placeholder="user" style="max-width:120px"></div>
+  <div class="cb-field"><label for="target_id">{{ t('লক্ষ্য আইডি', 'Target ID') }}</label><input class="cb-input" id="target_id" name="target_id" value="{{ f.target_id or '' }}" style="max-width:110px"></div>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+<div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse;font-size:14px">
+  <thead><tr><th scope="col">#</th><th scope="col">{{ t('সময়', 'Time') }}</th><th scope="col">{{ t('কে', 'Who') }}</th><th scope="col">{{ t('কাজ', 'Action') }}</th><th scope="col">{{ t('লক্ষ্য', 'Target') }}</th><th scope="col">{{ t('ফল', 'Result') }}</th><th scope="col">{{ t('কারণ / তথ্য', 'Reason / details') }}</th></tr></thead>
+  <tbody>{% for a in rows %}
+    <tr><td>{{ a.id }}</td><td style="white-space:nowrap">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ a.actor_name or '—' }}{% if a.actor_id %} #{{ a.actor_id }}{% endif %}</td>
+      <td><code>{{ a.action }}</code></td><td>{{ a.target_type or '' }}{% if a.target_id %} #{{ a.target_id }}{% endif %}</td>
+      <td><span class="cb-pill {{ 'ok' if a.result == 'ok' else 'no' }}">{{ a.result }}</span></td>
+      <td>{{ a.reason or '' }}{% if a.meta %}<br><small class="cb-hint" style="word-break:break-all">{{ a.meta|tojson }}</small>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "admin/_pager.html" %}
+{% endblock %}

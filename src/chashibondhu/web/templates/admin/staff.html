@@ -1,0 +1,36 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'স্টাফ — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('স্টাফ ও অনুমতি', 'Staff & permissions') }}</h1>
+<p class="cb-hint">{{ t('নতুন স্টাফ কোনো অনুমতি নিজে থেকে পান না — যা টিক দেবেন শুধু সেটাই। হিসাব, অডিট লগ ও স্টাফ অনুমতি সাবধানে দিন। শুধু সুপার অ্যাডমিন অন্যকে সুপার অ্যাডমিন বা স্টাফ-ম্যানেজার করতে পারেন।', 'New staff get no permission by default — only what you tick. Give finance, audit log and staff permissions carefully. Only a Super Admin can make someone Super Admin or staff manager.') }}</p>
+{% for s in rows %}
+<section class="cb-box" style="margin-bottom:14px">
+  <div class="cb-head-row" style="margin:0 0 6px"><h2 style="margin:0">{{ s.full_name }} <small class="cb-hint">#{{ s.id }} · {{ s.phone }}</small></h2>
+    <span class="cb-pill {{ 'ok' if s.status == 'active' else 'no' }}">{{ s.status }}</span></div>
+  {% if s.id == admin.id %}<p class="cb-hint">{{ t('এটা আপনি। নিজের অনুমতি বা অবস্থা নিজে বদলানো যায় না।', 'This is you. You cannot change your own permissions or status.') }}</p>
+  {% else %}
+  <form class="cb-form" method="post" action="/admin-staff/{{ s.id }}/permissions">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if admin.is_super %}<label class="cb-check"><input type="checkbox" name="is_super" value="1"{% if s.is_super %} checked{% endif %}><span><b>{{ t('সুপার অ্যাডমিন (সব অনুমতি)', 'Super Admin (all permissions)') }}</b></span></label>{% endif %}
+    <div class="cb-checks">{% for p in all_perms %}{% if admin.is_super or p != 'staff' %}
+      <label class="cb-check"><input type="checkbox" name="perms" value="{{ p }}"{% if p in s.permissions %} checked{% endif %}><span>{{ t(perm_labels[p][0], perm_labels[p][1]) }}</span></label>{% endif %}{% endfor %}</div>
+    <button class="cb-mini main" type="submit">{{ t('অনুমতি সংরক্ষণ', 'Save permissions') }}</button>
+  </form>
+  <form class="cb-offer" method="post" action="/admin-staff/{{ s.id }}/status" style="margin-top:8px" data-confirm-bn="নিশ্চিত?" data-confirm-en="Are you sure?">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ 'restore' if s.status != 'active' else 'suspend' }}">
+    {% if s.status == 'active' %}<input class="cb-input" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'কারণ / reason' }}" style="max-width:220px;min-height:40px" aria-label="reason">{% endif %}
+    <button class="cb-mini {{ 'main' if s.status != 'active' else 'danger' }}">{{ t('আবার চালু', 'Restore') if s.status != 'active' else t('স্থগিত', 'Suspend') }}</button></form>
+  {% endif %}
+</section>
+{% endfor %}
+
+<details class="cb-add"><summary><i class="fa-solid fa-plus"></i>{{ t('নতুন স্টাফ', 'New staff member') }}</summary>
+  <form class="cb-form" method="post" action="/admin-staff/new" autocomplete="off">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-row2"><div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label><input class="cb-input" id="full_name" name="full_name" required maxlength="100"></div>
+      <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর (লগইন)', 'Mobile number (login)') }}</label><input class="cb-input" id="phone" name="phone" type="tel" required></div></div>
+    <div class="cb-field"><label for="password">{{ t('প্রথম পাসওয়ার্ড (অন্তত ১০ অক্ষর)', 'First password (at least 10 characters)') }}</label><input class="cb-input" id="password" name="password" type="password" minlength="10" required autocomplete="new-password"></div>
+    <div class="cb-checks">{% for p in all_perms %}{% if admin.is_super or p != 'staff' %}<label class="cb-check"><input type="checkbox" name="perms" value="{{ p }}"><span>{{ t(perm_labels[p][0], perm_labels[p][1]) }}</span></label>{% endif %}{% endfor %}</div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('তৈরি করুন', 'Create') }}</button>
+  </form></details>
+{% endblock %}

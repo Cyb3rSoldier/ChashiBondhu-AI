@@ -1,0 +1,31 @@
+{% extends "admin/_layout.html" %}
+{% set AUD = {'all': ('সবাই', 'Everyone'), 'farmer': ('কৃষক', 'Farmers'), 'customer': ('ক্রেতা', 'Consumers')} %}
+{% set ST = {'draft': ('খসড়া', 'Draft'), 'published': ('প্রকাশিত', 'Published'), 'archived': ('আর্কাইভ', 'Archived')} %}
+{% block title %}{{ 'ঘোষণা — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('ঘোষণা ও নোটিফিকেশন', 'Announcements & notifications') }}</h1>
+<p class="cb-hint">{{ t('প্রকাশিত ঘোষণা কৃষকের "টিপস" পাতায় দেখা যায় (কৃষক বা সবাই হলে)। চাইলে অ্যাপের ভেতরে নোটিফিকেশন পাঠাতে পারেন — প্রতি ঘোষণায় একবারই যায়।', 'Published announcements appear on the farmers\' "Tips" page (for farmers or everyone). You can also send an in-app notification — it goes out only once per announcement.') }}</p>
+<p class="cb-hint"><i class="fa-solid fa-envelope"></i> {{ t('ইমেইল', 'Email') }}: {{ t('বাল্ক ইমেইল এখনো চালু নয়', 'bulk email is not set up') }} · <i class="fa-solid fa-comment-sms"></i> SMS: {{ t('কোনো SMS গেটওয়ে নেই', 'no SMS gateway') }}{% if email_ok %} ({{ t('রিসেট ইমেইল চালু আছে', 'password-reset email is on') }}){% endif %}</p>
+
+<details class="cb-add" open><summary><i class="fa-solid fa-plus"></i>{{ t('নতুন ঘোষণা', 'New announcement') }}</summary>
+  <form class="cb-form" method="post" action="/admin-announcements/new"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="title">{{ t('শিরোনাম', 'Title') }}</label><input class="cb-input" id="title" name="title" required minlength="3" maxlength="120"></div>
+    <div class="cb-field"><label for="body">{{ t('লেখা', 'Message') }}</label><textarea class="cb-textarea" id="body" name="body" required minlength="5" maxlength="3000" rows="4"></textarea></div>
+    <div class="cb-field"><label for="audience">{{ t('কাদের জন্য', 'Audience') }}</label><select class="cb-select" id="audience" name="audience">
+      {% for k, v in AUD.items() %}<option value="{{ k }}" data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+    <label class="cb-check"><input type="checkbox" name="publish" value="1" checked><span>{{ t('এখনই প্রকাশ করুন', 'Publish now') }}</span></label>
+    <label class="cb-check"><input type="checkbox" name="notify_now" value="1"><span>{{ t('অ্যাপে নোটিফিকেশনও পাঠান', 'Also send an in-app notification') }}</span></label>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-bullhorn"></i>{{ t('সংরক্ষণ', 'Save') }}</button>
+  </form></details>
+
+<ul class="cb-list" style="margin-top:14px">{% for a in rows %}
+  <li class="cb-row cb-row-wrap"><div><b>{{ a.title }}</b> <small class="cb-hint">#{{ a.id }}</small>
+    <small>{{ t(ST[a.status][0], ST[a.status][1]) if a.status in ST else a.status }} · {{ t(AUD[a.audience][0], AUD[a.audience][1]) }} · {{ a.creator or '—' }} · {{ a.created_at.strftime('%Y-%m-%d') }}
+      · {% if a.notified_at %}{{ t('অ্যাপে পাঠানো', 'In-app sent') }}: {{ num(a.notified_count or 0) }} ({{ a.notified_at.strftime('%Y-%m-%d') }}){% else %}{{ t('নোটিফিকেশন পাঠানো হয়নি', 'No notification sent') }}{% endif %}</small>
+    <p style="margin:4px 0;white-space:pre-line">{{ a.body }}</p></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      {% for action, cond, bn, en in [('publish', a.status == 'draft', 'প্রকাশ', 'Publish'), ('notify', a.status == 'published' and not a.notified_at, 'নোটিফিকেশন পাঠান', 'Send notification'), ('archive', a.status != 'archived', 'আর্কাইভ', 'Archive'), ('restore', a.status == 'archived', 'খসড়ায় ফেরান', 'Back to draft')] %}{% if cond %}
+      <form method="post" action="/admin-announcements/{{ a.id }}/{{ action }}" data-confirm-bn="নিশ্চিত?" data-confirm-en="Are you sure?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini{{ ' main' if action in ('publish', 'notify') }}">{{ t(bn, en) }}</button></form>{% endif %}{% endfor %}
+    </div></li>
+{% else %}<li class="cb-hint">{{ t('কোনো ঘোষণা নেই।', 'No announcements.') }}</li>{% endfor %}</ul>
+{% endblock %}

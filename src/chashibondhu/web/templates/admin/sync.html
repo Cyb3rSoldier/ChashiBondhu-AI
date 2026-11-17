@@ -1,0 +1,20 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'অফলাইন সিঙ্ক — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('অফলাইন সিঙ্ক লগ', 'Offline sync log') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<p class="cb-hint">{{ t('কৃষকের ফোন থেকে খসড়া পাঠানোর ফল (শুধু ফল, খসড়ার লেখা নয়)। এখান থেকে কৃষকের কোনো রেকর্ড তৈরি বা বদলানো যায় না।', "Results of drafts sent from farmers' phones (only the result, never the draft content). Nothing here creates or changes farmer records.") }}</p>
+<p>{{ t('গত ৭ দিন', 'Last 7 days') }}: {% for s in summary %}<span class="cb-pill {{ 'no' if s.result in ('conflict', 'rejected', 'error') else 'ok' }}">{{ s.result }} {{ num(s.n) }}</span> {% else %}<span class="cb-hint">{{ t('কিছু নেই', 'nothing') }}</span>{% endfor %}</p>
+<form class="cb-form" method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+  <div class="cb-field"><label for="result">{{ t('ফল', 'Result') }}</label><select class="cb-select" id="result" name="result"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for r in ('problems', 'created', 'updated', 'duplicate', 'conflict', 'rejected', 'error') %}<option value="{{ r }}"{% if f.result == r %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
+  {% if f.farmer %}<input type="hidden" name="farmer" value="{{ f.farmer }}">{% endif %}
+  <button class="cb-btn cb-btn-main" type="submit">{{ t('দেখুন', 'Show') }}</button></form>
+<div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse;font-size:14px">
+  <thead><tr><th scope="col">#</th><th scope="col">{{ t('সময়', 'Time') }}</th><th scope="col">{{ t('কৃষক', 'Farmer') }}</th><th scope="col">{{ t('ধরন', 'Type') }}</th><th scope="col">{{ t('ফল', 'Result') }}</th><th scope="col">HTTP</th><th scope="col">{{ t('কারণ', 'Detail') }}</th><th scope="col">{{ t('রেকর্ড', 'Record') }}</th></tr></thead>
+  <tbody>{% for e in rows %}<tr><td>{{ e.id }}</td><td style="white-space:nowrap">{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    <td>{% if e.farmer_id %}<a href="/admin-sync?farmer={{ e.farmer_id }}">{{ e.farmer_name }}</a>{% else %}—{% endif %}</td><td>{{ e.record_type }}</td>
+    <td><span class="cb-pill {{ 'no' if e.result in ('conflict', 'rejected', 'error') else 'ok' }}">{{ e.result }}</span></td><td>{{ e.http_status }}</td><td>{{ e.detail or '' }}</td>
+    <td>{% if e.server_id %}#{{ e.server_id }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="8" class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</td></tr>{% endfor %}</tbody></table></div>
+{% include "admin/_pager.html" %}
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ item.title }} — চাষীবন্ধু{% endblock %}
+{% block content %}
+{% set U = L.UN.get(item.unit, (item.unit, item.unit)) %}
+<div class="cb-wrap cb-pdp" style="padding-top:20px">
+  <article class="cb-pdp-main">
+    <a class="cb-hint" href="/market"><i class="fa-solid fa-arrow-left"></i> {{ t('বাজারে ফিরুন', 'Back to market') }}</a>
+    <div class="cb-pdp-grid">
+      <div class="cb-pdp-img">{% if item.image_path %}<img src="{{ item.image_path }}" alt="{{ item.title }}">{% else %}<span class="cb-noimg"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}</div>
+      <div>
+        <h1>{{ item.title }}</h1>
+        <p class="cb-hint">{{ t(L.CA.get(item.category, ('অন্যান্য', 'Others'))[0], L.CA.get(item.category, ('অন্যান্য', 'Others'))[1]) }}
+          · {{ t(L.FM.get(item.farming_method, L.FM['conventional'])[0], L.FM.get(item.farming_method, L.FM['conventional'])[1]) }}
+          {% if item.farming_method == 'organic' %}<small>({{ t('কৃষকের দেওয়া তথ্য, সনদ নয়', 'stated by the farmer, not a certificate') }})</small>{% endif %}</p>
+        <div class="cb-price cb-price-big"><b>৳{{ num(item.price_now) }}</b><small>/ {{ t(U[0], U[1]) }}</small>
+          {% if item.discount_price %}<s>৳{{ num(item.price_per_unit) }}</s><span class="cb-save">{{ t('সাশ্রয়', 'Save') }} ৳{{ num(item.price_per_unit - item.discount_price) }} / {{ t(U[0], U[1]) }}</span>{% endif %}</div>
+        <ul class="cb-facts-list">
+          <li><i class="fa-solid fa-user"></i>{{ t('কৃষক', 'Farmer') }}: <a href="/market/farmer/{{ item.farmer_id }}"><b>{{ item.farmer_name }}</b></a></li>
+          <li><i class="fa-solid fa-star"></i>{% if x.review_n %}<b>{{ num(x.review_avg, 1) }}</b> / ৫ · <a href="#reviews">{{ num(x.review_n) }} {{ t('টি রিভিউ', 'reviews') }}</a>{% else %}{{ t('এখনো রিভিউ নেই', 'No reviews yet') }}{% endif %}</li>
+          <li><i class="fa-solid fa-location-dot"></i>{{ t('এলাকা', 'Location') }}: {% if item.upazila_code or item.district_code %}<span data-area-name="{{ item.upazila_code or item.district_code }}">{{ item.upazila_code or item.district_code }}</span>{% if item.upazila_code and item.district_code %}, <span data-area-name="{{ item.district_code }}">{{ item.district_code }}</span>{% endif %}{% else %}—{% endif %}</li>
+          {% if item.listing_type == 'expected' %}
+          <li><i class="fa-solid fa-calendar"></i>{{ t('আগাম ফসল — উঠবে', 'Pre-harvest — expected') }} {{ item.available_from }}</li>
+          {% else %}
+          <li><i class="fa-solid fa-box"></i>{{ t('আছে', 'Available') }}: <b>{{ num(item.quantity) }} {{ t(U[0], U[1]) }}</b> · {{ t('সর্বনিম্ন অর্ডার', 'Minimum order') }} {{ num(item.min_order) }}</li>
+          {% endif %}
+          {% if item.harvest_date %}<li><i class="fa-solid fa-wheat-awn"></i>{{ t('তোলা হয়েছে', 'Harvested') }}: {{ item.harvest_date }}</li>{% endif %}
+        </ul>
+
+        {% if item.listing_type == 'expected' %}
+        <div class="cb-tip"><i class="fa-solid fa-seedling"></i><div><b>{{ t('এটি এখনো মাঠে আছে, তাই এখন অর্ডার দেওয়া যায় না।', 'This is still in the field, so it cannot be ordered yet.') }}</b>
+          <span>{{ t('ক্রেতা অ্যাকাউন্ট থেকে "আমার চাহিদা"-তে আগাম চাহিদা দিতে পারেন।', 'Customers can add an advance request in "My buying requests".') }}</span></div></div>
+        {% elif item.quantity <= 0 %}
+        <div class="cb-empty-box" style="padding:16px">{{ t('স্টক শেষ।', 'Out of stock.') }}</div>
+        {% elif can_buy %}
+        <form class="cb-buy" method="post" action="/cart/add">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ item.id }}">
+          <label for="qty">{{ t('পরিমাণ', 'Quantity') }} ({{ t(U[0], U[1]) }})</label>
+          <div class="cb-qty"><button type="button" class="cb-round soft" data-step="-1" aria-label="-">−</button>
+            <input class="cb-input" id="qty" name="qty" inputmode="decimal" value="{{ item.min_order|float|round(2) }}" data-min="{{ item.min_order }}" data-max="{{ item.quantity }}">
+            <button type="button" class="cb-round soft" data-step="1" aria-label="+">+</button></div>
+          <p class="cb-hint" data-qty-total data-price="{{ item.price_now }}"></p>
+          <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-cart-plus"></i>{{ t('কার্টে যোগ করুন', 'Add to cart') }}</button>
+        </form>
+        {% endif %}
+        {% if can_buy %}
+        <div class="cb-b1-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+          <form method="post" action="/market/{{ item.id }}/save"><input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="cb-btn cb-btn-line" type="submit" aria-pressed="{{ 'true' if x.saved else 'false' }}"><i class="fa-{{ 'solid' if x.saved else 'regular' }} fa-heart"></i>{{ t('সংরক্ষিত', 'Saved') if x.saved else t('সংরক্ষণ করুন', 'Save') }}</button></form>
+          <form method="post" action="/farmers/{{ item.farmer_id }}/follow"><input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="cb-btn cb-btn-line" type="submit" aria-pressed="{{ 'true' if x.following else 'false' }}"><i class="fa-solid fa-{{ 'user-check' if x.following else 'user-plus' }}"></i>{{ t('প্রিয় কৃষক', 'Favourite farmer') if x.following else t('কৃষককে প্রিয় করুন', 'Follow farmer') }}</button></form>
+        </div>
+        <form class="cb-box" method="post" action="/market/{{ item.id }}/alert" style="margin-top:12px;padding:12px 14px">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <p style="margin:0 0 6px;font-weight:700"><i class="fa-solid fa-bell"></i> {{ t('আমাকে জানাবেন যখন…', 'Tell me when…') }}</p>
+          <label class="cb-check"><input type="checkbox" name="restock" value="1" {% if x.alert and x.alert.restock %}checked{% endif %}><span>{{ t('আবার স্টকে আসবে', 'it is back in stock') }}</span></label>
+          <label class="cb-check"><input type="checkbox" name="price_drop" value="1" {% if x.alert and x.alert.price_drop %}checked{% endif %}><span>{{ t('দাম কমবে', 'the price drops') }}</span></label>
+          <button class="cb-mini" type="submit">{{ t('সংরক্ষণ', 'Save') }}</button>
+        </form>
+        {% elif user %}
+        <p class="cb-hint">{{ t('কিনতে ক্রেতা অ্যাকাউন্ট লাগবে।', 'Buying needs a customer account.') }}</p>
+        {% else %}
+        <a class="cb-btn cb-btn-main" href="/login?as=customer&next=/market/{{ item.id }}"><i class="fa-solid fa-right-to-bracket"></i>{{ t('কিনতে লগইন করুন', 'Log in to buy') }}</a>
+        <a class="cb-btn cb-btn-line" href="/register/customer">{{ t('নতুন ক্রেতা অ্যাকাউন্ট', 'New customer account') }}</a>
+        {% endif %}
+      </div>
+    </div>
+    <form method="post" action="/compare/toggle" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ item.id }}">
+      <button class="cb-btn cb-btn-line" type="submit" aria-pressed="{{ 'true' if in_compare else 'false' }}"><i class="fa-solid fa-scale-balanced"></i>{{ t('তুলনা থেকে সরান', 'Remove from compare') if in_compare else t('তুলনায় যোগ করুন', 'Add to compare') }}</button>
+      <button class="cb-btn cb-btn-line" type="submit" name="go" value="1" formaction="/compare/toggle"{% if in_compare %} hidden{% endif %}>{{ t('যোগ করে তুলনা দেখুন', 'Add and compare now') }}</button>
+      {% if in_compare %}<a class="cb-btn cb-btn-line" href="/compare">{{ t('তুলনা দেখুন', 'See comparison') }}</a>{% endif %}
+    </form>
+    {% if item.description or item.extra_info %}
+    <section class="cb-box" style="margin-top:20px"><h2>{{ t('বিবরণ', 'Description') }}</h2>
+      {% if item.description %}<p style="white-space:pre-line">{{ item.description }}</p>{% endif %}
+      {% if item.extra_info %}<p class="cb-hint" style="white-space:pre-line">{{ item.extra_info }}</p>{% endif %}</section>
+    {% endif %}
+    <section class="cb-box" id="reviews" style="margin-top:20px">
+      <h2>{{ t('ক্রেতাদের রিভিউ', 'Customer reviews') }}{% if x.review_n %} · ★ {{ num(x.review_avg, 1) }} ({{ num(x.review_n) }}){% endif %}</h2>
+      <p class="cb-hint">{{ t('শুধু যাঁরা পণ্যটি কিনে ডেলিভারি পেয়েছেন, তাঁরাই রিভিউ দিতে পারেন।', 'Only customers who bought this and got it delivered can review.') }}</p>
+      {% if can_buy and x.can_review %}
+      <form class="cb-form" method="post" action="/market/{{ item.id }}/review" style="margin:10px 0 16px">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <fieldset style="border:0;padding:0;margin:0"><legend class="cb-label">{{ t('আপনার রেটিং', 'Your rating') }}</legend>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">{% for n in range(1, 6) %}
+            <label class="cb-check"><input type="radio" name="rating" value="{{ n }}" required {% if x.my_review and x.my_review.rating == n %}checked{% endif %}><span>{{ '★' * n }}</span></label>{% endfor %}</div></fieldset>
+        <div class="cb-field"><label for="comment">{{ t('মন্তব্য (ইচ্ছামতো)', 'Comment (optional)') }}</label>
+          <textarea class="cb-textarea" id="comment" name="comment" maxlength="1000">{{ x.my_review.comment if x.my_review and x.my_review.comment else '' }}</textarea></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-star"></i>{{ t('রিভিউ বদলান', 'Update review') if x.my_review else t('রিভিউ দিন', 'Post review') }}</button>
+          {% if x.my_review %}<button class="cb-btn cb-btn-line" type="submit" name="delete" value="1" formnovalidate>{{ t('মুছুন', 'Delete') }}</button>{% endif %}
+        </div>
+        {% if x.my_review and x.my_review.status == 'hidden' %}<p class="cb-hint">{{ t('আপনার রিভিউ অ্যাডমিন লুকিয়ে রেখেছেন।', 'An admin has hidden your review.') }}</p>{% endif %}
+      </form>
+      {% endif %}
+      {% if x.reviews %}
+      <ul class="cb-list">{% for r in x.reviews %}
+        <li class="cb-row" style="display:block"><b>{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</b> · {{ r.name }} <small class="cb-hint">✓ {{ t('যাচাই করা ক্রেতা', 'Verified buyer') }}</small>
+          {% if r.comment %}<p style="margin:4px 0 0;white-space:pre-line">{{ r.comment }}</p>{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="cb-hint">{{ t('এখনো কোনো রিভিউ নেই।', 'No reviews yet.') }}</p>{% endif %}
+    </section>
+  </article>
+  <aside class="cb-pdp-side">
+    <h2>{{ t('একই ধরনের পণ্য', 'Related products') }}</h2>
+    {% if related %}<div class="cb-side-list">{% for l in related %}{% include "market/_card.html" %}{% endfor %}</div>
+    {% else %}<p class="cb-hint">{{ t('এখন আর কোনো মিল নেই।', 'Nothing similar right now.') }}</p>{% endif %}
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/market.js?v=1"></script><script src="/static/farmer.js?v=2"></script>{% endblock %}

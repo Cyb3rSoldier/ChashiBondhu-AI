@@ -1,0 +1,54 @@
+# ---------- Secrets (NEVER commit) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+secrets/
+
+# ---------- Data (too large / may be licensed / may be private) ----------
+# Raw and processed data are tracked by source links in docs/dataset_register.csv
+# (and later with DVC), not by Git.
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Geospatial and model files
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.gpkg
+*.tif
+*.tiff
+*.nc
+*.grib
+*.zip
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---------- Experiment tracking ----------
+mlruns/
+mlartifacts/
+
+# ---------- OS / editors ----------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

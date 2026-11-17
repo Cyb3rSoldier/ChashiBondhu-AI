@@ -1,0 +1,31 @@
+{% extends "customer/_layout.html" %}
+{% block title %}{{ 'সেটিংস — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<div class="cb-head-row"><h1>{{ t('সেটিংস', 'Settings') }}</h1></div>
+<section class="cb-box cb-set"><h2>{{ t('প্রোফাইল ছবি', 'Profile photo') }}</h2>
+  <div class="cb-item-top"><div class="cb-avatar">{% if me.avatar_path %}<img src="{{ me.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+    <form class="cb-form" method="post" action="/customer/settings/avatar" enctype="multipart/form-data" style="flex:1"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <input class="cb-input" type="file" name="image" accept="image/*" aria-label="ছবি / Photo">
+      <div class="cb-item-actions"><button class="cb-mini main" type="submit">{{ t('ছবি সংরক্ষণ', 'Save photo') }}</button>
+        {% if me.avatar_path %}<button class="cb-mini danger" type="submit" name="remove" value="1">{{ t('ছবি সরান', 'Remove photo') }}</button>{% endif %}</div></form></div></section>
+<section class="cb-box cb-set"><h2>{{ t('আমার তথ্য', 'My details') }}</h2>
+  <form class="cb-form" method="post" action="/customer/settings"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label><input class="cb-input" id="full_name" name="full_name" required maxlength="100" value="{{ me.full_name or '' }}"></div>
+    {% with code=me.upazila_code, label=me.upazila_code %}{% include "_upazila_picker.html" %}{% endwith %}
+    <div class="cb-field"><label for="address">{{ t('ঠিকানা (ডেলিভারির জন্য)', 'Address (for delivery)') }}</label><textarea class="cb-textarea" id="address" name="address" maxlength="300">{{ me.address or '' }}</textarea></div>
+    <button class="cb-btn cb-btn-main" type="submit">{{ t('সংরক্ষণ করুন', 'Save') }}</button></form></section>
+<div class="cb-cols cb-cols-even">
+  <section class="cb-box cb-set"><h2>{{ t('মোবাইল নম্বর', 'Mobile number') }}</h2><p class="cb-hint">{{ me.phone | bn_digits }}</p>
+    <form class="cb-form" method="post" action="/customer/settings/phone"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="np">{{ t('নতুন নম্বর', 'New number') }}</label><input class="cb-input" id="np" name="phone" type="tel" required></div>
+      <div class="cb-field"><label for="pw">{{ t('পাসওয়ার্ড', 'Password') }}</label><input class="cb-input" id="pw" name="password" type="password" required></div>
+      <button class="cb-btn cb-btn-line" type="submit">{{ t('নম্বর বদলান', 'Change number') }}</button></form></section>
+  <section class="cb-box cb-set"><h2>{{ t('পাসওয়ার্ড বদলান', 'Change password') }}</h2>
+    <form class="cb-form" method="post" action="/customer/settings/password"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="c1">{{ t('বর্তমান পাসওয়ার্ড', 'Current password') }}</label><input class="cb-input" id="c1" name="current" type="password" required></div>
+      <div class="cb-field"><label for="c2">{{ t('নতুন পাসওয়ার্ড', 'New password') }}</label><input class="cb-input" id="c2" name="new" type="password" required></div>
+      <div class="cb-field"><label for="c3">{{ t('আবার নতুন পাসওয়ার্ড', 'New password again') }}</label><input class="cb-input" id="c3" name="new2" type="password" required></div>
+      <button class="cb-btn cb-btn-line" type="submit">{{ t('পাসওয়ার্ড বদলান', 'Change password') }}</button></form></section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/upazila.js?v=1"></script><script src="/static/farmer.js?v=2"></script>{% endblock %}

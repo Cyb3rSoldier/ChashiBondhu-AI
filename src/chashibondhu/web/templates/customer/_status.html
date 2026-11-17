@@ -1,0 +1,3 @@
+{% set OS = {'pending': ('অপেক্ষমাণ', 'Pending'), 'confirmed': ('নিশ্চিত', 'Confirmed'), 'shipped': ('পাঠানো হয়েছে', 'Shipped'), 'delivered': ('ডেলিভারি সম্পন্ন', 'Completed'), 'cancelled': ('বাতিল', 'Cancelled')} %}
+{% set IS = {'pending': ('কৃষকের নিশ্চয়তার অপেক্ষা', 'Waiting for farmer'), 'accepted': ('কৃষক নিশ্চিত করেছেন', 'Confirmed'), 'packed': ('ডেলিভারির জন্য প্রস্তুত', 'Ready for delivery'), 'handed_over': ('পাঠানো হয়েছে', 'Out for delivery'), 'rejected': ('কৃষক দিতে পারছেন না', 'Cancelled by farmer')} %}
+{% set PS = {'unpaid': ('টাকা বাকি (ক্যাশ অন ডেলিভারি)', 'Unpaid (cash on delivery)'), 'paid': ('পরিশোধিত', 'Paid'), 'refunded': ('টাকা ফেরত', 'Refunded')} %}

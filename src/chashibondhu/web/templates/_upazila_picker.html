@@ -1,0 +1,10 @@
+{# Upazila search using the existing /areas/search API. Expects `code` and `label` values. #}
+<div class="cb-field" data-upazila-picker>
+  <label for="upazilaSearch">{{ t('আপনার উপজেলা', 'Your upazila') }}</label>
+  <input class="cb-input" id="upazilaSearch" type="search" autocomplete="off" data-ph-bn="উপজেলার নাম লিখুন (যেমন: পীরগঞ্জ)" data-ph-en="Type your upazila (e.g. Pirganj)">
+  <input type="hidden" name="upazila_code" value="{{ code or '' }}">
+  <input type="hidden" name="upazila_label" value="{{ label or '' }}">
+  <span class="cb-chosen" {% if not label and not code %}hidden{% endif %}><i class="fa-solid fa-location-dot"></i><span data-chosen>{{ label or code or '' }}</span></span>
+  <ul class="cb-suggest" hidden></ul>
+  <p class="cb-hint">{{ t('উপজেলা দিলে আপনার এলাকার জন্য পরামর্শ দেওয়া সহজ হয়।', 'Your upazila helps us give advice for your area.') }}</p>
+</div>

@@ -1,0 +1,7 @@
+{% set pages = ((total + page_size - 1) // page_size) if total else 1 %}
+{% if pages > 1 %}{% set qs = request.query_params.items()|rejectattr(0, 'equalto', 'page')|list %}
+<nav class="cb-pager" aria-label="pages" style="display:flex;gap:8px;align-items:center;margin-top:12px">
+  {% if page > 1 %}<a class="cb-mini" href="?{% for k, v in qs %}{{ k|urlencode }}={{ v|urlencode }}&{% endfor %}page={{ page - 1 }}">← {{ t('আগের', 'Prev') }}</a>{% endif %}
+  <span class="cb-hint">{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="cb-mini" href="?{% for k, v in qs %}{{ k|urlencode }}={{ v|urlencode }}&{% endfor %}page={{ page + 1 }}">{{ t('পরের', 'Next') }} →</a>{% endif %}
+</nav>{% endif %}

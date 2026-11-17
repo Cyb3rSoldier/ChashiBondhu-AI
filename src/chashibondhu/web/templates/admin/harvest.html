@@ -1,0 +1,40 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'আগাম ফসল — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('আগাম ফসল ও ক্রেতা মিল', 'Pre-harvest buyer matching') }}</h1>
+<p class="cb-hint">{{ t('মনে রাখুন: আগাম ফসল আসল স্টক নয়, মিল মানে অর্ডার নয়, আগ্রহ মানে টাকা নয়। এখান থেকে কোনো ফসলকে স্টক বানানো যায় না — শুধু কৃষক আসল পরিমাণ নিশ্চিত করলে পণ্য বাজারে আসে।', 'Remember: expected harvest is not stock, a match is not an order, interest is not payment. Nothing here can turn a forecast into stock — only the farmer\'s actual-quantity confirmation creates a listing.') }}</p>
+<section class="cb-stats">
+  <div class="cb-stat"><i class="fa-solid fa-seedling"></i><b>{{ num(c.forecasts_open) }}</b><span>{{ t('খোলা আগাম ফসল', 'Open forecasts') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-handshake"></i><b>{{ num(c.requests_open) }}</b><span>{{ t('খোলা চাহিদা', 'Open demand requests') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-link"></i><b>{{ num(c.matches_live) }}</b><span>{{ t('চলমান মিল', 'Live matches') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-cart-plus"></i><b>{{ num(c.matches_orderable) }} / {{ num(c.matches_converted) }}</b><span>{{ t('অর্ডারযোগ্য / অর্ডার হয়েছে', 'Orderable / converted') }}</span></div>
+</section>
+<nav style="display:flex;gap:6px;margin:10px 0">{% for k, bn, en in [('forecasts', 'আগাম ফসল', 'Forecasts'), ('requests', 'চাহিদা', 'Demand requests'), ('matches', 'মিল', 'Matches')] %}
+  <a class="cb-mini{{ ' main' if tab == k }}" href="/admin-harvest?tab={{ k }}"{% if tab == k %} aria-current="page"{% endif %}>{{ t(bn, en) }}</a>{% endfor %}</nav>
+<form class="cb-form" method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><input type="hidden" name="tab" value="{{ tab }}">
+  {% if tab != 'matches' %}<div class="cb-field"><label for="q">{{ t('পণ্য / নাম / আইডি', 'Product / name / ID') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>{% endif %}
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><input class="cb-input" id="status" name="status" value="{{ f.status }}" placeholder="open" style="max-width:150px"></div>
+  <button class="cb-btn cb-btn-main" type="submit">{{ t('খুঁজুন', 'Search') }}</button></form>
+<ul class="cb-list">
+{% for r in rows %}
+  {% if tab == 'forecasts' %}
+  <li class="cb-row cb-row-wrap"><div><b>{{ r.product_name }}{% if r.variety %} ({{ r.variety }}){% endif %}</b> <small class="cb-hint">#{{ r.id }}</small>
+    <small>{{ t('আনুমানিক', 'Expected') }} {{ num(r.expected_qty) }} {{ r.unit }} · {{ r.harvest_from }} – {{ r.harvest_to }} · <b>{{ r.status }}</b> · {{ num(r.matches) }} {{ t('মিল', 'matches') }}
+      · <a href="/admin/farmers/{{ r.farmer_id }}">{{ r.farmer_name }}</a>{% if r.district_code %} · {{ r.district_code }}{% endif %}</small>
+    {% if r.actual_qty is not none %}<small>{{ t('আসল পরিমাণ (কৃষক নিশ্চিত)', 'Actual qty (farmer confirmed)') }}: {{ num(r.actual_qty) }} {{ r.unit }}{% if r.actual_harvest_date %} · {{ r.actual_harvest_date }}{% endif %}{% if r.listing_id %} · <a href="/market/{{ r.listing_id }}">{{ t('পণ্য', 'listing') }} #{{ r.listing_id }}</a>{% endif %}</small>{% endif %}</div>
+    {% if r.status == 'open' %}<form class="cb-offer" method="post" action="/admin-harvest/forecast/{{ r.id }}/cancel" data-confirm-bn="এই আগাম ফসল বাতিল করবেন? চলমান মিলও বাতিল হবে।" data-confirm-en="Cancel this forecast? Its live matches are cancelled too.">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input class="cb-input" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'কারণ / reason' }}" aria-label="reason" style="max-width:200px;min-height:40px"><button class="cb-mini danger">{{ t('বাতিল', 'Cancel') }}</button></form>{% endif %}</li>
+  {% elif tab == 'requests' %}
+  <li class="cb-row cb-row-wrap"><div><b>{{ r.product_name }}</b> <small class="cb-hint">#{{ r.id }}</small>
+    <small>{{ num(r.quantity) }} {{ r.unit }} · {{ r.needed_from }} – {{ r.needed_to }} · <b>{{ r.status }}</b> · {{ num(r.matches) }} {{ t('মিল', 'matches') }}
+      · <a href="/admin/{{ 'consumers' if r.buyer_role == 'customer' else 'farmers' }}/{{ r.buyer_id }}">{{ r.buyer_name }}</a>{% if r.district_code %} · {{ r.district_code }}{% endif %}</small></div>
+    {% if r.status == 'open' %}<form class="cb-offer" method="post" action="/admin-harvest/request/{{ r.id }}/cancel" data-confirm-bn="এই চাহিদা বাতিল করবেন?" data-confirm-en="Cancel this demand request?">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input class="cb-input" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'কারণ / reason' }}" aria-label="reason" style="max-width:200px;min-height:40px"><button class="cb-mini danger">{{ t('বাতিল', 'Cancel') }}</button></form>{% endif %}</li>
+  {% else %}
+  <li class="cb-row"><div><b>{{ r.product_name }}</b> · {{ num(r.match_qty) }} {{ r.unit }}{% if r.confirmed_qty is not none %} → {{ t('নিশ্চিত', 'confirmed') }} {{ num(r.confirmed_qty) }}{% endif %} · <b>{{ r.status }}</b>
+    <small>{{ t('কৃষক', 'Farmer') }}: <a href="/admin/farmers/{{ r.farmer_id }}">{{ r.farmer_name }}</a> (#{{ r.forecast_id }}) · {{ t('ক্রেতা', 'Buyer') }}: {{ r.buyer_name }} (#{{ r.request_id }}){% if r.order_number %} · <a href="/admin-orders/{{ r.order_number }}">{{ r.order_number }}</a>{% endif %} · {{ r.updated_at.strftime('%Y-%m-%d') }}</small></div></li>
+  {% endif %}
+{% else %}<li class="cb-hint">{{ t('কিছু নেই।', 'Nothing here.') }}</li>{% endfor %}
+</ul>
+{% include "admin/_pager.html" %}
+{% endblock %}

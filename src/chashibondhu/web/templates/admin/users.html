@@ -1,0 +1,27 @@
+{% extends "admin/_layout.html" %}
+{% set FARM = kind == 'farmers' %}
+{% block title %}{{ 'অ্যাডমিন — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<h1>{{ t('কৃষক', 'Farmers') if FARM else t('ক্রেতা', 'Consumers') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="q">{{ t('নাম / ফোন / ইমেইল / আইডি', 'Name / phone / email / ID') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>
+  <div class="cb-field"><label for="district">{{ t('জেলা কোড', 'District code') }}</label><input class="cb-input" id="district" name="district" value="{{ f.district }}" placeholder="BD2626" style="max-width:130px"></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status">
+    <option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option><option value="active"{% if f.status == 'active' %} selected{% endif %} data-en="{{ 'Active' }}">{{ 'সক্রিয়' }}</option>
+    <option value="suspended"{% if f.status == 'suspended' %} selected{% endif %} data-en="{{ 'Suspended' }}">{{ 'স্থগিত' }}</option></select></div>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+<div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse">
+  <thead><tr><th scope="col">ID</th><th scope="col">{{ t('নাম', 'Name') }}</th><th scope="col">{{ t('যোগাযোগ', 'Contact') }}</th><th scope="col">{{ t('এলাকা', 'Area') }}</th>
+    <th scope="col">{{ t('পণ্য / অর্ডার আইটেম', 'Products / order items') if FARM else t('অর্ডার / খরচ', 'Orders / spent') }}</th><th scope="col">{{ t('যোগ দিয়েছেন', 'Joined') }}</th><th scope="col">{{ t('অবস্থা', 'Status') }}</th></tr></thead>
+  <tbody>{% for u in rows %}
+    <tr><td>{{ u.id }}</td><td><a href="/admin/{{ kind }}/{{ u.id }}">{{ u.full_name }}</a></td>
+      <td>{{ u.phone }}{% if u.email %}<br><small>{{ u.email }}</small>{% endif %}</td>
+      <td>{% if u.district_code %}<span data-area-name="{{ u.upazila_code or u.district_code }}">{{ u.upazila_code or u.district_code }}</span>{% else %}—{% endif %}</td>
+      <td>{% if FARM %}{{ num(u.active_listings) }} / {{ num(u.order_items) }}{% else %}{{ num(u.orders) }} / ৳{{ num(u.spent) }}{% endif %}</td>
+      <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+      <td><span class="cb-pill {{ 'ok' if u.status == 'active' else 'no' }}">{{ u.status }}</span></td></tr>
+  {% else %}<tr><td colspan="7" class="cb-hint">{{ t('কিছু পাওয়া যায়নি।', 'Nothing found.') }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "admin/_pager.html" %}
+{% endblock %}

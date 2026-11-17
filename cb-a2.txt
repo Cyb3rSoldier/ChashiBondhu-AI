@@ -1,0 +1,393 @@
+complaints.id bigint null=NO def=None
+
+complaints.complaint_number text null=NO def=((('CMP'::text || to_char((now() AT TIME ZONE 'Asia/Dhaka'::text), 'YYMMDD'::text)) || '-'::text) || lpad((nextval('complaint_number_seq'::regclass))::text, 5, '0'::text))
+
+complaints.user_id bigint null=NO def=None
+
+complaints.category text null=NO def=None
+
+complaints.subject text null=NO def=None
+
+complaints.description text null=NO def=None
+
+complaints.image_path text null=YES def=None
+
+complaints.status text null=NO def='open'::text
+
+complaints.admin_response text null=YES def=None
+
+complaints.responded_by bigint null=YES def=None
+
+complaints.responded_at timestamp with time zone null=YES def=None
+
+complaints.created_at timestamp with time zone null=NO def=now()
+
+complaints.updated_at timestamp with time zone null=NO def=now()
+
+farmer_ledger.id bigint null=NO def=None
+
+farmer_ledger.farmer_id bigint null=NO def=None
+
+farmer_ledger.order_item_id bigint null=NO def=None
+
+farmer_ledger.entry_type text null=NO def=None
+
+farmer_ledger.amount numeric null=NO def=None
+
+farmer_ledger.created_at timestamp with time zone null=NO def=now()
+
+order_items.id bigint null=NO def=None
+
+order_items.order_id bigint null=NO def=None
+
+order_items.listing_id bigint null=YES def=None
+
+order_items.farmer_id bigint null=NO def=None
+
+order_items.title text null=NO def=None
+
+order_items.unit text null=NO def=None
+
+order_items.unit_price numeric null=NO def=None
+
+order_items.quantity numeric null=NO def=None
+
+order_items.line_total numeric null=NO def=None
+
+order_items.farmer_status text null=NO def='pending'::text
+
+order_items.stock_deducted boolean null=NO def=false
+
+orders.id bigint null=NO def=None
+
+orders.order_number text null=NO def=((('CB'::text || to_char((now() AT TIME ZONE 'Asia/Dhaka'::text), 'YYMMDD'::text)) || '-'::text) || lpad((nextval('order_number_seq'::regclass))::text, 5, '0'::text))
+
+orders.customer_id bigint null=NO def=None
+
+orders.status text null=NO def='pending'::text
+
+orders.payment_method text null=NO def='cod'::text
+
+orders.payment_status text null=NO def='unpaid'::text
+
+orders.subtotal numeric null=NO def=None
+
+orders.delivery_fee numeric null=NO def=0
+
+orders.total numeric null=NO def=None
+
+orders.delivery_address text null=NO def=None
+
+orders.phone text null=NO def=None
+
+orders.note text null=YES def=None
+
+orders.created_at timestamp with time zone null=NO def=now()
+
+orders.updated_at timestamp with time zone null=NO def=now()
+
+orders orders_status_check: CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'shipped'::text, 'delivered'::text, 'cancelled'::text])))
+
+orders orders_payment_method_check: CHECK ((payment_method = 'cod'::text))
+
+orders orders_payment_status_check: CHECK ((payment_status = ANY (ARRAY['unpaid'::text, 'paid'::text, 'refunded'::text])))
+
+orders orders_subtotal_check: CHECK ((subtotal >= (0)::numeric))
+
+orders orders_delivery_fee_check: CHECK ((delivery_fee >= (0)::numeric))
+
+orders orders_total_check: CHECK ((total >= (0)::numeric))
+
+orders orders_pkey: PRIMARY KEY (id)
+
+orders orders_order_number_key: UNIQUE (order_number)
+
+orders orders_customer_id_fkey: FOREIGN KEY (customer_id) REFERENCES users(id)
+
+order_items order_items_unit_price_check: CHECK ((unit_price >= (0)::numeric))
+
+order_items order_items_quantity_check: CHECK ((quantity > (0)::numeric))
+
+order_items order_items_line_total_check: CHECK ((line_total >= (0)::numeric))
+
+order_items order_items_farmer_status_check: CHECK ((farmer_status = ANY (ARRAY['pending'::text, 'accepted'::text, 'packed'::text, 'handed_over'::text, 'rejected'::text])))
+
+order_items order_items_pkey: PRIMARY KEY (id)
+
+order_items order_items_order_id_fkey: FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+
+order_items order_items_listing_id_fkey: FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE SET NULL
+
+order_items order_items_farmer_id_fkey: FOREIGN KEY (farmer_id) REFERENCES users(id)
+
+farmer_ledger farmer_ledger_entry_type_check: CHECK ((entry_type = ANY (ARRAY['sale_credit'::text, 'refund_reversal'::text])))
+
+farmer_ledger farmer_ledger_check: CHECK ((((entry_type = 'sale_credit'::text) AND (amount >= (0)::numeric)) OR ((entry_type = 'refund_reversal'::text) AND (amount <= (0)::numeric))))
+
+farmer_ledger farmer_ledger_pkey: PRIMARY KEY (id)
+
+farmer_ledger farmer_ledger_order_item_id_entry_type_key: UNIQUE (order_item_id, entry_type)
+
+farmer_ledger farmer_ledger_farmer_id_fkey: FOREIGN KEY (farmer_id) REFERENCES users(id)
+
+farmer_ledger farmer_ledger_order_item_id_fkey: FOREIGN KEY (order_item_id) REFERENCES order_items(id)
+
+complaints complaints_category_check: CHECK ((category = ANY (ARRAY['order'::text, 'payment'::text, 'product'::text, 'account'::text, 'website'::text, 'other'::text])))
+
+complaints complaints_subject_check: CHECK (((length(subject) >= 3) AND (length(subject) <= 120)))
+
+complaints complaints_description_check: CHECK (((length(description) >= 10) AND (length(description) <= 3000)))
+
+complaints complaints_status_check: CHECK ((status = ANY (ARRAY['open'::text, 'in_review'::text, 'resolved'::text, 'closed'::text])))
+
+complaints complaints_pkey: PRIMARY KEY (id)
+
+complaints complaints_complaint_number_key: UNIQUE (complaint_number)
+
+complaints complaints_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
+complaints complaints_responded_by_fkey: FOREIGN KEY (responded_by) REFERENCES users(id) ON DELETE SET NULL
+
+CREATE OR REPLACE FUNCTION public.notify_item_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE o RECORD; bn TEXT; en TEXT;
+BEGIN
+  IF NEW.farmer_status = OLD.farmer_status THEN RETURN NEW; END IF;
+  SELECT id, order_number, customer_id INTO o FROM orders WHERE id = NEW.order_id;
+  bn := CASE NEW.farmer_status WHEN 'accepted' THEN 'কৃষক অর্ডার নিশ্চিত করেছেন'
+                               WHEN 'packed' THEN 'পণ্য ডেলিভারির জন্য প্রস্তুত'
+                               WHEN 'handed_over' THEN 'পণ্য পাঠানো হয়েছে'
+                               WHEN 'rejected' THEN 'কৃষক এই পণ্যটি দিতে পারছেন না' ELSE NULL END;
+  en := CASE NEW.farmer_status WHEN 'accepted' THEN 'The farmer confirmed your order'
+                               WHEN 'packed' THEN 'Ready for delivery'
+                               WHEN 'handed_over' THEN 'Out for delivery'
+                               WHEN 'rejected' THEN 'The farmer cannot supply this item' ELSE NULL END;
+  IF bn IS NOT NULL THEN
+    INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key)
+    VALUES (o.customer_id, 'order', bn || ' / ' || en, NEW.title || ' · ' || o.order_number,
+            '/customer/orders/' || o.order_number, 'item:' || NEW.id || ':' || NEW.farmer_status)
+    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$function$
+
+
+CREATE OR REPLACE FUNCTION public.notify_order_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE bn TEXT; en TEXT;
+BEGIN
+  IF NEW.status = OLD.status THEN RETURN NEW; END IF;
+  bn := CASE NEW.status WHEN 'delivered' THEN 'অর্ডার ডেলিভারি হয়েছে' WHEN 'cancelled' THEN 'অর্ডার বাতিল হয়েছে'
+                        WHEN 'shipped' THEN 'অর্ডার পাঠানো হয়েছে' WHEN 'confirmed' THEN 'অর্ডার নিশ্চিত হয়েছে' ELSE NULL END;
+  en := CASE NEW.status WHEN 'delivered' THEN 'Order delivered' WHEN 'cancelled' THEN 'Order cancelled'
+                        WHEN 'shipped' THEN 'Order shipped' WHEN 'confirmed' THEN 'Order confirmed' ELSE NULL END;
+  IF bn IS NOT NULL THEN
+    INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key)
+    VALUES (NEW.customer_id, 'order', bn || ' / ' || en, NEW.order_number, '/customer/orders/' || NEW.order_number,
+            'order:' || NEW.id || ':' || NEW.status)
+    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$function$
+
+
+CREATE OR REPLACE FUNCTION public.ledger_on_order_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  -- credit: order delivered AND paid -> one credit per farmer item that was not rejected
+  IF NEW.status = 'delivered' AND NEW.payment_status = 'paid' THEN
+    INSERT INTO farmer_ledger (farmer_id, order_item_id, entry_type, amount)
+    SELECT oi.farmer_id, oi.id, 'sale_credit', oi.line_total
+    FROM order_items oi
+    WHERE oi.order_id = NEW.id AND oi.farmer_status <> 'rejected'
+    ON CONFLICT (order_item_id, entry_type) DO NOTHING;
+  END IF;
+  -- reversal: refunded or cancelled after a credit
+  IF NEW.payment_status = 'refunded' OR NEW.status = 'cancelled' THEN
+    INSERT INTO farmer_ledger (farmer_id, order_item_id, entry_type, amount)
+    SELECT l.farmer_id, l.order_item_id, 'refund_reversal', -l.amount
+    FROM farmer_ledger l JOIN order_items oi ON oi.id = l.order_item_id
+    WHERE oi.order_id = NEW.id AND l.entry_type = 'sale_credit'
+    ON CONFLICT (order_item_id, entry_type) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$function$
+
+
+CREATE OR REPLACE FUNCTION public.matches_on_order_item()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF NEW.listing_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  UPDATE harvest_matches m SET status = 'converted', order_id = NEW.order_id
+  FROM harvest_forecasts f, buyer_demand_requests r, orders o
+  WHERE m.forecast_id = f.id AND m.request_id = r.id AND o.id = NEW.order_id
+    AND f.listing_id = NEW.listing_id AND r.buyer_id = o.customer_id AND m.status = 'qty_confirmed';
+  RETURN NEW;
+END;
+$function$
+
+
+CREATE OR REPLACE FUNCTION public.listings_notify_watchers()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  new_price numeric := COALESCE(NEW.discount_price, NEW.price_per_unit);
+  old_price numeric;
+  can_buy_now boolean := NEW.status = 'active' AND NEW.listing_type = 'available' AND NEW.quantity >= NEW.min_order;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.status = 'active' THEN                        -- new product from a favourite farmer
+      INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key)
+      SELECT f.customer_id, 'market', 'প্রিয় কৃষকের নতুন পণ্য / New product from a favourite farmer',
+             NEW.title, '/market/' || NEW.id, 'newlisting:' || NEW.id
+        FROM favourite_farmers f JOIN users u ON u.id = f.customer_id
+       WHERE f.farmer_id = NEW.farmer_id AND u.role = 'customer' AND u.status = 'active'
+      ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  old_price := COALESCE(OLD.discount_price, OLD.price_per_unit);
+  -- back in stock (was not buyable, now is): at most one per product per customer per day
+  IF can_buy_now AND NOT (OLD.status = 'active' AND OLD.listing_type = 'available' AND OLD.quantity >= OLD.min_order) THEN
+    INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key)
+    SELECT a.customer_id, 'market', 'আবার পাওয়া যাচ্ছে / Back in stock', NEW.title, '/market/' || NEW.id,
+           'restock:' || NEW.id || ':' || to_char(now() AT TIME ZONE 'Asia/Dhaka', 'YYYYMMDD')
+      FROM product_alerts a JOIN users u ON u.id = a.customer_id
+     WHERE a.listing_id = NEW.id AND a.on_restock AND u.role = 'customer' AND u.status = 'active'
+    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+  END IF;
+  -- price dropped: one per product per new price
+  IF NEW.status = 'active' AND new_price < old_price THEN
+    INSERT INTO notifications (user_id, kind, title, body, link, dedupe_key)
+    SELECT a.customer_id, 'market', 'দাম কমেছে / Price dropped',
+           NEW.title || ': ৳' || trim(to_char(old_price, 'FM999999990.##')) || ' → ৳'
+             || trim(to_char(new_price, 'FM999999990.##')),
+           '/market/' || NEW.id, 'price:' || NEW.id || ':' || new_price::text
+      FROM product_alerts a JOIN users u ON u.id = a.customer_id
+     WHERE a.listing_id = NEW.id AND a.on_price_drop AND u.role = 'customer' AND u.status = 'active'
+    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING;
+  END IF;
+  RETURN NEW;
+END $function$
+
+
+def farmer_order_items(farmer_id: int, period: str = "all") -> list[dict]:
+    """Only THIS farmer's items. Customer phone/address are shown only after the farmer confirms."""
+    sql = ("SELECT oi.*, o.order_number, o.status AS order_status, o.payment_status, o.payment_method, "
+           "o.created_at, u.full_name AS customer_name, "
+           "CASE WHEN oi.farmer_status IN ('accepted', 'packed', 'handed_over') THEN o.delivery_address END "
+           "AS delivery_address, "
+           "CASE WHEN oi.farmer_status IN ('accepted', 'packed', 'handed_over') THEN o.phone END AS customer_phone "
+           "FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN users u ON u.id = o.customer_id "
+           "WHERE oi.farmer_id = %s")
+    params: list = [farmer_id]
+    if period in ORDER_PERIODS:
+        sql += " AND o.created_at >= now() - %s::interval"
+        params.append(ORDER_PERIODS[period])
+    sql += " ORDER BY o.created_at DESC LIMIT 200"
+    return fetch_all(sql, tuple(params))
+
+def earnings_summary(farmer_id: int) -> dict:
+    return fetch_one("""
+        SELECT
+          COALESCE(sum(amount) FILTER (WHERE entry_type = 'sale_credit'), 0)     AS lifetime_sales,
+          COALESCE(sum(amount) FILTER (WHERE entry_type = 'refund_reversal'), 0) AS reversals,
+          COALESCE(sum(amount), 0)                                               AS balance,
+          count(*) FILTER (WHERE entry_type = 'sale_credit')                     AS completed_count
+        FROM farmer_ledger WHERE farmer_id = %s""", (farmer_id,)) or {}
+
+def earnings_series(farmer_id: int, span: str) -> list[dict]:
+    """Daily totals for '7d' / '30d', monthly totals for '12m' (Bangladesh time). Empty periods = 0."""
+    if span == "12m":
+        sql = """
+          SELECT to_char(m, 'YYYY-MM') AS label, COALESCE(sum(l.amount), 0) AS amount
+          FROM generate_series(date_trunc('month', (now() AT TIME ZONE 'Asia/Dhaka')) - interval '11 months',
+                               date_trunc('month', (now() AT TIME ZONE 'Asia/Dhaka')), interval '1 month') AS m
+          LEFT JOIN farmer_ledger l ON l.farmer_id = %s
+               AND date_trunc('month', l.created_at AT TIME ZONE 'Asia/Dhaka') = m
+          GROUP BY m ORDER BY m"""
+        return fetch_all(sql, (farmer_id,))
+    days = 30 if span == "30d" else 7
+    sql = """
+      SELECT to_char(d, 'MM-DD') AS label, COALESCE(sum(l.amount), 0) AS amount
+      FROM generate_series((now() AT TIME ZONE 'Asia/Dhaka')::date - (%s - 1), (now() AT TIME ZONE 'Asia/Dhaka')::date,
+                           interval '1 day') AS d
+      LEFT JOIN farmer_ledger l ON l.farmer_id = %s AND (l.created_at AT TIME ZONE 'Asia/Dhaka')::date = d::date
+      GROUP BY d ORDER BY d"""
+    return fetch_all(sql, (days, farmer_id))
+
+def earnings_history(farmer_id: int, limit: int = 50) -> list[dict]:
+    return fetch_all("SELECT l.entry_type, l.amount, l.created_at, oi.title, oi.quantity, oi.unit, o.order_number "
+                     "FROM farmer_ledger l JOIN order_items oi ON oi.id = l.order_item_id "
+                     "JOIN orders o ON o.id = oi.order_id WHERE l.farmer_id = %s "
+                     "ORDER BY l.created_at DESC LIMIT %s", (farmer_id, limit))
+
+def create_complaint(user_id: int, category: str, subject: str, description: str,
+                     image_path: str | None) -> dict:
+    return fetch_one("INSERT INTO complaints (user_id, category, subject, description, image_path) "
+                     "VALUES (%s, %s, %s, %s, %s) RETURNING id, complaint_number",
+                     (user_id, category, subject, description, image_path)) or {}
+
+def list_complaints(user_id: int) -> list[dict]:
+    return fetch_all("SELECT * FROM complaints WHERE user_id = %s ORDER BY created_at DESC LIMIT 100", (user_id,))
+
+def get_complaint(user_id: int, complaint_id: int) -> dict | None:
+    return fetch_one("SELECT * FROM complaints WHERE id = %s AND user_id = %s", (complaint_id, user_id))
+
+def cancel_forecast(farmer_id: int, forecast_id: int) -> str:
+    with connect() as conn:
+        f = conn.execute("SELECT status FROM harvest_forecasts WHERE id = %s AND farmer_id = %s FOR UPDATE",
+                         (forecast_id, farmer_id)).fetchone()
+        if not f:
+            return "not_found"
+        if f["status"] != "open":
+            return "closed"
+        conn.execute("UPDATE harvest_forecasts SET status = 'cancelled', version = version + 1 WHERE id = %s",
+                     (forecast_id,))
+        conn.execute("UPDATE harvest_matches SET status = 'cancelled' WHERE forecast_id = %s "
+                     "AND status IN ('buyer_interested', 'farmer_offered', 'agreed')", (forecast_id,))
+        return "ok"
+
+def cancel_request(buyer_id: int, request_id: int) -> str:
+    with connect() as conn:
+        r = conn.execute("SELECT status FROM buyer_demand_requests WHERE id = %s AND buyer_id = %s FOR UPDATE",
+                         (request_id, buyer_id)).fetchone()
+        if not r:
+            return "not_found"
+        if r["status"] != "open":
+            return "closed"
+        conn.execute("UPDATE buyer_demand_requests SET status = 'cancelled' WHERE id = %s", (request_id,))
+        conn.execute("UPDATE harvest_matches SET status = 'cancelled' WHERE request_id = %s "
+                     "AND status IN ('buyer_interested', 'farmer_offered', 'agreed')", (request_id,))
+        return "ok"
+
+def cancel_order(customer_id: int, order_number: str) -> str:
+    """The customer may cancel only while no farmer has confirmed anything."""
+    with connect() as conn:
+        o = conn.execute("SELECT id, status FROM orders WHERE order_number = %s AND customer_id = %s FOR UPDATE",
+                         (order_number, customer_id)).fetchone()
+        if not o:
+            return "not_found"
+        if o["status"] != "pending":
+            return "too_late"
+        busy = conn.execute("SELECT 1 FROM order_items WHERE order_id = %s AND farmer_status IN "
+                            "('accepted', 'packed', 'handed_over') LIMIT 1", (o["id"],)).fetchone()
+        if busy:
+            return "too_late"
+        conn.execute("UPDATE orders SET status = 'cancelled' WHERE id = %s", (o["id"],))
+        return "ok"

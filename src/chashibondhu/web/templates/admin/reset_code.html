@@ -1,0 +1,21 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'কৃষকের রিসেট কোড — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<section class="cb-auth" style="margin:0">
+  <h1>{{ t('কৃষকের পাসওয়ার্ড রিসেট কোড', 'Farmer password reset code') }}</h1>
+  <p class="cb-sub">{{ t('আগে অ্যাকাউন্টের নম্বরে নিজে ফোন করে কৃষককে যাচাই করুন। কোড শুধু সেই ফোন কলেই বলুন।', 'First verify the farmer by calling the account\'s own number yourself. Tell the code only on that call.') }}</p>
+  {% include "auth/_msgs.html" %}
+  {% if code %}
+  <div role="status" style="border:2px solid var(--cb-paddy);border-radius:12px;padding:16px;margin:8px 0 16px;text-align:center">
+    <p style="margin:0 0 6px">{{ farmer.full_name }} — {{ farmer.phone }}</p>
+    <p style="margin:0;font-size:2rem;font-weight:700;letter-spacing:.3em">{{ code }}</p>
+    <p class="cb-hint" style="margin:6px 0 0">{{ t('৩০ মিনিট চলবে, একবারই। এই পাতা বন্ধ করলে কোড আর দেখা যাবে না।', 'Works for 30 minutes, only once. It is not shown again after you leave this page.') }}</p>
+  </div>
+  {% endif %}
+  <form class="cb-form" method="post" action="/admin/reset-code"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="phone">{{ t('কৃষকের মোবাইল নম্বর', 'Farmer mobile number') }}</label>
+      <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}"></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-key"></i>{{ t('কোড তৈরি করুন', 'Make a code') }}</button>
+  </form>
+</section>
+{% endblock %}

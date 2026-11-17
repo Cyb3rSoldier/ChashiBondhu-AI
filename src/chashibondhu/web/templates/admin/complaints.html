@@ -1,0 +1,21 @@
+{% extends "admin/_layout.html" %}
+{% set ST = {'open': ('জমা হয়েছে', 'Submitted'), 'in_review': ('দেখা হচ্ছে', 'Under review'), 'in_progress': ('কাজ চলছে', 'In progress'), 'resolved': ('সমাধান', 'Resolved'), 'rejected': ('বাতিল', 'Rejected'), 'closed': ('বন্ধ', 'Closed')} %}
+{% block title %}{{ 'অভিযোগ — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('অভিযোগ', 'Complaints') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="q">{{ t('নম্বর / বিষয় / নাম', 'Number / subject / name') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status">
+    <option value="active"{% if f.status == 'active' %} selected{% endif %} data-en="{{ 'Open (all)' }}">{{ 'খোলা (সব)' }}</option><option value=""{% if not f.status %} selected{% endif %} data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for k, v in ST.items() %}<option value="{{ k }}"{% if f.status == k %} selected{% endif %} data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="role">{{ t('কে', 'From') }}</label><select class="cb-select" id="role" name="role"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    <option value="farmer"{% if f.role == 'farmer' %} selected{% endif %} data-en="{{ 'Farmers' }}">{{ 'কৃষক' }}</option><option value="customer"{% if f.role == 'customer' %} selected{% endif %} data-en="{{ 'Consumers' }}">{{ 'ক্রেতা' }}</option></select></div>
+  <label class="cb-check"><input type="checkbox" name="mine" value="1"{% if f.mine %} checked{% endif %}><span>{{ t('আমাকে দেওয়া', 'Assigned to me') }}</span></label>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+<ul class="cb-list">{% for c in rows %}
+  <li class="cb-row"><div><b><a href="/admin-complaints/{{ c.id }}">{{ c.complaint_number }}</a></b> · {{ c.subject }}{% if c.has_photo %} <i class="fa-solid fa-image" title="photo"></i>{% endif %}
+    <small>{{ t(ST[c.status][0], ST[c.status][1]) if c.status in ST else c.status }} · {{ c.category }} · {{ c.user_name }} ({{ c.user_role }}) · {{ c.created_at.strftime('%Y-%m-%d') }}{% if c.assigned_name %} · → {{ c.assigned_name }}{% endif %}</small></div></li>
+{% else %}<li class="cb-hint">{{ t('কোনো অভিযোগ নেই।', 'No complaints.') }}</li>{% endfor %}</ul>
+{% include "admin/_pager.html" %}
+{% endblock %}

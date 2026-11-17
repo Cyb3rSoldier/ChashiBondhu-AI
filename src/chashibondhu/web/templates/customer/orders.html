@@ -1,0 +1,19 @@
+{% extends "customer/_layout.html" %}
+{% import "customer/_status.html" as S %}
+{% block title %}{{ 'আমার অর্ডার — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<div class="cb-head-row"><h1>{{ t('আমার অর্ডার', 'My orders') }}</h1></div>
+<nav class="cb-cats" aria-label="period" style="margin-bottom:16px">
+  {% for p, bn, en in [('all', 'সব', 'All'), ('today', 'আজ', 'Today'), ('week', 'গত ৭ দিন', 'Last 7 days'), ('month', 'গত ৩০ দিন', 'Last 30 days')] %}
+  <a class="cb-cat" href="/customer/orders?period={{ p }}"{% if period == p %} aria-current="true"{% endif %}>{{ t(bn, en) }}</a>{% endfor %}
+</nav>
+{% if items %}
+<div class="cb-cardlist">{% for o in items %}
+  <a class="cb-item cb-item-link" href="/customer/orders/{{ o.order_number }}">
+    <div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-receipt"></i></span>
+      <div><b>{{ o.order_number }} · ৳{{ num(o.total) }}</b><small>{{ (o.created_at|string)[:16] }} · {{ num(o.item_count) }} {{ t('টি পণ্য', 'items') }}</small><small>{{ o.titles }}</small></div>
+      <span class="cb-badge {{ 'bad' if o.status == 'cancelled' else ('' if o.status == 'delivered' else 'soil') }}">{{ t(S.OS[o.status][0], S.OS[o.status][1]) }}</span></div>
+  </a>{% endfor %}
+</div>
+{% else %}<div class="cb-empty-box"><i class="fa-solid fa-receipt"></i>{{ t('এই সময়ে কোনো অর্ডার নেই।', 'No orders in this period.') }}</div>{% endif %}
+{% endblock %}

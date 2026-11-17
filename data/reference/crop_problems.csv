@@ -1,0 +1,6 @@
+crop_id,problem_id,name_bn,name_en,search_terms_bn,kind,status,source_note
+potato,late_blight,নাবি ধ্বসা,late blight,নাবি ধ্বসা রোগ লক্ষণ দমন,disease,draft,name seen in Hatboi search output (printed p.29 list); verify wording and page
+potato,bacterial_wilt,ব্যাকটেরিয়া জনিত ঢলে পড়া,bacterial wilt,ঢলে পড়া রোগ লক্ষণ দমন,disease,draft,seen in Hatboi search output (printed p.31); verify
+potato,black_scurf,স্কার্ফ (রাইজোকটনিয়া) রোগ,black scurf (Rhizoctonia),স্কার্ফ রাইজোকটনিয়া রোগ দমন,disease,draft,seen in Hatboi search output (printed p.33); verify
+potato,virus,ভাইরাস রোগ (পাতা মোড়ানো / মোজাইক),virus (leaf roll / mosaic),ভাইরাস রোগ পাতা মোড়ানো লক্ষণ দমন,disease,draft,seen in Hatboi search output (printed p.35); verify
+potato,soft_rot,নরম পচা রোগ,bacterial soft rot,নরম পচা রোগ দমন,disease,draft,from the BARI photo dataset class list; NOT yet found in the book - check before verifying

@@ -1,0 +1,50 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'বাজার দর — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('বাজার দর', 'Market price') }}</h1></div>
+<p class="cb-sub">{{ t('এখানে শুধু দেখা দাম (তারিখ ও উৎসসহ) দেখানো হয়। কখন বিক্রি করবেন বা রাখবেন — সেই সিদ্ধান্ত সম্পূর্ণ আপনার।', 'Only observed prices are shown here, each with its date and source. When to sell or keep is entirely your decision.') }}</p>
+{% if products %}
+<nav class="cb-cats" aria-label="products" style="margin-bottom:16px">
+  {% for p in products %}
+  <a class="cb-cat" href="/farmer/prices?product={{ p.product_key | urlencode }}"{% if product == p.product_key %} aria-current="true"{% endif %}>{{ t(p.name_bn or p.product_key, p.name_en or p.product_key) }}</a>
+  {% endfor %}
+</nav>
+<section class="cb-box">
+  <h2>{{ t('বিভিন্ন বাজারে সর্বশেষ দাম', 'Latest price in each market') }}</h2>
+  <div class="cb-tablewrap">
+    <table class="cb-table">
+      <thead><tr><th>{{ t('বাজার', 'Market') }}</th><th>{{ t('সর্বনিম্ন', 'Min') }}</th><th>{{ t('সর্বোচ্চ', 'Max') }}</th><th>{{ t('গড়', 'Average') }}</th><th>{{ t('একক', 'Unit') }}</th><th>{{ t('তারিখ', 'Observed') }}</th><th>{{ t('উৎস', 'Source') }}</th></tr></thead>
+      <tbody>
+        {% for r in latest %}
+        <tr><td>{{ r.market_name }}</td>
+          <td>{% if r.price_min is not none %}৳{{ num(r.price_min) }}{% else %}—{% endif %}</td>
+          <td>{% if r.price_max is not none %}৳{{ num(r.price_max) }}{% else %}—{% endif %}</td>
+          <td>{% if r.price_avg is not none %}৳{{ num(r.price_avg) }}{% else %}—{% endif %}</td>
+          <td>{{ r.unit }}</td><td>{{ (r.observed_at|string)[:16] }}</td>
+          <td>{% if r.source_url %}<a href="{{ r.source_url }}" target="_blank" rel="noopener">{{ r.source_name }}</a>{% else %}{{ r.source_name }}{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="cb-box" style="margin-top:22px">
+  <h2>{{ t('আগের দাম (ইতিহাস)', 'Price history') }}</h2>
+  <div class="cb-tablewrap">
+    <table class="cb-table">
+      <thead><tr><th>{{ t('তারিখ', 'Observed') }}</th><th>{{ t('বাজার', 'Market') }}</th><th>{{ t('সর্বনিম্ন', 'Min') }}</th><th>{{ t('সর্বোচ্চ', 'Max') }}</th><th>{{ t('গড়', 'Average') }}</th><th>{{ t('উৎস', 'Source') }}</th></tr></thead>
+      <tbody>
+        {% for r in history %}
+        <tr><td>{{ (r.observed_at|string)[:10] }}</td><td>{{ r.market_name }}</td>
+          <td>{% if r.price_min is not none %}৳{{ num(r.price_min) }}{% else %}—{% endif %}</td>
+          <td>{% if r.price_max is not none %}৳{{ num(r.price_max) }}{% else %}—{% endif %}</td>
+          <td>{% if r.price_avg is not none %}৳{{ num(r.price_avg) }}{% else %}—{% endif %}</td><td>{{ r.source_name }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="cb-hint" style="margin-top:10px">{{ t('দামের পূর্বাভাস দেখানো হয় না — যথেষ্ট যাচাই করা তথ্য পাওয়া গেলে তবেই আলাদা করে দেখানো হবে।', 'No price forecasts are shown. They will only be added, clearly marked, when there is enough verified data.') }}</p>
+</section>
+{% else %}
+<div class="cb-empty-box"><i class="fa-solid fa-chart-line"></i>{{ t('এখনো কোনো যাচাই করা বাজার দর যোগ হয়নি। আমরা বানানো দাম দেখাই না — নির্ভরযোগ্য উৎস থেকে তথ্য এলে এখানে তারিখ ও উৎসসহ দেখা যাবে।', 'No verified market prices have been added yet. We never show made-up prices — data will appear here with its date and source once loaded from a reliable source.') }}</div>
+{% endif %}
+{% endblock %}

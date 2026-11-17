@@ -1,0 +1,50 @@
+{% extends "admin/_layout.html" %}
+{% set ST = {'open': ('জমা হয়েছে', 'Submitted'), 'in_review': ('দেখা হচ্ছে', 'Under review'), 'in_progress': ('কাজ চলছে', 'In progress'), 'resolved': ('সমাধান', 'Resolved'), 'rejected': ('বাতিল', 'Rejected'), 'closed': ('বন্ধ', 'Closed')} %}
+{% block title %}{{ c.complaint_number }} — অ্যাডমিন{% endblock %}
+{% block page %}
+<a class="cb-hint" href="/admin-complaints"><i class="fa-solid fa-arrow-left"></i> {{ t('অভিযোগ তালিকা', 'All complaints') }}</a>
+<h1>{{ c.complaint_number }} <small class="cb-pill">{{ t(ST[c.status][0], ST[c.status][1]) if c.status in ST else c.status }}</small></h1>
+<section class="cb-box">
+  <dl class="cb-pv">
+    <dt>{{ t('কে', 'From') }}</dt><dd><a href="/admin/{{ 'farmers' if c.user_role == 'farmer' else 'consumers' }}/{{ c.user_id }}">{{ c.user_name }}</a> ({{ c.user_role }}) · {{ c.user_phone }}{% if c.user_email %} · {{ c.user_email }}{% endif %}</dd>
+    <dt>{{ t('ধরন', 'Category') }}</dt><dd>{{ c.category }}</dd>
+    <dt>{{ t('তারিখ', 'Date') }}</dt><dd>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+    <dt>{{ t('দায়িত্বে', 'Assigned to') }}</dt><dd>{{ c.assigned_name or '—' }}</dd>
+    {% if c.image_path %}<dt>{{ t('ছবি', 'Photo') }}</dt><dd>{{ t('ছবি সংযুক্ত আছে (গোপন ফোল্ডারে)', 'A photo is attached (private folder)') }}</dd>{% endif %}
+  </dl>
+  <h2 style="margin-top:10px">{{ c.subject }}</h2>
+  <p style="white-space:pre-line">{{ c.description }}</p>
+</section>
+
+<section class="cb-box"><h2>{{ t('ব্যবহারকারীকে উত্তর', 'Reply to the user') }}</h2>
+  {% if c.admin_response %}<p style="white-space:pre-line;border-left:3px solid var(--cb-paddy, #2e7d32);padding-left:10px">{{ c.admin_response }}</p>
+    <p class="cb-hint">{{ c.responder_name or '—' }} · {{ c.responded_at.strftime('%Y-%m-%d %H:%M') if c.responded_at else '' }}</p>{% endif %}
+  <form class="cb-form" method="post" action="/admin-complaints/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <label class="cb-sr" for="reply">{{ t('উত্তর', 'Reply') }}</label>
+    <textarea class="cb-textarea" id="reply" name="reply" maxlength="2000" required rows="3" placeholder="{{ 'ব্যবহারকারী এটি দেখবেন / The user will see this' }}"></textarea>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-reply"></i>{{ t('উত্তর পাঠান', 'Send reply') }}</button></form>
+</section>
+
+<div class="cb-cols" style="gap:18px">
+  <section class="cb-box"><h2>{{ t('অবস্থা ও দায়িত্ব', 'Status & assignment') }}</h2>
+    <form class="cb-form" method="post" action="/admin-complaints/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status">
+        {% for s in statuses %}<option value="{{ s }}"{% if c.status == s %} selected{% endif %} data-en="{{ ST[s][1] }}">{{ ST[s][0] }}</option>{% endfor %}</select></div>
+      <div class="cb-field"><label for="assign">{{ t('দায়িত্ব দিন', 'Assign to') }}</label><select class="cb-select" id="assign" name="assign">
+        <option value="" data-en="{{ '— no change —' }}">{{ '— বদল নেই —' }}</option><option value="none" data-en="{{ 'Nobody' }}">{{ 'কেউ না' }}</option>
+        {% for s in staff %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}</select></div>
+      <button class="cb-mini main" type="submit">{{ t('সংরক্ষণ', 'Save') }}</button></form></section>
+  <section class="cb-box"><h2>{{ t('ভেতরের নোট (ব্যবহারকারী দেখবেন না)', 'Internal notes (user never sees)') }}</h2>
+    {% for n in c.notes %}<p style="margin:0 0 8px"><small class="cb-hint">{{ n.author or '—' }} · {{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small><br><span style="white-space:pre-line">{{ n.note }}</span></p>{% endfor %}
+    <form class="cb-form" method="post" action="/admin-complaints/{{ c.id }}"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <label class="cb-sr" for="note">{{ t('নোট', 'Note') }}</label><textarea class="cb-textarea" id="note" name="note" maxlength="2000" required rows="2"></textarea>
+      <button class="cb-mini" type="submit">{{ t('নোট যোগ', 'Add note') }}</button></form></section>
+</div>
+
+{% if c.orders %}<section class="cb-box"><h2>{{ t('এই ক্রেতার সাম্প্রতিক অর্ডার', "This customer's recent orders") }}</h2>
+  <ul class="cb-list">{% for o in c.orders %}<li class="cb-row"><div><a href="/admin-orders/{{ o.order_number }}">{{ o.order_number }}</a> · ৳{{ num(o.total) }}<small>{{ o.status }} · {{ o.payment_status }} · {{ o.created_at.strftime('%Y-%m-%d') }}</small></div></li>{% endfor %}</ul></section>{% endif %}
+
+<section class="cb-box"><h2>{{ t('ইতিহাস', 'History') }}</h2>
+  {% if c.history %}<ul class="cb-list">{% for a in c.history %}<li class="cb-row"><div><b>{{ a.action }}</b> <small class="cb-hint">{{ a.meta|tojson }}</small><small>{{ a.actor_name or '—' }} · {{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</p>{% endif %}</section>
+{% endblock %}

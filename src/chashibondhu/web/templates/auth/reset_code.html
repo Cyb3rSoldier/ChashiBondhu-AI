@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ 'নতুন পাসওয়ার্ড — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap"><section class="cb-auth">
+  <h1>{{ t('কোড দিয়ে নতুন পাসওয়ার্ড', 'New password with a code') }}</h1>
+  <p class="cb-sub">{{ t('কোড ' + ('১০' if sms else '৩০') + ' মিনিট চলবে, একবারই ব্যবহার করা যাবে। কোড কাউকে বলবেন না।', 'The code works for ' + ('10' if sms else '30') + ' minutes, only once. Never tell the code to anyone.') }}</p>
+  {% include "auth/_msgs.html" %}
+  <form class="cb-form" method="post" action="/forgot/farmer/code" autocomplete="off"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
+      <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+    <div class="cb-field"><label for="code">{{ t('৬ সংখ্যার কোড', '6-digit code') }}</label>
+      <input class="cb-input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required style="font-size:1.4rem;letter-spacing:.3em"></div>
+    <div class="cb-field"><label for="password">{{ t('নতুন পাসওয়ার্ড', 'New password') }}</label>
+      <input class="cb-input" id="password" name="password" type="password" minlength="6" maxlength="128" autocomplete="new-password" required>
+      <p class="cb-hint">{{ t('অন্তত ৬ অক্ষর। ১২৩৪৫৬ বা নিজের ফোন নম্বর দেবেন না।', 'At least 6 characters. Not 123456 or your phone number.') }}</p></div>
+    <div class="cb-field"><label for="password2">{{ t('আবার নতুন পাসওয়ার্ড', 'New password again') }}</label>
+      <input class="cb-input" id="password2" name="password2" type="password" minlength="6" maxlength="128" autocomplete="new-password" required></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-check"></i>{{ t('পাসওয়ার্ড বদলান', 'Change password') }}</button>
+  </form>
+  <p class="cb-hint" style="margin-top:16px"><a href="/forgot/farmer">{{ t('নতুন কোড চাই', 'I need a new code') }}</a></p>
+</section></div>
+{% endblock %}

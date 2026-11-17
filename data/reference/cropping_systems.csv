@@ -1,0 +1,6 @@
+﻿system_id,system_type,main_crop_id,companion_crop_id,companion_other_en,companion_other_bn,main_variety_scope,companion_variety_scope,companion_timing,timing_days_min,timing_days_max,row_ratio,season_system,land_type,water_regime,evidence_level,tested_districts,source_id,source_locator,status,verified_by,verified_on,notes
+aman_rice__maize__relay,relay,aman_rice,maize,,,,,,,,,,,,field_trial,,PAPER_MAIZE_RELAY_TAMAN_SYLHET,,todo,,,candidate from paper; fill values from the PDF
+potato__maize__relay,relay,potato,maize,,,,,,,,,,,,field_trial,,PAPER_POTATO_MAIZE_RELAY_GAIBANDHA,,todo,,,candidate from paper; fill values from the PDF
+aman_rice__lentil__relay,relay,aman_rice,lentil,,,,,,,,,,,,field_trial,,PAPER_LENTIL_RELAY_TAMAN_ISHURDI,,todo,,,candidate from paper; fill values from the PDF
+aman_rice__mustard__relay,relay,aman_rice,mustard,,,,,,,,,,,,field_trial,,PAPER_MUSTARD_RELAY_TAMAN_SAU,,todo,,,candidate from paper; fill values from the PDF
+potato__maize__intercrop,intercrop,potato,maize,,,,,,,,,,,,field_trial,,PAPER_POTATO_MAIZE_INTERCROP_RANGPUR,,todo,,,candidate from paper; fill values from the PDF

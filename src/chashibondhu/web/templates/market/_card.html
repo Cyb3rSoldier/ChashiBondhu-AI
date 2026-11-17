@@ -1,0 +1,20 @@
+{# market product card; expects `l` (repo.MARKET_COLS row) and `L` (farmer/_labels) #}
+<a class="cb-card cb-card-link" href="/market/{{ l.id }}">
+  <div class="cb-card-img">
+    {% if l.image_path %}<img src="{{ l.image_path }}" alt="{{ l.title }}" loading="lazy">{% else %}<span class="cb-noimg"><i class="fa-solid {{ 'fa-screwdriver-wrench' if l.category == 'tools_equipment' else 'fa-basket-shopping' }}"></i></span>{% endif %}
+    {% if l.listing_type == 'expected' %}<span class="cb-flag l">{{ t('আগাম ফসল', 'Pre-harvest') }}</span>
+    {% elif l.discount_price %}<span class="cb-flag l sale">{{ t('ছাড়', 'Sale') }}</span>{% endif %}
+    {% if l.farming_method == 'organic' %}<span class="cb-flag r" title="কৃষকের দেওয়া তথ্য, সনদ নয় / Stated by the farmer, not a certificate"><i class="fa-solid fa-leaf"></i> {{ t('জৈব', 'Organic') }}</span>{% endif %}
+  </div>
+  <div class="cb-card-body">
+    <h3>{{ l.title }}</h3>
+    <small class="cb-cat-name">{{ t(L.CA.get(l.category, ('অন্যান্য', 'Others'))[0], L.CA.get(l.category, ('অন্যান্য', 'Others'))[1]) }}</small>
+    <div class="cb-price"><b>৳{{ num(l.price_now) }}</b><small>/ {{ t(L.UN.get(l.unit, (l.unit, l.unit))[0], L.UN.get(l.unit, (l.unit, l.unit))[1]) }}</small>
+      {% if l.discount_price %}<s>৳{{ num(l.price_per_unit) }}</s><span class="cb-save">{{ t('সাশ্রয়', 'Save') }} ৳{{ num(l.price_per_unit - l.discount_price) }}</span>{% endif %}</div>
+    <div class="cb-who"><i class="fa-solid fa-user"></i> {{ l.farmer_name }}{% if l.district_code %} · <span data-area-name="{{ l.district_code }}">{{ l.district_code }}</span>{% endif %}</div>
+    <div class="cb-who"><i class="fa-solid fa-box"></i>
+      {% if l.listing_type == 'expected' %}{{ t('ফসল উঠবে', 'Harvest') }} {{ l.available_from }}
+      {% elif l.quantity > 0 %}{{ t('আছে', 'In stock') }} {{ num(l.quantity) }}{% else %}{{ t('স্টক শেষ', 'Out of stock') }}{% endif %}</div>
+    <span class="cb-btn cb-btn-line cb-card-cta">{{ t('বিস্তারিত দেখুন', 'View details') }}</span>
+  </div>
+</a>

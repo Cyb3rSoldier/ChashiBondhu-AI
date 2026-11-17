@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="bn" data-lang="bn" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}চাষীবন্ধু — ChashiBondhu{% endblock %}</title>
+<script>
+  (function () { var d = document.documentElement, l = "bn", th = "";
+    try { l = localStorage.getItem("cb_lang") === "en" ? "en" : "bn"; th = localStorage.getItem("cb_theme") || ""; } catch (e) {}
+    if (!th) th = (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+    d.setAttribute("data-lang", l); d.setAttribute("lang", l); d.setAttribute("data-theme", th); })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/static/cb.css?v=6">
+{% if user %}<meta name="csrf-token" content="{{ csrf }}"><meta name="cb-user" content="{{ user.id }}" data-role="{{ user.role }}">{% endif %}
+{% block head %}{% endblock %}
+</head>
+<body class="cb-page {% block body_class %}{% endblock %}">
+{% set role = user.role if user else None %}
+{% set ai_ok = (not user) or role in ('farmer', 'admin') %}{# the farm assistant is for farmers + admins (server checks too) #}
+<header class="cb-nav" data-cb-nav>
+  <div class="cb-nav-in">
+    <a class="cb-logo" href="/"><span class="cb-logo-ic"><i class="fa-solid fa-seedling"></i></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+    <ul class="cb-links">
+      <li><a href="/"{% if active == 'home' %} aria-current="page"{% endif %}>{{ t('হোম', 'Home') }}</a></li>
+      <li><a href="/market"{% if active == 'market' %} aria-current="page"{% endif %}>{{ t('বাজার', 'Market') }}</a></li>
+      <li><a href="/articles"{% if active == 'articles' %} aria-current="page"{% endif %}>{{ t('কৃষি খবর', 'News') }}</a></li>
+      {% if role == 'customer' %}<li><a href="/cart"{% if active == 'cart' %} aria-current="page"{% endif %}><i class="fa-solid fa-cart-shopping"></i>{{ t('কার্ট', 'Cart') }}</a></li>{% endif %}
+      {% if ai_ok %}<li><a class="cb-ai-link" href="/assistant"{% if active == 'ai' %} aria-current="page"{% endif %}><i class="fa-solid fa-wand-magic-sparkles"></i>{{ t('AI সহায়তা', 'AI help') }}</a></li>{% endif %}
+      {% if role == 'farmer' %}
+      <li><a href="/farmer"{% if active in ('dash','add','farm','listings','orders','earnings','prices','tips','complaints','profile','forecasts','drafts') %} aria-current="page"{% endif %}>{{ t('আমার খামার', 'My farm') }}</a></li>
+      {% endif %}
+    </ul>
+    <div class="cb-tools">
+      {% if role == 'farmer' %}<a class="cb-chip-btn cb-net" href="/farmer/drafts" data-cb-net hidden aria-live="polite"><i class="fa-solid fa-wifi"></i><span data-cb-net-text></span></a>{% endif %}
+      <button class="cb-chip-btn" type="button" data-cb-lang aria-label="Language / ভাষা"><span class="lang-bn">English</span><span class="lang-en">বাংলা</span></button>
+      <button class="cb-chip-btn" type="button" data-cb-theme aria-label="Light / dark"><i class="fa-solid fa-moon" data-cb-theme-icon></i></button>
+      {% if user %}
+      <details class="cb-menu cb-hide-sm">
+        <summary class="cb-chip-btn"><i class="fa-solid fa-circle-user"></i>{{ user.name[:18] }}</summary>
+        <ul class="cb-menu-list">
+          {% if role == 'farmer' %}
+          <li><a href="/farmer"><i class="fa-solid fa-gauge"></i>{{ t('ড্যাশবোর্ড', 'Dashboard') }}</a></li>
+          <li><a href="/farmer/profile"><i class="fa-solid fa-gear"></i>{{ t('সেটিংস', 'Settings') }}</a></li>
+          {% endif %}
+          {% if role == 'customer' %}
+          <li><a href="/customer"><i class="fa-solid fa-gauge"></i>{{ t('আমার অ্যাকাউন্ট', 'My account') }}</a></li>
+          <li><a href="/cart"><i class="fa-solid fa-cart-shopping"></i>{{ t('কার্ট', 'Cart') }}</a></li>
+          <li><a href="/customer/orders"><i class="fa-solid fa-receipt"></i>{{ t('আমার অর্ডার', 'My orders') }}</a></li>
+          {% endif %}
+          {% if role == 'admin' %}
+          <li><a href="/admin"><i class="fa-solid fa-user-shield"></i>{{ t('অ্যাডমিন প্যানেল', 'Admin panel') }}</a></li>
+          {% endif %}
+          {% if role in ('customer', 'admin') %}
+          <li><a href="/requests"><i class="fa-solid fa-handshake"></i>{{ t('আমার চাহিদা (আগাম কেনা)', 'My buying requests') }}</a></li>
+          {% endif %}
+          <li><form class="cb-logout" method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit"><i class="fa-solid fa-right-from-bracket"></i>{{ t('লগআউট', 'Log out') }}</button></form></li>
+        </ul>
+      </details>
+      {% else %}
+      <details class="cb-menu cb-hide-sm">
+        <summary class="cb-chip-btn">{{ t('লগইন', 'Login') }}<i class="fa-solid fa-chevron-down cb-caret"></i></summary>
+        <ul class="cb-menu-list">
+          <li><a href="/login?as=customer"><i class="fa-solid fa-user cb-ic-paddy"></i>{{ t('ক্রেতা হিসেবে লগইন', 'Login as customer') }}</a></li>
+          <li><a href="/login?as=farmer"><i class="fa-solid fa-tractor cb-ic-paddy"></i>{{ t('কৃষক হিসেবে লগইন', 'Login as farmer') }}</a></li>
+          <li><a href="/login?as=admin"><i class="fa-solid fa-user-shield cb-ic-muted"></i>{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a></li>
+          <li class="cb-menu-sep" aria-hidden="true"></li>
+          <li class="cb-menu-note">{{ t('অ্যাকাউন্ট নেই?', "Don't have an account?") }}</li>
+          <li class="cb-menu-join">
+            <a class="cb-join-btn" href="/register">{{ t('কৃষক', 'Farmer') }}</a>
+            <a class="cb-join-btn" href="/register/customer">{{ t('ক্রেতা', 'Customer') }}</a>
+          </li>
+        </ul>
+      </details>
+      {% endif %}
+      <button class="cb-chip-btn cb-burger" type="button" data-cb-burger aria-expanded="false" aria-controls="cbDrawer" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </div>
+</header>
+<nav class="cb-drawer" id="cbDrawer" aria-label="Menu">
+  <a href="/"><i class="fa-solid fa-house"></i>{{ t('হোম', 'Home') }}</a>
+  <a href="/market"><i class="fa-solid fa-basket-shopping"></i>{{ t('বাজার', 'Market') }}</a>
+  <a href="/articles"><i class="fa-solid fa-newspaper"></i>{{ t('কৃষি লেখা ও খবর', 'Articles & news') }}</a>
+  {% if ai_ok %}
+  <a href="/assistant"><i class="fa-solid fa-wand-magic-sparkles"></i>{{ t('AI সহায়তা', 'AI help') }}</a>
+  <a href="/assistant?photo=1"><i class="fa-solid fa-camera"></i>{{ t('ছবি দিয়ে সমস্যা দেখুন', 'Check a problem by photo') }}</a>
+  {% endif %}
+  <hr>
+  {% if role == 'farmer' %}
+  <a href="/farmer"><i class="fa-solid fa-gauge"></i>{{ t('ড্যাশবোর্ড', 'Dashboard') }}</a>
+  <a href="/farmer/farm"><i class="fa-solid fa-wheat-awn"></i>{{ t('আমার জমি ও ফসল', 'My land and crops') }}</a>
+  <a href="/farmer/listings"><i class="fa-solid fa-store"></i>{{ t('আমার পণ্য', 'My products') }}</a>
+  <a href="/farmer/forecasts"><i class="fa-solid fa-handshake"></i>{{ t('আগাম ফসল ও ক্রেতা', 'Harvest & buyers') }}</a>
+  <a href="/farmer/drafts"><i class="fa-solid fa-mobile-screen"></i>{{ t('ফোনে রাখা খসড়া', 'Saved on phone') }}</a>
+  <a href="/farmer/orders"><i class="fa-solid fa-receipt"></i>{{ t('অর্ডার', 'Orders') }}</a>
+  <a href="/farmer/earnings"><i class="fa-solid fa-sack-dollar"></i>{{ t('আয়ের হিসাব', 'Earnings report') }}</a>
+  <a href="/farmer/prices"><i class="fa-solid fa-chart-line"></i>{{ t('বাজার দর', 'Market price') }}</a>
+  <a href="/farmer/tips"><i class="fa-solid fa-lightbulb"></i>{{ t('কৃষকের পরামর্শ', 'Farmers tips') }}</a>
+  <a href="/farmer/complaints"><i class="fa-solid fa-comment-dots"></i>{{ t('অভিযোগ বাক্স', 'Complaint box') }}</a>
+  <a href="/farmer/profile"><i class="fa-solid fa-gear"></i>{{ t('সেটিংস', 'Settings') }}</a>
+  {% endif %}
+  {% if role == 'customer' %}
+  <a href="/customer"><i class="fa-solid fa-gauge"></i>{{ t('আমার অ্যাকাউন্ট', 'My account') }}</a>
+  <a href="/cart"><i class="fa-solid fa-cart-shopping"></i>{{ t('কার্ট', 'Cart') }}</a>
+  <a href="/customer/orders"><i class="fa-solid fa-receipt"></i>{{ t('আমার অর্ডার', 'My orders') }}</a>
+  {% endif %}
+  {% if role == 'admin' %}
+  <a href="/admin"><i class="fa-solid fa-user-shield"></i>{{ t('অ্যাডমিন প্যানেল', 'Admin panel') }}</a>
+  {% endif %}
+  {% if role in ('customer', 'admin') %}
+  <a href="/requests"><i class="fa-solid fa-handshake"></i>{{ t('আমার চাহিদা (আগাম কেনা)', 'My buying requests') }}</a>
+  {% endif %}
+  {% if user %}
+  <form class="cb-logout" method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit"><i class="fa-solid fa-right-from-bracket"></i>{{ t('লগআউট', 'Log out') }}</button></form>
+  {% else %}
+  <a href="/login?as=customer"><i class="fa-solid fa-user"></i>{{ t('ক্রেতা হিসেবে লগইন', 'Login as customer') }}</a>
+  <a href="/login?as=farmer"><i class="fa-solid fa-tractor"></i>{{ t('কৃষক হিসেবে লগইন', 'Login as farmer') }}</a>
+  <a href="/login?as=admin"><i class="fa-solid fa-user-shield"></i>{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a>
+  <a href="/register"><i class="fa-solid fa-user-plus"></i>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a>
+  <a href="/register/customer"><i class="fa-solid fa-user-plus"></i>{{ t('ক্রেতা অ্যাকাউন্ট খুলুন', 'Create a customer account') }}</a>
+  {% endif %}
+</nav>
+
+<main class="cb-main">
+  {% if flashes %}
+  <div class="cb-wrap cb-flashes">
+    {% for kind, bn, en in flashes %}
+    <div class="cb-flash {{ kind }}" role="status"><i class="fa-solid {{ 'fa-circle-check' if kind == 'ok' else 'fa-circle-exclamation' }}"></i>{{ t(bn, en) }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="cb-foot cb-foot-green">
+  <div class="cb-wrap cb-foot-grid">
+    <div id="about">
+      <a class="cb-logo" href="/"><span class="cb-logo-ic"><i class="fa-solid fa-seedling"></i></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+      <p style="margin-top:12px">{{ t('কৃষক ও ক্রেতার মাঝে সরাসরি সেতু। চাষের পরামর্শ থেকে সরাসরি বিক্রি পর্যন্ত — বাংলাদেশের কৃষকের পাশে।', 'A direct bridge between farmers and buyers. From farming advice to direct sales — beside the farmers of Bangladesh.') }}</p>
+    </div>
+    <div>
+      <h3>{{ t('দ্রুত লিংক', 'Quick links') }}</h3>
+      <ul>
+        <li><a href="/">{{ t('হোম', 'Home') }}</a></li>
+        <li><a href="/market">{{ t('বাজার', 'Market') }}</a></li>
+        <li><a href="/articles">{{ t('কৃষি লেখা ও খবর', 'Articles & news') }}</a></li>
+        <li><a href="/#about">{{ t('আমাদের কথা', 'About us') }}</a></li>
+        <li><a href="/#contact">{{ t('যোগাযোগ', 'Contact') }}</a></li>
+        {% if ai_ok %}<li><a href="/assistant">{{ t('AI সহায়তা', 'AI help') }}</a></li>
+        <li><a href="/assistant?photo=1">{{ t('ছবি দিয়ে সমস্যা দেখুন', 'Check a problem by photo') }}</a></li>{% endif %}
+      </ul>
+    </div>
+    <div>
+      <h3>{{ t('ব্যবহারকারী', 'For users') }}</h3>
+      <ul>
+        <li><a href="/login?as=customer">{{ t('ক্রেতা লগইন', 'Customer login') }}</a></li>
+        <li><a href="/login?as=farmer">{{ t('কৃষক লগইন', 'Farmer login') }}</a></li>
+        <li><a href="/register">{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a></li>
+        <li><a href="/login?as=admin">{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a></li>
+      </ul>
+    </div>
+    <div id="contact">
+      <h3>{{ t('যোগাযোগ', 'Contact us') }}</h3>
+      <ul>
+        <li><i class="fa-solid fa-location-dot"></i> {{ t('ঢাকা, বাংলাদেশ', 'Dhaka, Bangladesh') }}</li>
+        <li><a href="tel:+8801835314263"><i class="fa-solid fa-phone"></i> +880 1835-314263</a></li>
+        <li><a href="mailto:hello@chashibondhu.com"><i class="fa-solid fa-envelope"></i> hello@chashibondhu.com</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="cb-wrap">
+    <p class="cb-foot-note">© ChashiBondhu. {{ t('এআই-এর উত্তর ভুল হতে পারে। ওষুধ বা সার ব্যবহারের আগে স্থানীয় কৃষি অফিসে জিজ্ঞেস করুন।', 'AI answers can be wrong. Ask your local agriculture office before using any pesticide or fertilizer.') }}</p>
+  </div>
+</footer>
+{% if active != 'ai' and ai_ok %}
+<a class="cb-fab" href="/assistant" aria-label="কৃষি সহকারী / Farm assistant">
+  <span class="cb-fab-ic"><i class="fa-solid fa-seedling"></i></span>
+  <span class="cb-fab-txt">{{ t('সহকারীকে জিজ্ঞেস করুন', 'Ask the assistant') }}</span>
+</a>
+{% endif %}
+<script src="/static/cb.js?v=3"></script>
+{% if role == 'farmer' %}<script src="/static/offline.js?v=1"></script>
+{% else %}<script>/* not a farmer session: remove saved farmer pages from this device (drafts stay, per account) */
+if (window.caches) { caches.keys().then(function (k) { k.forEach(function (n) { if (n.indexOf("cb-pages-") === 0) caches.delete(n); }); }); }
+if ("serviceWorker" in navigator) { navigator.serviceWorker.getRegistrations().then(function (r) { r.forEach(function (x) { x.unregister(); }); }); }</script>{% endif %}
+{% block scripts %}{% endblock %}
+<script>
+/* Dropdown options cannot hold the two language spans, so they carry data-en and swap text with the language. */
+(function () {
+  var d = document.documentElement;
+  function sync() {
+    var en = d.getAttribute("data-lang") === "en";
+    document.querySelectorAll("option[data-en]").forEach(function (o) {
+      if (!o.hasAttribute("data-bn")) o.setAttribute("data-bn", o.textContent);
+      o.textContent = en ? o.getAttribute("data-en") : o.getAttribute("data-bn");
+    });
+  }
+  sync();
+  new MutationObserver(sync).observe(d, { attributes: true, attributeFilter: ["data-lang"] });
+})();
+</script>
+</body>
+</html>

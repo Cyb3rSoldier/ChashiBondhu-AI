@@ -1,0 +1,30 @@
+{% extends "customer/_layout.html" %}
+{% block title %}{{ 'অভিযোগ — চাষীবন্ধু' }}{% endblock %}
+{% set CC = {'order': ('অর্ডার', 'Order'), 'payment': ('টাকা / পেমেন্ট', 'Payment'), 'product': ('পণ্য', 'Product'), 'account': ('অ্যাকাউন্ট', 'Account'), 'website': ('ওয়েবসাইটের সমস্যা', 'Website problem'), 'other': ('অন্যান্য', 'Other')} %}
+{% set CS = {'open': ('জমা হয়েছে', 'Submitted'), 'in_review': ('দেখা হচ্ছে', 'In review'), 'resolved': ('সমাধান হয়েছে', 'Resolved'), 'closed': ('বন্ধ', 'Closed')} %}
+{% block page %}
+<div class="cb-head-row"><h1>{{ t('অভিযোগ', 'Complaints') }}</h1></div>
+<details class="cb-add" {% if errors or not items %}open{% endif %}>
+  <summary><i class="fa-solid fa-plus"></i>{{ t('নতুন অভিযোগ', 'New complaint') }}</summary>
+  {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
+  <form class="cb-form" method="post" action="/customer/complaints" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="category">{{ t('কী নিয়ে অভিযোগ', 'What is it about') }}</label>
+      <select class="cb-select" id="category" name="category" required><option value="">—</option>{% for k in categories %}<option value="{{ k }}" {% if form.category == k %}selected{% endif %}>{{ CC[k][0] }} / {{ CC[k][1] }}</option>{% endfor %}</select></div>
+    <div class="cb-field"><label for="subject">{{ t('বিষয় (ছোট করে)', 'Subject (short)') }}</label><input class="cb-input" id="subject" name="subject" maxlength="120" required value="{{ form.subject or '' }}"></div>
+    <div class="cb-field"><label for="description">{{ t('কী হয়েছে, খুলে লিখুন (অর্ডার নম্বরসহ)', 'What happened (with the order number)') }}</label><textarea class="cb-textarea" id="description" name="description" maxlength="3000" required>{{ form.description or '' }}</textarea></div>
+    <div class="cb-field"><label for="cimage">{{ t('ছবি (ইচ্ছামতো)', 'Photo (optional)') }}</label><input class="cb-input" type="file" id="cimage" name="image" accept="image/*"></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-paper-plane"></i>{{ t('জমা দিন', 'Submit') }}</button>
+  </form>
+</details>
+<div class="cb-cardlist">{% for c in items %}
+  <article class="cb-item"><div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-comment-dots"></i></span>
+    <div><b>{{ c.subject }}</b><small>{{ c.complaint_number }} · {{ t(CC[c.category][0], CC[c.category][1]) }} · {{ (c.created_at|string)[:16] }}</small></div>
+    <span class="cb-badge {{ '' if c.status in ('resolved', 'closed') else 'soil' }}">{{ t(CS[c.status][0], CS[c.status][1]) }}</span></div>
+    <p style="margin:0;white-space:pre-line">{{ c.description }}</p>
+    {% if c.image_path %}<a class="cb-mini" href="/customer/complaints/{{ c.id }}/image" target="_blank" rel="noopener"><i class="fa-solid fa-image"></i>{{ t('ছবি', 'Photo') }}</a>{% endif %}
+    {% if c.admin_response %}<div class="cb-tip"><i class="fa-solid fa-reply"></i><div><b>{{ t('অ্যাডমিনের উত্তর', 'Admin response') }}</b><span style="white-space:pre-line">{{ c.admin_response }}</span></div></div>
+    {% else %}<p class="cb-hint">{{ t('অ্যাডমিন এখনো উত্তর দেননি।', 'No admin response yet.') }}</p>{% endif %}
+  </article>{% endfor %}
+</div>
+{% endblock %}

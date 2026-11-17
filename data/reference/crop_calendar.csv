@@ -1,0 +1,16 @@
+﻿crop_id,variety_scope,activity,start_month,start_day,end_month,end_day,region_scope,source_id,source_locator,status,verified_by,verified_on,notes
+maize,general,sowing,,,,,national,BARI_KPH,,todo,,,
+maize,general,harvest,,,,,national,BARI_KPH,,todo,,,
+potato,general,sowing,11,1,11,30,national,BARI_KPH,p. 26 (KPH 10th ed.),draft,,,book: ১৫ কার্তিক থেকে ১৫ অগ্রহায়ণ (নভেম্বর মাস) আলু লাগানোর উপযুক্ত সময় | activity=sowing means planting seed tubers
+potato,general,harvest,,,,,national,BARI_KPH,,todo,,,
+tomato,general,sowing,,,,,national,BARI_KPH,,todo,,,
+tomato,general,transplanting,,,,,national,BARI_KPH,,todo,,,
+tomato,general,harvest,,,,,national,BARI_KPH,,todo,,,
+mustard,general,sowing,10,15,11,15,national,BARI_KPH,p. 115 (KPH 10th ed.),verified,siyam,2026-11-09,book: কার্তিক মাসের ১ম সপ্তাহ থেকে শেষ সপ্তাহ (মধ্য-অক্টোবর থেকে মধ্য-নভেম্বর) | book says mid-Oct to mid-Nov; 15th used for mid
+mustard,general,harvest,12,24,3,15,national,BARI_KPH,p. 115-116 (KPH 10th ed.),verified,siyam,2026-11-09,book: (derived) বপন সময় + ৭০-১২০ দিনে সংগ্রহ | DERIVED not stated: earliest 15 Oct + 70 days; latest 15 Nov + 120 days
+aman_rice,general,seedbed_sowing,,,,,national,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,transplanting,,,,,national,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,harvest,,,,,national,BRRI_ADHUNIK,,todo,,,
+mustard,BARI Sarisha-19,sowing,10,15,11,30,national,BARI_KPH,p. 114 (KPH 10th ed.),verified,siyam,2026-11-09,book: বপন কাল: ১৫ অক্টোবর থেকে ৩০ নভেম্বর
+mustard,BARI Sarisha-21,sowing,10,15,11,30,national,BARI_KPH,p. 114 (KPH 10th ed.),verified,siyam,2026-11-09,book: জাতটির বপন কাল ১৫ অক্টোবর থেকে ৩০ নভেম্বর
+tomato,general,seedbed_sowing,10,1,11,30,national,BARI_KPH,p. 145 (KPH 10th ed.),draft,,,book: বীজ বপনের সময়: শীতকালে অক্টোবর-নভেম্বর (আশ্বিন-কার্তিক) | CHECK: stated in the hybrid tomato section; confirm it applies to all winter tomato

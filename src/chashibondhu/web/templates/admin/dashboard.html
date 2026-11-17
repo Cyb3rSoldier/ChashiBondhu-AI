@@ -1,0 +1,52 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'অ্যাডমিন — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<h1>{{ t('কমান্ড সেন্টার', 'Command center') }}</h1>
+<p class="cb-hint">{{ t('সব সংখ্যা ডাটাবেসের আসল রেকর্ড থেকে।', 'All numbers come from real database records.') }}</p>
+<section class="cb-stats">
+  <a class="cb-stat" href="/admin/farmers"><i class="fa-solid fa-tractor"></i><b>{{ num(n.farmers_active) }} / {{ num(n.farmers) }}</b><span>{{ t('সক্রিয় / মোট কৃষক', 'Active / all farmers') }}</span></a>
+  <a class="cb-stat" href="/admin/consumers"><i class="fa-solid fa-users"></i><b>{{ num(n.customers_active) }} / {{ num(n.customers) }}</b><span>{{ t('সক্রিয় / মোট ক্রেতা', 'Active / all consumers') }}</span></a>
+  <a class="cb-stat" href="/admin-products?status=active"><i class="fa-solid fa-boxes-stacked"></i><b>{{ num(n.listings_active) }} / {{ num(n.listings) }}</b><span>{{ t('চালু / মোট পণ্য', 'Active / all products') }}</span></a>
+  <a class="cb-stat warn" href="/admin-products?avail=out"><i class="fa-solid fa-box-open"></i><b>{{ num(n.out_of_stock) }}</b><span>{{ t('স্টক শেষ (চালু পণ্য)', 'Out of stock (active)') }}</span></a>
+</section>
+<section class="cb-stats">
+  <div class="cb-stat"><i class="fa-solid fa-receipt"></i><b>{{ num(n.orders) }}</b><span>{{ t('মোট অর্ডার', 'All orders') }}</span></div>
+  <a class="cb-stat warn" href="/admin-orders?status=pending"><i class="fa-solid fa-hourglass-half"></i><b>{{ num(n.orders_open) }}</b><span>{{ t('চলমান', 'Open') }}</span></a>
+  <div class="cb-stat"><i class="fa-solid fa-circle-check"></i><b>{{ num(n.orders_done) }}</b><span>{{ t('ডেলিভারি হয়েছে', 'Delivered') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-ban"></i><b>{{ num(n.orders_cancelled) }}</b><span>{{ t('বাতিল', 'Cancelled') }}</span></div>
+</section>
+<section class="cb-stats">
+  <div class="cb-stat"><i class="fa-solid fa-bangladeshi-taka-sign"></i><b>৳{{ num(n.sales_delivered) }}</b><span>{{ t('বিক্রি (ডেলিভারি হওয়া)', 'Sales (delivered)') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-hand-holding-dollar"></i><b>৳{{ num(n.sales_paid) }}</b><span>{{ t('যার টাকা পাওয়া গেছে', 'Of which paid') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-percent"></i><b>—</b><span>{{ t('প্ল্যাটফর্ম আয়: কমিশন সেট করা নেই', 'Platform revenue: no commission set') }}</span></div>
+  <a class="cb-stat warn" href="/admin-complaints"><i class="fa-solid fa-comment-dots"></i><b>{{ num(n.complaints_open) }}</b><span>{{ t('খোলা অভিযোগ', 'Open complaints') }}</span></a>
+  <a class="cb-stat warn" href="/admin-orders?status=delivered&payment=unpaid"><i class="fa-solid fa-hand-holding-dollar"></i><b>{{ num(n.cod_to_collect) }}</b><span>{{ t('COD টাকা বাকি', 'COD to collect') }}</span></a>
+</section>
+<section class="cb-stats">
+  <a class="cb-stat" href="/admin-products?avail=moderated"><i class="fa-solid fa-shield-halved"></i><b>{{ num(n.moderated) }}</b><span>{{ t('অ্যাডমিন সরানো পণ্য', 'Removed by admin') }}</span></a>
+</section>
+
+<section class="cb-box">
+  <div class="cb-head-row" style="margin:0 0 8px"><h2 style="margin:0">{{ t('প্রবণতা', 'Trends') }}</h2>
+    <nav style="display:flex;gap:6px">{% for k, bn, en in [('7d', '৭ দিন', '7 days'), ('30d', '৩০ দিন', '30 days'), ('12m', '১২ মাস', '12 months')] %}
+      <a class="cb-mini{{ ' main' if span == k }}" href="/admin?span={{ k }}"{% if span == k %} aria-current="true"{% endif %}>{{ t(bn, en) }}</a>{% endfor %}</nav></div>
+  <div class="cb-cols" style="gap:18px">
+    {% for key, bn, en, fmt in [('orders', 'অর্ডার', 'Orders', 'num'), ('sales', 'বিক্রি (ডেলিভারি)', 'Sales (delivered)', 'taka'), ('farmers', 'নতুন কৃষক', 'New farmers', 'num'), ('customers', 'নতুন ক্রেতা', 'New consumers', 'num')] %}
+    <div><h3>{{ t(bn, en) }}</h3>{% with rows=charts[key], fmt=fmt %}{% include "admin/_bars.html" %}{% endwith %}</div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="cb-cols" style="gap:18px">
+  <section class="cb-box"><h2>{{ t('অর্ডারের অবস্থা', 'Order status') }}</h2>
+    {% with rows=charts['status'], fmt='num' %}{% include "admin/_bars.html" %}{% endwith %}</section>
+  <section class="cb-box"><h2>{{ t('চালু পণ্যের ধরন', 'Active products by category') }}</h2>
+    {% with rows=charts['category'], fmt='num' %}{% include "admin/_bars.html" %}{% endwith %}</section>
+  <section class="cb-box"><h2>{{ t('জেলা অনুযায়ী চালু পণ্য', 'Active products by district') }}</h2>
+    {% with rows=charts['district'], fmt='num' %}{% include "admin/_bars.html" %}{% endwith %}</section>
+</div>
+
+<section class="cb-box"><h2>{{ t('সাম্প্রতিক অ্যাডমিন কাজ', 'Recent admin activity') }}</h2>
+  {% if b.recent %}<ul class="cb-list">{% for a in b.recent %}<li class="cb-row"><div><b>{{ a.action }}</b> {% if a.target_type %}· {{ a.target_type }} #{{ a.target_id }}{% endif %}<small>{{ a.actor_name or '—' }} · {{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('এখনো কিছু নেই।', 'Nothing yet.') }}</p>{% endif %}</section>
+{% endblock %}

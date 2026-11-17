@@ -1,0 +1,29 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'লেখা — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<a class="cb-hint" href="/admin-content"><i class="fa-solid fa-arrow-left"></i> {{ t('তালিকা', 'List') }}</a>
+<h1>{{ item.title or t('নতুন লেখা', 'New item') }}{% if item.status %} <small class="cb-pill">{{ item.status }}</small>{% endif %}</h1>
+{% if errors %}<div class="cb-errors" role="alert">{% for e in errors %}<p>{{ t(e[0], e[1]) }}</p>{% endfor %}</div>{% endif %}
+<form class="cb-form cb-box" method="post" action="/admin-content/{{ item.id or 'new' }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save">
+  <div class="cb-row2"><div class="cb-field"><label for="kind">{{ t('ধরন', 'Type') }}</label><select class="cb-select" id="kind" name="kind" required><option value="">—</option>{% for k, v in kinds.items() %}<option value="{{ k }}"{% if item.kind == k %} selected{% endif %} data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+    <div class="cb-field"><label for="title">{{ t('শিরোনাম', 'Title') }}</label><input class="cb-input" id="title" name="title" required minlength="3" maxlength="160" value="{{ item.title or '' }}"></div></div>
+  <div class="cb-field"><label for="summary">{{ t('সংক্ষেপ (ইচ্ছামতো)', 'Summary (optional)') }}</label><input class="cb-input" id="summary" name="summary" maxlength="400" value="{{ item.summary or '' }}"></div>
+  <div class="cb-field"><label for="body">{{ t('লেখা', 'Text') }}</label><textarea class="cb-textarea" id="body" name="body" required minlength="10" maxlength="20000" rows="10">{{ item.body or '' }}</textarea></div>
+  <div class="cb-field"><label for="media_url">{{ t('ভিডিও লিংক (https://, ইচ্ছামতো)', 'Video link (https://, optional)') }}</label><input class="cb-input" id="media_url" name="media_url" type="url" maxlength="500" value="{{ item.media_url or '' }}"></div>
+  <div class="cb-row2"><div class="cb-field"><label for="source_name">{{ t('উৎস (খবরে বাধ্যতামূলক)', 'Source (required for news)') }}</label><input class="cb-input" id="source_name" name="source_name" maxlength="160" value="{{ item.source_name or '' }}"></div>
+    <div class="cb-field"><label for="source_url">{{ t('উৎসের লিংক', 'Source link') }}</label><input class="cb-input" id="source_url" name="source_url" type="url" maxlength="500" value="{{ item.source_url or '' }}"></div></div>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-floppy-disk"></i>{{ t('সংরক্ষণ (খসড়া থাকবে)', 'Save (stays as it is)') }}</button>
+</form>
+{% if item.id and item.status %}
+<section class="cb-box"><h2>{{ t('প্রকাশ', 'Publishing') }}</h2>
+  {% if item.status != 'published' %}
+  <form class="cb-offer" method="post" action="/admin-content/{{ item.id }}" data-confirm-bn="প্রকাশ করবেন? সবাই দেখতে পাবেন।" data-confirm-en="Publish? Everyone will see it."><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="published">
+    <label for="published_at">{{ t('প্রকাশের তারিখ', 'Publication date') }}</label><input class="cb-input" type="date" id="published_at" name="published_at" style="max-width:170px">
+    <button class="cb-btn cb-btn-main">{{ t('প্রকাশ করুন', 'Publish') }}</button></form>{% endif %}
+  <div style="display:flex;gap:8px;margin-top:8px">
+  {% if item.status == 'published' %}<form method="post" action="/admin-content/{{ item.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="draft"><button class="cb-mini">{{ t('প্রকাশ বন্ধ (খসড়া)', 'Unpublish') }}</button></form>
+    <a class="cb-mini" href="/articles/{{ item.id }}">{{ t('পাবলিক পাতা', 'Public page') }}</a>{% endif %}
+  {% if item.status != 'archived' %}<form method="post" action="/admin-content/{{ item.id }}" data-confirm-bn="আর্কাইভ করবেন?" data-confirm-en="Archive?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="archived"><button class="cb-mini danger">{{ t('আর্কাইভ', 'Archive') }}</button></form>{% endif %}
+  </div>
+</section>{% endif %}
+{% endblock %}

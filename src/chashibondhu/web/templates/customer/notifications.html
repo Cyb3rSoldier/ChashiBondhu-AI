@@ -1,0 +1,12 @@
+{% extends "customer/_layout.html" %}
+{% block title %}{{ 'নোটিফিকেশন — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<div class="cb-head-row"><h1>{{ t('নোটিফিকেশন', 'Notifications') }}</h1></div>
+{% if items %}
+<ul class="cb-list">{% for n in items %}
+  <li class="cb-row"><span class="cb-thumb"><i class="fa-solid {{ 'fa-receipt' if n.kind == 'order' else 'fa-bell' }}"></i></span>
+    <div><b>{{ n.title }}{% if not n.read_at %} <span class="cb-badge soil">{{ t('নতুন', 'New') }}</span>{% endif %}</b><small>{{ n.body or '' }} · {{ (n.created_at|string)[:16] }}</small></div>
+    {% if n.link and n.link.startswith('/') %}<a class="cb-mini" href="{{ n.link }}">{{ t('দেখুন', 'Open') }}</a>{% endif %}</li>{% endfor %}
+</ul>
+{% else %}<div class="cb-empty-box"><i class="fa-solid fa-bell"></i>{{ t('কোনো নোটিফিকেশন নেই।', 'No notifications.') }}</div>{% endif %}
+{% endblock %}

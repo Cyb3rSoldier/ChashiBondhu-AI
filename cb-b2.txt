@@ -1,0 +1,407 @@
+buyer_demand_requests.id bigint null=NO def=None
+
+buyer_demand_requests.buyer_id bigint null=NO def=None
+
+buyer_demand_requests.crop_id text null=YES def=None
+
+buyer_demand_requests.product_name text null=NO def=None
+
+buyer_demand_requests.variety text null=YES def=None
+
+buyer_demand_requests.quantity numeric null=NO def=None
+
+buyer_demand_requests.unit text null=NO def=None
+
+buyer_demand_requests.needed_from date null=NO def=None
+
+buyer_demand_requests.needed_to date null=NO def=None
+
+buyer_demand_requests.district_code text null=YES def=None
+
+buyer_demand_requests.upazila_code text null=YES def=None
+
+buyer_demand_requests.note text null=YES def=None
+
+buyer_demand_requests.status text null=NO def='open'::text
+
+buyer_demand_requests.created_at timestamp with time zone null=NO def=now()
+
+buyer_demand_requests.updated_at timestamp with time zone null=NO def=now()
+
+harvest_forecasts.id bigint null=NO def=None
+
+harvest_forecasts.farmer_id bigint null=NO def=None
+
+harvest_forecasts.client_id uuid null=YES def=None
+
+harvest_forecasts.crop_id text null=YES def=None
+
+harvest_forecasts.product_name text null=NO def=None
+
+harvest_forecasts.variety text null=YES def=None
+
+harvest_forecasts.expected_qty numeric null=NO def=None
+
+harvest_forecasts.unit text null=NO def=None
+
+harvest_forecasts.harvest_from date null=NO def=None
+
+harvest_forecasts.harvest_to date null=NO def=None
+
+harvest_forecasts.district_code text null=YES def=None
+
+harvest_forecasts.upazila_code text null=YES def=None
+
+harvest_forecasts.description text null=YES def=None
+
+harvest_forecasts.quality_grade text null=YES def=None
+
+harvest_forecasts.status text null=NO def='open'::text
+
+harvest_forecasts.actual_qty numeric null=YES def=None
+
+harvest_forecasts.actual_harvest_date date null=YES def=None
+
+harvest_forecasts.listing_id bigint null=YES def=None
+
+harvest_forecasts.version integer null=NO def=1
+
+harvest_forecasts.created_at timestamp with time zone null=NO def=now()
+
+harvest_forecasts.updated_at timestamp with time zone null=NO def=now()
+
+harvest_matches.id bigint null=NO def=None
+
+harvest_matches.forecast_id bigint null=NO def=None
+
+harvest_matches.request_id bigint null=NO def=None
+
+harvest_matches.match_qty numeric null=NO def=None
+
+harvest_matches.confirmed_qty numeric null=YES def=None
+
+harvest_matches.status text null=NO def=None
+
+harvest_matches.order_id bigint null=YES def=None
+
+harvest_matches.created_at timestamp with time zone null=NO def=now()
+
+harvest_matches.updated_at timestamp with time zone null=NO def=now()
+
+harvest_forecasts harvest_forecasts_product_name_check: CHECK (((length(product_name) >= 2) AND (length(product_name) <= 120)))
+
+harvest_forecasts harvest_forecasts_variety_check: CHECK ((length(variety) <= 80))
+
+harvest_forecasts harvest_forecasts_expected_qty_check: CHECK ((expected_qty > (0)::numeric))
+
+harvest_forecasts harvest_forecasts_unit_check: CHECK ((unit = ANY (ARRAY['kg'::text, 'gram'::text, 'maund'::text, 'piece'::text, 'dozen'::text, 'litre'::text, 'packet'::text])))
+
+harvest_forecasts harvest_forecasts_district_code_check: CHECK ((district_code ~ '^BD[0-9]{4}$'::text))
+
+harvest_forecasts harvest_forecasts_upazila_code_check: CHECK ((upazila_code ~ '^BD[0-9]{8}$'::text))
+
+harvest_forecasts harvest_forecasts_description_check: CHECK ((length(description) <= 2000))
+
+harvest_forecasts harvest_forecasts_quality_grade_check: CHECK ((length(quality_grade) <= 60))
+
+harvest_forecasts harvest_forecasts_status_check: CHECK ((status = ANY (ARRAY['open'::text, 'harvest_confirmed'::text, 'cancelled'::text, 'expired'::text])))
+
+harvest_forecasts harvest_forecasts_actual_qty_check: CHECK ((actual_qty >= (0)::numeric))
+
+harvest_forecasts harvest_forecasts_check: CHECK ((harvest_to >= harvest_from))
+
+harvest_forecasts harvest_forecasts_check1: CHECK (((status <> 'harvest_confirmed'::text) OR ((actual_qty IS NOT NULL) AND (actual_harvest_date IS NOT NULL))))
+
+harvest_forecasts harvest_forecasts_pkey: PRIMARY KEY (id)
+
+harvest_forecasts harvest_forecasts_farmer_id_client_id_key: UNIQUE (farmer_id, client_id)
+
+harvest_forecasts harvest_forecasts_farmer_id_fkey: FOREIGN KEY (farmer_id) REFERENCES users(id) ON DELETE CASCADE
+
+harvest_forecasts harvest_forecasts_listing_id_fkey: FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE SET NULL
+
+buyer_demand_requests buyer_demand_requests_product_name_check: CHECK (((length(product_name) >= 2) AND (length(product_name) <= 120)))
+
+buyer_demand_requests buyer_demand_requests_variety_check: CHECK ((length(variety) <= 80))
+
+buyer_demand_requests buyer_demand_requests_quantity_check: CHECK ((quantity > (0)::numeric))
+
+buyer_demand_requests buyer_demand_requests_unit_check: CHECK ((unit = ANY (ARRAY['kg'::text, 'gram'::text, 'maund'::text, 'piece'::text, 'dozen'::text, 'litre'::text, 'packet'::text])))
+
+buyer_demand_requests buyer_demand_requests_district_code_check: CHECK ((district_code ~ '^BD[0-9]{4}$'::text))
+
+buyer_demand_requests buyer_demand_requests_upazila_code_check: CHECK ((upazila_code ~ '^BD[0-9]{8}$'::text))
+
+buyer_demand_requests buyer_demand_requests_note_check: CHECK ((length(note) <= 1000))
+
+buyer_demand_requests buyer_demand_requests_status_check: CHECK ((status = ANY (ARRAY['open'::text, 'fulfilled'::text, 'cancelled'::text, 'expired'::text])))
+
+buyer_demand_requests buyer_demand_requests_check: CHECK ((needed_to >= needed_from))
+
+buyer_demand_requests buyer_demand_requests_pkey: PRIMARY KEY (id)
+
+buyer_demand_requests buyer_demand_requests_buyer_id_fkey: FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE
+
+harvest_matches harvest_matches_match_qty_check: CHECK ((match_qty > (0)::numeric))
+
+harvest_matches harvest_matches_confirmed_qty_check: CHECK ((confirmed_qty >= (0)::numeric))
+
+harvest_matches harvest_matches_status_check: CHECK ((status = ANY (ARRAY['buyer_interested'::text, 'farmer_offered'::text, 'agreed'::text, 'declined'::text, 'qty_confirmed'::text, 'converted'::text, 'cancelled'::text, 'expired'::text])))
+
+harvest_matches harvest_matches_pkey: PRIMARY KEY (id)
+
+harvest_matches harvest_matches_forecast_id_request_id_key: UNIQUE (forecast_id, request_id)
+
+harvest_matches harvest_matches_forecast_id_fkey: FOREIGN KEY (forecast_id) REFERENCES harvest_forecasts(id) ON DELETE CASCADE
+
+harvest_matches harvest_matches_request_id_fkey: FOREIGN KEY (request_id) REFERENCES buyer_demand_requests(id) ON DELETE CASCADE
+
+harvest_matches harvest_matches_order_id_fkey: FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
+
+def expire_stale() -> None:
+    """Close what is clearly out of date (cheap; called when lists are opened)."""
+    with connect() as conn:
+        conn.execute("UPDATE harvest_forecasts SET status = 'expired' "
+                     "WHERE status = 'open' AND harvest_to < CURRENT_DATE - 14")
+        conn.execute("UPDATE buyer_demand_requests SET status = 'expired' "
+                     "WHERE status = 'open' AND needed_to < CURRENT_DATE")
+        conn.execute("UPDATE harvest_matches m SET status = 'expired' WHERE m.status IN "
+                     "('buyer_interested', 'farmer_offered', 'agreed') AND EXISTS (SELECT 1 FROM harvest_forecasts f "
+                     "WHERE f.id = m.forecast_id AND f.status = 'expired')")
+
+def create_forecast(farmer_id: int, data: dict, client_id: str | None = None) -> dict:
+    """Idempotent when client_id is given: the same offline draft returns the same forecast."""
+    if client_id:
+        old = fetch_one("SELECT id, version FROM harvest_forecasts WHERE farmer_id = %s AND client_id = %s",
+                        (farmer_id, client_id))
+        if old:
+            return {**old, "duplicate": True}
+    cols = list(FORECAST_FIELDS) + ["farmer_id", "client_id"]
+    vals = [data[k] for k in FORECAST_FIELDS] + [farmer_id, client_id]
+    r = fetch_one(f"INSERT INTO harvest_forecasts ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
+                  "ON CONFLICT (farmer_id, client_id) DO NOTHING RETURNING id, version", tuple(vals))
+    if r is None:        # a parallel retry inserted it first
+        r = fetch_one("SELECT id, version FROM harvest_forecasts WHERE farmer_id = %s AND client_id = %s",
+                      (farmer_id, client_id))
+        return {**r, "duplicate": True}
+    return {**r, "duplicate": False}
+
+def update_forecast(farmer_id: int, forecast_id: int, data: dict, base_version: int | None) -> dict:
+    """Optimistic lock: only updates when the farmer edited the newest version (or base_version is None = force).
+    Returns {"ok": True, "version": n} or {"ok": False, "reason": "not_found"|"closed"|"conflict", "server": row}."""
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM harvest_forecasts WHERE id = %s AND farmer_id = %s FOR UPDATE",
+                           (forecast_id, farmer_id)).fetchone()
+        if not row:
+            return {"ok": False, "reason": "not_found"}
+        if row["status"] != "open":
+            return {"ok": False, "reason": "closed", "server": row}
+        if base_version is not None and int(base_version) != row["version"]:
+            return {"ok": False, "reason": "conflict", "server": row}
+        sets = ", ".join(f"{k} = %s" for k in FORECAST_FIELDS)
+        r = conn.execute(f"UPDATE harvest_forecasts SET {sets}, version = version + 1 WHERE id = %s "
+                         "RETURNING version", tuple([data[k] for k in FORECAST_FIELDS] + [forecast_id])).fetchone()
+        return {"ok": True, "version": r["version"]}
+
+def list_forecasts(farmer_id: int) -> list[dict]:
+    return fetch_all(f"""
+        SELECT f.*,
+          (SELECT count(*) FROM harvest_matches m WHERE m.forecast_id = f.id
+             AND m.status = 'buyer_interested') AS need_response,
+          (SELECT COALESCE(sum(m.match_qty), 0) FROM harvest_matches m WHERE m.forecast_id = f.id
+             AND m.status IN {_ACTIVE_SQL}) AS matched_qty
+        FROM harvest_forecasts f WHERE f.farmer_id = %s
+        ORDER BY f.status <> 'open', f.harvest_from, f.id DESC""", (farmer_id,))
+
+def get_forecast(farmer_id: int, forecast_id: int) -> dict | None:
+    return fetch_one("SELECT * FROM harvest_forecasts WHERE id = %s AND farmer_id = %s", (forecast_id, farmer_id))
+
+def potential_requests(farmer_id: int, forecast_id: int, limit: int = 30) -> list[dict]:
+    """Open buyer requests that fit this open forecast: same crop (or same name), same unit, overlapping dates
+    (7 days slack), compatible variety, quantity still free on both sides. Nearest areas first."""
+    return fetch_all(f"""
+        WITH f AS (
+          SELECT f.*, f.expected_qty - COALESCE((SELECT sum(m.match_qty) FROM harvest_matches m
+                 WHERE m.forecast_id = f.id AND m.status IN {_ACTIVE_SQL}), 0) AS free_qty
+          FROM harvest_forecasts f WHERE f.id = %(fid)s AND f.farmer_id = %(uid)s AND f.status = 'open')
+        SELECT r.id, r.product_name, r.variety, r.unit, r.needed_from, r.needed_to, r.district_code, r.upazila_code,
+               r.note, u.full_name AS buyer_name,
+               LEAST(r.quantity - COALESCE(used.q, 0), f.free_qty) AS possible_qty,
+               r.quantity - COALESCE(used.q, 0) AS request_free_qty,
+               CASE WHEN r.district_code = f.district_code THEN 2
+                    WHEN left(r.district_code, 4) = left(f.district_code, 4) THEN 1 ELSE 0 END AS near
+        FROM f
+        JOIN buyer_demand_requests r ON r.status = 'open' AND r.buyer_id <> f.farmer_id AND r.unit = f.unit
+             AND (r.crop_id = f.crop_id OR lower(r.product_name) = lower(f.product_name))
+             AND r.needed_from <= f.harvest_to + 7 AND r.needed_to >= f.harvest_from - 7
+             AND (r.variety IS NULL OR f.variety IS NULL OR lower(r.variety) = lower(f.variety))
+        JOIN users u ON u.id = r.buyer_id AND u.status = 'active'
+        LEFT JOIN LATERAL (SELECT sum(m.match_qty) AS q FROM harvest_matches m
+                           WHERE m.request_id = r.id AND m.status IN {_ACTIVE_SQL}) used ON TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM harvest_matches x WHERE x.forecast_id = f.id AND x.request_id = r.id)
+          AND LEAST(r.quantity - COALESCE(used.q, 0), f.free_qty) > 0
+        ORDER BY near DESC, abs(r.needed_from - f.harvest_from), r.created_at
+        LIMIT %(lim)s""", {"fid": forecast_id, "uid": farmer_id, "lim": limit})
+
+def forecast_matches(farmer_id: int, forecast_id: int) -> list[dict]:
+    """Match rows of one forecast. Buyer phone only after both sides agreed."""
+    return fetch_all("""
+        SELECT m.*, r.product_name AS request_product, r.needed_from, r.needed_to, r.district_code AS buyer_district,
+               r.quantity AS request_qty, u.full_name AS buyer_name,
+               CASE WHEN m.status IN ('agreed', 'qty_confirmed', 'converted') THEN u.phone END AS buyer_phone,
+               o.order_number
+        FROM harvest_matches m JOIN harvest_forecasts f ON f.id = m.forecast_id
+        JOIN buyer_demand_requests r ON r.id = m.request_id JOIN users u ON u.id = r.buyer_id
+        LEFT JOIN orders o ON o.id = m.order_id
+        WHERE f.id = %s AND f.farmer_id = %s ORDER BY m.created_at""", (forecast_id, farmer_id))
+
+def _open_match(conn, forecast_id: int, request_id: int, qty, status: str) -> str:
+    """Shared by farmer offer + buyer interest. Locks both rows, checks free quantity, never double-books."""
+    f = conn.execute("SELECT id, status, unit FROM harvest_forecasts WHERE id = %s FOR UPDATE",
+                     (forecast_id,)).fetchone()
+    r = conn.execute("SELECT id, status, unit FROM buyer_demand_requests WHERE id = %s FOR UPDATE",
+                     (request_id,)).fetchone()
+    if not f or not r:
+        return "not_found"
+    if f["status"] != "open" or r["status"] != "open":
+        return "closed"
+    if f["unit"] != r["unit"]:
+        return "unit_mismatch"
+    if conn.execute("SELECT 1 FROM harvest_matches WHERE forecast_id = %s AND request_id = %s",
+                    (forecast_id, request_id)).fetchone():
+        return "exists"
+    free_f, free_r = _free_qty(conn, forecast_id, request_id)
+    if qty <= 0 or qty > free_f or qty > free_r:
+        return "too_much"
+    conn.execute("INSERT INTO harvest_matches (forecast_id, request_id, match_qty, status) VALUES (%s, %s, %s, %s)",
+                 (forecast_id, request_id, qty, status))
+    return "ok"
+
+def farmer_offer(farmer_id: int, forecast_id: int, request_id: int, qty) -> str:
+    with connect() as conn:
+        own = conn.execute("SELECT 1 FROM harvest_forecasts WHERE id = %s AND farmer_id = %s",
+                           (forecast_id, farmer_id)).fetchone()
+        if not own:
+            return "not_found"
+        mine = conn.execute("SELECT 1 FROM buyer_demand_requests WHERE id = %s AND buyer_id = %s",
+                            (request_id, farmer_id)).fetchone()
+        if mine:
+            return "not_found"
+        return _open_match(conn, forecast_id, request_id, qty, "farmer_offered")
+
+def cancel_forecast(farmer_id: int, forecast_id: int) -> str:
+    with connect() as conn:
+        f = conn.execute("SELECT status FROM harvest_forecasts WHERE id = %s AND farmer_id = %s FOR UPDATE",
+                         (forecast_id, farmer_id)).fetchone()
+        if not f:
+            return "not_found"
+        if f["status"] != "open":
+            return "closed"
+        conn.execute("UPDATE harvest_forecasts SET status = 'cancelled', version = version + 1 WHERE id = %s",
+                     (forecast_id,))
+        conn.execute("UPDATE harvest_matches SET status = 'cancelled' WHERE forecast_id = %s "
+                     "AND status IN ('buyer_interested', 'farmer_offered', 'agreed')", (forecast_id,))
+        return "ok"
+
+def confirm_harvest(farmer_id: int, forecast_id: int, actual_qty, harvest_date, listing: dict) -> dict:
+    """One transaction: forecast -> harvest_confirmed, a real 'available' listing with the ACTUAL quantity,
+    agreed matches get confirmed quantities in the order they were agreed (until the harvest runs out);
+    agreed matches that do not fit are cancelled; unanswered interest/offers expire."""
+    with connect() as conn:
+        f = conn.execute("SELECT * FROM harvest_forecasts WHERE id = %s AND farmer_id = %s FOR UPDATE",
+                         (forecast_id, farmer_id)).fetchone()
+        if not f:
+            return {"ok": False, "reason": "not_found"}
+        if f["status"] != "open":
+            return {"ok": False, "reason": "closed"}
+        lst = None
+        if actual_qty > 0:
+            cols = ["farmer_id", "listing_type", "crop_id", "title", "category", "description", "unit",
+                    "price_per_unit", "quantity", "min_order", "is_organic", "farming_method", "harvest_date",
+                    "district_code", "upazila_code", "status"]
+            vals = [farmer_id, "available", f["crop_id"], listing["title"], listing["category"],
+                    listing.get("description") or f["description"], f["unit"], listing["price_per_unit"],
+                    actual_qty, listing.get("min_order") or 1, listing["farming_method"] == "organic",
+                    listing["farming_method"], harvest_date, f["district_code"], f["upazila_code"], "active"]
+            lst = conn.execute(f"INSERT INTO listings ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
+                               "RETURNING id", tuple(vals)).fetchone()
+        conn.execute("UPDATE harvest_forecasts SET status = 'harvest_confirmed', actual_qty = %s, "
+                     "actual_harvest_date = %s, listing_id = %s, version = version + 1 WHERE id = %s",
+                     (actual_qty, harvest_date, lst["id"] if lst else None, forecast_id))
+        left = actual_qty
+        agreed = conn.execute("SELECT id, match_qty FROM harvest_matches WHERE forecast_id = %s AND status = 'agreed' "
+                              "ORDER BY updated_at, id FOR UPDATE", (forecast_id,)).fetchall()
+        confirmed = 0
+        for m in agreed:
+            give = min(m["match_qty"], left)
+            if give > 0:
+                conn.execute("UPDATE harvest_matches SET status = 'qty_confirmed', confirmed_qty = %s WHERE id = %s",
+                             (give, m["id"]))
+                left -= give
+                confirmed += 1
+            else:
+                conn.execute("UPDATE harvest_matches SET status = 'cancelled', confirmed_qty = 0 WHERE id = %s",
+                             (m["id"],))
+        conn.execute("UPDATE harvest_matches SET status = 'expired' WHERE forecast_id = %s "
+                     "AND status IN ('buyer_interested', 'farmer_offered')", (forecast_id,))
+        return {"ok": True, "listing_id": lst["id"] if lst else None, "confirmed_matches": confirmed}
+
+def create_request(buyer_id: int, data: dict) -> int:
+    cols = list(REQUEST_FIELDS) + ["buyer_id"]
+    r = fetch_one(f"INSERT INTO buyer_demand_requests ({', '.join(cols)}) VALUES ({', '.join(['%s'] * len(cols))}) "
+                  "RETURNING id", tuple([data[k] for k in REQUEST_FIELDS] + [buyer_id]))
+    return int(r["id"])
+
+def list_requests(buyer_id: int) -> list[dict]:
+    return fetch_all("SELECT * FROM buyer_demand_requests WHERE buyer_id = %s "
+                     "ORDER BY status <> 'open', needed_from, id DESC", (buyer_id,))
+
+def cancel_request(buyer_id: int, request_id: int) -> str:
+    with connect() as conn:
+        r = conn.execute("SELECT status FROM buyer_demand_requests WHERE id = %s AND buyer_id = %s FOR UPDATE",
+                         (request_id, buyer_id)).fetchone()
+        if not r:
+            return "not_found"
+        if r["status"] != "open":
+            return "closed"
+        conn.execute("UPDATE buyer_demand_requests SET status = 'cancelled' WHERE id = %s", (request_id,))
+        conn.execute("UPDATE harvest_matches SET status = 'cancelled' WHERE request_id = %s "
+                     "AND status IN ('buyer_interested', 'farmer_offered', 'agreed')", (request_id,))
+        return "ok"
+
+def potential_forecasts(buyer_id: int, request_id: int, limit: int = 30) -> list[dict]:
+    """Open forecasts that fit an open request (same rules as potential_requests, mirrored)."""
+    return fetch_all(f"""
+        WITH r AS (
+          SELECT r.*, r.quantity - COALESCE((SELECT sum(m.match_qty) FROM harvest_matches m
+                 WHERE m.request_id = r.id AND m.status IN {_ACTIVE_SQL}), 0) AS free_qty
+          FROM buyer_demand_requests r WHERE r.id = %(rid)s AND r.buyer_id = %(uid)s AND r.status = 'open')
+        SELECT f.id, f.product_name, f.variety, f.unit, f.harvest_from, f.harvest_to, f.district_code,
+               f.upazila_code, f.quality_grade, f.expected_qty, u.full_name AS farmer_name,
+               LEAST(f.expected_qty - COALESCE(used.q, 0), r.free_qty) AS possible_qty,
+               CASE WHEN f.district_code = r.district_code THEN 2
+                    WHEN left(f.district_code, 4) = left(r.district_code, 4) THEN 1 ELSE 0 END AS near
+        FROM r
+        JOIN harvest_forecasts f ON f.status = 'open' AND f.farmer_id <> r.buyer_id AND f.unit = r.unit
+             AND (f.crop_id = r.crop_id OR lower(f.product_name) = lower(r.product_name))
+             AND r.needed_from <= f.harvest_to + 7 AND r.needed_to >= f.harvest_from - 7
+             AND (r.variety IS NULL OR f.variety IS NULL OR lower(r.variety) = lower(f.variety))
+        JOIN users u ON u.id = f.farmer_id AND u.status = 'active'
+        LEFT JOIN LATERAL (SELECT sum(m.match_qty) AS q FROM harvest_matches m
+                           WHERE m.forecast_id = f.id AND m.status IN {_ACTIVE_SQL}) used ON TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM harvest_matches x WHERE x.forecast_id = f.id AND x.request_id = r.id)
+          AND LEAST(f.expected_qty - COALESCE(used.q, 0), r.free_qty) > 0
+        ORDER BY near DESC, abs(r.needed_from - f.harvest_from), f.created_at
+        LIMIT %(lim)s""", {"rid": request_id, "uid": buyer_id, "lim": limit})
+
+def request_matches(buyer_id: int, request_id: int) -> list[dict]:
+    """Match rows of one request. Farmer phone only after both sides agreed."""
+    return fetch_all("""
+        SELECT m.*, f.product_name AS forecast_product, f.harvest_from, f.harvest_to, f.district_code AS farmer_district,
+               f.expected_qty, f.actual_qty, f.status AS forecast_status, f.listing_id, u.full_name AS farmer_name,
+               CASE WHEN m.status IN ('agreed', 'qty_confirmed', 'converted') THEN u.phone END AS farmer_phone,
+               o.order_number
+        FROM harvest_matches m JOIN buyer_demand_requests r ON r.id = m.request_id
+        JOIN harvest_forecasts f ON f.id = m.forecast_id JOIN users u ON u.id = f.farmer_id
+        LEFT JOIN orders o ON o.id = m.order_id
+        WHERE r.id = %s AND r.buyer_id = %s ORDER BY m.created_at""", (request_id, buyer_id))

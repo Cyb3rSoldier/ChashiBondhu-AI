@@ -1,0 +1,10 @@
+{# Farmer area: sidebar (desktop) / scrolling menu (phone) + page. Child pages fill `farmer_content`. #}
+{% extends "base.html" %}
+{% block content %}
+<div class="cb-wrap cb-fdash">
+  {% include "farmer/_sidebar.html" %}
+  <div class="cb-fmain">
+    {% block farmer_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "customer/_layout.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'কেনাকাটা সহায়ক — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<h1><i class="fa-solid fa-wand-magic-sparkles"></i> {{ t('কেনাকাটা সহায়ক', 'Shopping helper') }}</h1>
+<p class="cb-sub">{{ t('কী কিনতে চান লিখুন। সহায়ক শুধু এখন বাজারে থাকা আসল পণ্য থেকে বেছে দেয়। এটি কখনো নিজে অর্ডার করে না — কার্টে যোগ আপনি নিজে করবেন।', 'Write what you want to buy. The helper chooses only from real products in the market now. It never orders by itself — you add to cart yourself.') }}</p>
+
+<form class="cb-form cb-box" method="post" action="/shop-assistant" style="padding:14px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="question" class="cb-label">{{ t('আপনার প্রশ্ন', 'Your question') }}</label>
+  <textarea class="cb-textarea" id="question" name="question" maxlength="300" required rows="2" placeholder="৫ কেজি আলু কম দামে, জৈব হলে ভালো">{{ q or '' }}</textarea>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজে দিন', 'Find for me') }}</button>
+</form>
+
+{% if error %}<div class="cb-errors" role="alert"><p>{{ t(error[0], error[1]) }}</p></div>{% endif %}
+
+{% if result is defined %}
+<section class="cb-box" aria-live="polite" style="margin-top:16px">
+  {% if result.mode == 'off_topic' %}
+    <p>{{ t('এই সহায়ক শুধু কেনাকাটায় সাহায্য করে। চাষের প্রশ্নের জন্য কৃষি অফিসে যোগাযোগ করুন।', 'This helper only helps with shopping. For farming questions, please contact the local agriculture office.') }}</p>
+  {% elif result.mode == 'none' %}
+    {% if no_text %}<p>{{ t('কোন পণ্য চান তার নাম লিখুন (যেমন: আলু, পেঁয়াজ, টমেটো)।', 'Please write the product name (for example: potato, onion, tomato).') }}</p>
+    {% else %}<p>{{ t('এখন বাজারে এর সাথে মেলে এমন কোনো পণ্য নেই।', 'No product in the market matches this right now.') }}</p>
+    <p class="cb-hint">{{ t('আগাম চাহিদা দিলে কৃষকের আগাম ফসলের সাথে মিলিয়ে দেখানো হবে।', 'Add a demand request and we will match it with farmers\' upcoming harvests.') }} <a href="/requests">{{ t('আগাম চাহিদা দিন', 'Add a demand request') }}</a></p>{% endif %}
+  {% else %}
+    {% if result.mode == 'ai' and result.intro %}<p>{{ result.intro }}</p>{% endif %}
+    {% if result.mode == 'plain' %}<p class="cb-hint">{{ t('এখন AI উত্তর পাওয়া যাচ্ছে না, তাই আসল পণ্যগুলো দাম অনুযায়ী সাজিয়ে দেখানো হলো।', 'AI is not available right now, so real products are shown sorted by price.') }}</p>{% endif %}
+    {% if organic_dropped %}<p class="cb-hint">{{ t('জৈব পণ্য পাওয়া যায়নি, তাই সাধারণ পণ্য দেখানো হলো।', 'No organic product found, so regular products are shown.') }}</p>{% endif %}
+    <ul class="cb-list">
+      {% for pk in result.picks %}{% set r = pk.row %}{% set U = L.UN.get(r.unit, (r.unit, r.unit)) %}
+      <li class="cb-row cb-row-wrap">
+        {% if r.image_path %}<img class="cb-thumb" src="{{ r.image_path }}" alt="" style="object-fit:cover">{% else %}<span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+        <div><b><a href="/market/{{ r.id }}">{{ r.title }}</a></b>
+          <small>৳{{ num(r.price_now) }} / {{ t(U[0], U[1]) }}{% if r.discount_price %} <s>৳{{ num(r.price_per_unit) }}</s>{% endif %}{% if r.base_price and r.unit != r.base %} · ৳{{ num(r.base_price, 2) }} / {{ r.base }}{% endif %}
+            · {{ r.farmer_name }}{% if r.farming_method == 'organic' %} · {{ t('জৈব (কৃষকের দেওয়া তথ্য)', 'Organic (stated by farmer)') }}{% endif %}</small>
+          <small>{% if r.listing_type == 'expected' %}{{ t('আগাম ফসল — এখন কেনা যায় না', 'Pre-harvest — not for sale yet') }}
+            {% elif not r.buyable %}{{ t('স্টক শেষ', 'Out of stock') }}
+            {% else %}{{ t('আছে', 'In stock') }} {{ num(r.quantity) }} · {{ t('সর্বনিম্ন', 'Min') }} {{ num(r.min_order) }}{% if not r.enough %} · <span class="cb-bad-text">{{ t('আপনি যত চান তত নেই', 'Less than you asked for') }}</span>{% endif %}{% endif %}</small>
+          {% if pk.why %}<small><i class="fa-solid fa-wand-magic-sparkles"></i> {{ pk.why }}</small>{% endif %}</div>
+        {% if r.buyable %}
+        <form method="post" action="/cart/add" class="cb-offer"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ r.id }}">
+          <label class="cb-sr" for="q{{ r.id }}">{{ t('পরিমাণ', 'Quantity') }}</label>
+          <input class="cb-input" id="q{{ r.id }}" name="qty" inputmode="decimal" value="{{ r.cart_qty|float|round(2) }}" style="max-width:100px;min-height:42px">
+          <button class="cb-mini main"><i class="fa-solid fa-cart-plus"></i>{{ t('কার্টে যোগ', 'Add to cart') }}</button></form>
+        {% endif %}
+      </li>{% endfor %}
+    </ul>
+    <p class="cb-hint" style="margin-top:8px">{{ t('দাম ও স্টক অর্ডারের সময় আবার যাচাই হবে।', 'Price and stock are checked again at checkout.') }}{% if result.mode == 'ai' %} {{ t('ব্যাখ্যা AI লিখেছে; পণ্য ও দাম বাজার থেকে নেওয়া।', 'The explanation is written by AI; products and prices come from the market.') }}{% endif %}</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

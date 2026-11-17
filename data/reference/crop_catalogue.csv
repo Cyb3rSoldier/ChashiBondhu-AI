@@ -1,0 +1,11 @@
+﻿crop_id,name_en,name_bn,scientific_name,crop_group,season_systems,aliases_bn,aliases_latin,initial_ml_model,source_id,source_locator,status,verified_by,verified_on,notes
+aman_rice,Aman Rice,আমন ধান,Oryza sativa,cereal,kharif2,আমন,aman|aman dhan,true,BRRI_ADHUNIK,,draft,,,
+boro_rice,Boro Rice,বোরো ধান,Oryza sativa,cereal,rabi,বোরো,boro|boro dhan,false,BRRI_ADHUNIK,,draft,,,
+maize,Maize,ভুট্টা,Zea mays,cereal,rabi|kharif1,ভূট্টা,bhutta|vutta|corn,true,BARI_KPH,,draft,,,
+potato,Potato,আলু,Solanum tuberosum,tuber,rabi,গোল আলু,alu|aloo,true,BARI_KPH,,draft,,,
+tomato,Tomato,টমেটো,Solanum lycopersicum,vegetable,rabi|kharif1,টমাটো,tometo|tamato,true,BARI_KPH,,draft,,,
+mustard,Mustard,সরিষা,Brassica spp. (rapa/juncea/napus; varies by variety),oilseed,rabi,সরষে|সর্ষে,sorisha|shorisha|sorshe,true,BARI_KPH,,draft,,,
+mung_bean,Mung Bean,মুগ ডাল,Vigna radiata,pulse,kharif1|rabi,মুগ|মুগডাল,mug|mug dal|moong,false,BARI_KPH,,draft,,,
+lentil,Lentil,মসুর ডাল,Lens culinaris,pulse,rabi,মসুর|মশুর,mosur|masur|moshur,false,BARI_KPH,,draft,,,
+onion,Onion,পেঁয়াজ,Allium cepa,spice,rabi|kharif1,পিঁয়াজ|পিয়াজ,peyaj|piyaj|peyaz,false,BARI_KPH,,draft,,,
+watermelon,Watermelon,তরমুজ,Citrullus lanatus,fruit_vegetable,kharif1,তরমুজ,tormuj|tarmuj,false,BARI_KPH,,draft,,,

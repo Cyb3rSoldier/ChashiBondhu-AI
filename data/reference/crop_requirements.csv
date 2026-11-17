@@ -1,0 +1,52 @@
+﻿crop_id,variety_scope,parameter,unit,min,opt_min,opt_max,max,value_text,source_id,source_locator,status,verified_by,verified_on,notes
+maize,general,air_temp_c,degC,,,,,,BARI_KPH,,todo,,,
+maize,general,soil_ph,pH,,,,,,BARI_KPH,,todo,,,
+maize,general,season_rain_mm,mm,,,,,,BARI_KPH,,todo,,,
+maize,general,crop_duration_days,days,,,,,,BARI_KPH,,todo,,,
+maize,general,water_regime,category,,,,,,BARI_KPH,,todo,,,
+maize,general,land_type,category,,,,,,BARI_KPH,,todo,,,
+maize,general,soil_texture,category,,,,,,BARI_KPH,,todo,,,
+potato,general,air_temp_c,degC,,,,,,BARI_KPH,,todo,,,
+potato,general,soil_ph,pH,,,,,,BARI_KPH,,todo,,,
+potato,general,season_rain_mm,mm,,,,,,BARI_KPH,,todo,,,
+potato,general,crop_duration_days,days,,,,,,BARI_KPH,,todo,,,
+potato,general,water_regime,category,,,,,irrigated,BARI_KPH,p. 27 (KPH 10th ed.),draft,,,book: ২-৩টি সেচ প্রয়োগ করা প্রয়োজন হতে পারে
+potato,general,land_type,category,,,,,highland|medium_highland,BARI_KPH,p. 25 (KPH 10th ed.),draft,,,book: উঁচু থেকে মাঝারী উঁচু জমি যেখানে সেচ ও নিষ্কাশনের সুব্যবস্থা আছে
+potato,general,soil_texture,category,,,,,sandy_loam|loam,BARI_KPH,p. 25 (KPH 10th ed.),draft,,,book: বেলে দো-আঁশ থেকে দো-আঁশ মাটি আলু চাষের জন্য উত্তম | book: potato can grow on any soil; these are best
+tomato,general,air_temp_c,degC,,20,25,,,BARI_KPH,p. 142 (KPH 10th ed.),draft,,,book: গড় তাপমাত্রা ২০-২৫° সে. টমেটোর ভাল ফলনের জন্য সবচেয়ে উপযোগী | also: night temperature below 23 C is better for flowering and fruit set
+tomato,general,soil_ph,pH,,6,7,,,BARI_KPH,p. 142 (KPH 10th ed.),draft,,,book: মাটির পিএইচ ৬-৭ হলে ভাল হয় | book: below 6 apply lime
+tomato,general,season_rain_mm,mm,,,,,,BARI_KPH,,todo,,,
+tomato,general,crop_duration_days,days,,,,,,BARI_KPH,,todo,,,
+tomato,general,water_regime,category,,,,,irrigated,BARI_KPH,p. 143 (KPH 10th ed.),draft,,,book: প্রতি কিস্তি সার প্রয়োগের পর জমিতে সেচ দিতে হয় | does not tolerate waterlogging
+tomato,general,land_type,category,,,,,,BARI_KPH,,todo,,,
+tomato,general,soil_texture,category,,,,,sandy_loam|loam|clay_loam,BARI_KPH,p. 142 (KPH 10th ed.),draft,,,book: দোআঁশ মাটি সবচেয়ে ভাল; বেলে দোআঁশ থেকে এঁটেল দোআঁশ সব মাটিতেই ভাল জন্মে | loam is best
+mustard,general,air_temp_c,degC,,,,,,BARI_KPH,,todo,,,
+mustard,general,soil_ph,pH,,,,,,BARI_KPH,,todo,,,
+mustard,general,season_rain_mm,mm,,,,,,BARI_KPH,,todo,,,
+mustard,general,crop_duration_days,days,,,,,,BARI_KPH,,todo,,,
+mustard,general,water_regime,category,,,,,supplementary_irrigation,BARI_KPH,p. 116 (KPH 10th ed.),verified,siyam,2026-11-09,book: উফশী জাতসমূহে পানি সেচ দিলে ফলন বেশি হয় | mapping is our interpretation: 2 irrigations at 20-25 and 50-55 days raise yield
+mustard,general,land_type,category,,,,,,BARI_KPH,,todo,,,
+mustard,general,soil_texture,category,,,,,sandy_loam|loam,BARI_KPH,p. 115 (KPH 10th ed.),verified,siyam,2026-11-09,book: সরিষা বেলে দোআঁশ ও দোআঁশ মাটিতে ভালো জন্মে
+aman_rice,general,air_temp_c,degC,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,soil_ph,pH,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,season_rain_mm,mm,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,crop_duration_days,days,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,water_regime,category,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,land_type,category,,,,,,BRRI_ADHUNIK,,todo,,,
+aman_rice,general,soil_texture,category,,,,,,BRRI_ADHUNIK,,todo,,,
+mustard,tori_type,crop_duration_days,days,70,,,90,,BARI_KPH,p. 116 (KPH 10th ed.),verified,siyam,2026-11-09,book: টরি জাতীয় সরিষা ৭০-৯০ দিনের মধ্যে সংগ্রহ
+mustard,rai_type,crop_duration_days,days,90,,,120,,BARI_KPH,p. 116 (KPH 10th ed.),verified,siyam,2026-11-09,book: রাই জাতীয় সরিষা ৯০-১২০ দিনের মধ্যে সংগ্রহ
+mustard,Tori-7,crop_duration_days,days,70,,,80,,BARI_KPH,p. 110 (KPH 10th ed.),verified,siyam,2026-11-09,book: বোনা থেকে পাকা পর্যন্ত ৭০-৮০ দিন
+mustard,BARI Sarisha-11,crop_duration_days,days,105,,,110,,BARI_KPH,p. 111 (KPH 10th ed.),verified,siyam,2026-11-09,book: ফসল ১০৫-১১০ দিনে পাকে
+mustard,BARI Sarisha-12,crop_duration_days,days,85,,,90,,BARI_KPH,p. 111 (KPH 10th ed.),verified,siyam,2026-11-09,book: ফসল ৮৫-৯০ দিনে পাকে
+mustard,BARI Sarisha-13,crop_duration_days,days,90,,,95,,BARI_KPH,p. 111 (KPH 10th ed.),verified,siyam,2026-11-09,book: ফসল ৯০-৯৫ দিনে পাকে
+mustard,BARI Sarisha-14,crop_duration_days,days,75,,,80,,BARI_KPH,p. 112 (KPH 10th ed.),verified,siyam,2026-11-09,book: স্থিতিকাল ৭৫-৮০ দিন | short duration: T.Aman-mustard-Boro pattern
+mustard,BARI Sarisha-15,crop_duration_days,days,80,,,85,,BARI_KPH,p. 112 (KPH 10th ed.),verified,siyam,2026-11-09,book: স্থিতিকাল ৮০-৮৫ দিন | short duration: T.Aman-mustard-Boro pattern
+mustard,BARI Sarisha-16,crop_duration_days,days,105,,,115,,BARI_KPH,p. 113 (KPH 10th ed.),verified,siyam,2026-11-09,book: স্থিতিকাল ১০৫-১১৫ দিন | late variety; drought and salinity tolerant
+mustard,BARI Sarisha-17,crop_duration_days,days,82,,,86,,BARI_KPH,p. 113 (KPH 10th ed.),verified,siyam,2026-11-09,book: স্থিতিকাল ৮২-৮৬ দিন | short duration: T.Aman-mustard-Boro pattern
+mustard,BARI Sarisha-18,crop_duration_days,days,95,,,100,,BARI_KPH,p. 113 (KPH 10th ed.),verified,siyam,2026-11-09,book: বপন হতে কর্তন পর্যন্ত ৯৫-১০০ দিন | canola type
+mustard,BARI Sarisha-19,crop_duration_days,days,90,,,105,,BARI_KPH,p. 113 (KPH 10th ed.),verified,siyam,2026-11-09,book: জীবনকাল ৯০-১০৫ দিন | salinity tolerant
+mustard,BARI Sarisha-20,crop_duration_days,days,80,,,85,,BARI_KPH,p. 114 (KPH 10th ed.),verified,siyam,2026-11-09,book: জীবনকাল ৮০-৮৫ দিন | short duration: T.Aman-mustard-Boro pattern
+mustard,BARI Sarisha-21,crop_duration_days,days,95,,,110,,BARI_KPH,p. 114 (KPH 10th ed.),verified,siyam,2026-11-09,book: জীবনকাল ৯৫-১১০ দিন | released 2024
+mustard,BARI Sarisha-22,crop_duration_days,days,84,,,85,,BARI_KPH,p. 114 (KPH 10th ed.),verified,siyam,2026-11-09,book: জীবনকাল ৮৪-৮৫ দিন | released 2025
+mustard,BARI Sarisha-23,crop_duration_days,days,88,,,90,,BARI_KPH,p. 115 (KPH 10th ed.),verified,siyam,2026-11-09,book: জীবনকাল ৮৮-৯০ দিন | released 2025

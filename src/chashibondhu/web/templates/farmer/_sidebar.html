@@ -1,0 +1,23 @@
+{% set MENU = [
+  ('dash', '/farmer', 'fa-gauge', 'সারসংক্ষেপ', 'Overview'),
+  ('add', '/farmer/listings/new', 'fa-circle-plus', 'পণ্য যোগ করুন', 'Add product'),
+  ('listings', '/farmer/listings', 'fa-store', 'আমার পণ্য', 'My products'),
+  ('forecasts', '/farmer/forecasts', 'fa-handshake', 'আগাম ফসল ও ক্রেতা', 'Harvest & buyers'),
+  ('orders', '/farmer/orders', 'fa-receipt', 'অর্ডার দেখুন', 'View orders'),
+  ('earnings', '/farmer/earnings', 'fa-sack-dollar', 'আয়ের হিসাব', 'Earnings report'),
+  ('prices', '/farmer/prices', 'fa-chart-line', 'বাজার দর', 'Market price'),
+  ('ai', '/assistant', 'fa-seedling', 'কৃষি সহকারী (এআই)', 'AI assistance'),
+  ('farm', '/farmer/farm', 'fa-wheat-awn', 'জমি ও ফসল', 'Land & crops'),
+  ('tips', '/farmer/tips', 'fa-lightbulb', 'কৃষকের পরামর্শ', 'Farmers tips'),
+  ('complaints', '/farmer/complaints', 'fa-comment-dots', 'অভিযোগ বাক্স', 'Complaint box'),
+  ('drafts', '/farmer/drafts', 'fa-mobile-screen', 'ফোনে রাখা খসড়া', 'Saved on phone'),
+  ('profile', '/farmer/profile', 'fa-gear', 'সেটিংস', 'Settings'),
+] %}
+<nav class="cb-side" aria-label="farmer menu">
+  <ul>
+    {% for key, href, icon, bn, en in MENU %}
+    <li><a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}><i class="fa-solid {{ icon }}"></i>{{ t(bn, en) }}</a></li>
+    {% endfor %}
+    <li class="cb-side-out"><form class="cb-logout" method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit"><i class="fa-solid fa-right-from-bracket"></i>{{ t('লগআউট', 'Log out') }}</button></form></li>
+  </ul>
+</nav>

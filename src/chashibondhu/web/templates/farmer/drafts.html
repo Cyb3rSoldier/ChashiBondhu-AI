@@ -1,0 +1,11 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'ফোনে রাখা খসড়া — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('ফোনে রাখা খসড়া', 'Saved on phone') }}</h1>
+  <button class="cb-btn cb-btn-main" type="button" data-sync-now><i class="fa-solid fa-rotate"></i>{{ t('এখনই পাঠান', 'Sync now') }}</button></div>
+<p class="cb-sub">{{ t('ইন্টারনেট না থাকলে পণ্য ও আগাম ফসলের তথ্য এই ফোনে রাখা হয়। ইন্টারনেট ফিরলে নিজে থেকেই পাঠানো হয়। সার্ভার নিশ্চিত না করা পর্যন্ত "পাঠানো হয়েছে" দেখাবে না।', 'Without internet, products and harvest forecasts are kept on this phone and sent automatically when internet returns. "Synced" shows only after the server confirms.') }}</p>
+<div data-drafts-list aria-live="polite">
+  <div class="cb-empty-box" data-drafts-empty><i class="fa-solid fa-mobile-screen"></i>{{ t('এই ফোনে কোনো খসড়া নেই।', 'No drafts on this phone.') }}</div>
+</div>
+<p class="cb-hint" style="margin-top:14px">{{ t('অর্ডার নিশ্চিত করা, টাকা, বাজারের স্টক আর এআই — এগুলোর জন্য ইন্টারনেট লাগবে।', 'Confirming orders, payments, market stock and the AI need internet.') }}</p>
+{% endblock %}

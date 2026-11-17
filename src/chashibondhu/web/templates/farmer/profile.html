@@ -1,0 +1,75 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'সেটিংস — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('সেটিংস', 'Settings') }}</h1></div>
+
+<section class="cb-box cb-set">
+  <h2>{{ t('প্রোফাইল ছবি', 'Profile photo') }}</h2>
+  <div class="cb-item-top">
+    <div class="cb-avatar">{% if p.avatar_path %}<img src="{{ p.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+    <form class="cb-form" method="post" action="/farmer/settings/avatar" enctype="multipart/form-data" style="flex:1">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input class="cb-input" type="file" name="image" accept="image/*" aria-label="ছবি / Photo">
+      <div class="cb-item-actions">
+        <button class="cb-mini main" type="submit"><i class="fa-solid fa-upload"></i>{{ t('ছবি সংরক্ষণ', 'Save photo') }}</button>
+        {% if p.avatar_path %}<button class="cb-mini danger" type="submit" name="remove" value="1">{{ t('ছবি সরান', 'Remove photo') }}</button>{% endif %}
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="cb-box cb-set">
+  <h2>{{ t('আমার তথ্য', 'My details') }}</h2>
+  <form class="cb-form" method="post" action="/farmer/profile">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label>
+      <input class="cb-input" id="full_name" name="full_name" required maxlength="100" value="{{ p.full_name or '' }}"></div>
+    {% with code=p.upazila_code, label=p.upazila_code %}{% include "_upazila_picker.html" %}{% endwith %}
+    <div class="cb-field"><label for="address">{{ t('ঠিকানা (গ্রাম/মহল্লা, ইউনিয়ন)', 'Address (village, union)') }}</label>
+      <textarea class="cb-textarea" id="address" name="address" maxlength="300">{{ p.address or '' }}</textarea></div>
+    <div class="cb-field"><label for="land_decimal">{{ t('মোট জমি (শতাংশ)', 'Total land (decimal)') }}</label>
+      <input class="cb-input" id="land_decimal" name="land_decimal" inputmode="decimal" value="{{ p.land_decimal if p.land_decimal is not none else '' }}"></div>
+    <div class="cb-field"><span class="cb-label">{{ t('সেচের ব্যবস্থা আছে?', 'Is there irrigation?') }}</span>
+      <div class="cb-checks">
+        <label class="cb-check"><input type="radio" name="has_irrigation" value="yes" {% if p.has_irrigation == true %}checked{% endif %}><span>{{ t('হ্যাঁ', 'Yes') }}</span></label>
+        <label class="cb-check"><input type="radio" name="has_irrigation" value="no" {% if p.has_irrigation == false %}checked{% endif %}><span>{{ t('না', 'No') }}</span></label>
+      </div></div>
+    <div class="cb-field"><span class="cb-label">{{ t('যে ফসল চাষ করেন', 'Crops you grow') }}</span>
+      <div class="cb-checks">
+        {% for c in crops %}
+        <label class="cb-check"><input type="checkbox" name="main_crops" value="{{ c.crop_id }}" {% if c.crop_id in (p.main_crops or []) %}checked{% endif %}><span>{{ t(c.name_bn, c.name_en) }}</span></label>
+        {% endfor %}
+      </div></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-check"></i>{{ t('সংরক্ষণ করুন', 'Save') }}</button>
+  </form>
+</section>
+
+<div class="cb-cols cb-cols-even">
+  <section class="cb-box cb-set">
+    <h2>{{ t('মোবাইল নম্বর', 'Mobile number') }}</h2>
+    <p class="cb-hint">{{ t('এখনকার নম্বর', 'Current number') }}: <b>{{ p.phone | bn_digits }}</b></p>
+    <form class="cb-form" method="post" action="/farmer/settings/phone">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="newphone">{{ t('নতুন নম্বর', 'New number') }}</label>
+        <input class="cb-input" id="newphone" name="phone" type="tel" inputmode="tel" required data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+      <div class="cb-field"><label for="pw1">{{ t('আপনার পাসওয়ার্ড (নিশ্চিত করতে)', 'Your password (to confirm)') }}</label>
+        <input class="cb-input" id="pw1" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="cb-btn cb-btn-line" type="submit">{{ t('নম্বর বদলান', 'Change number') }}</button>
+    </form>
+  </section>
+  <section class="cb-box cb-set">
+    <h2>{{ t('পাসওয়ার্ড বদলান', 'Change password') }}</h2>
+    <form class="cb-form" method="post" action="/farmer/settings/password">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="cur">{{ t('বর্তমান পাসওয়ার্ড', 'Current password') }}</label>
+        <input class="cb-input" id="cur" name="current" type="password" autocomplete="current-password" required></div>
+      <div class="cb-field"><label for="new">{{ t('নতুন পাসওয়ার্ড', 'New password') }}</label>
+        <input class="cb-input" id="new" name="new" type="password" autocomplete="new-password" required></div>
+      <div class="cb-field"><label for="new2">{{ t('আবার নতুন পাসওয়ার্ড', 'New password again') }}</label>
+        <input class="cb-input" id="new2" name="new2" type="password" autocomplete="new-password" required></div>
+      <button class="cb-btn cb-btn-line" type="submit">{{ t('পাসওয়ার্ড বদলান', 'Change password') }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/upazila.js?v=1"></script><script src="/static/farmer.js?v=2"></script>{% endblock %}

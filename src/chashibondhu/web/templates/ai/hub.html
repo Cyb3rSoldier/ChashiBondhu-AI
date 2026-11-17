@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ 'AI সহায়তা — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+{% include "ai/_style.html" %}
+<div class="cb-wrap" style="padding-top:20px">
+  <h1>{{ t('AI সহায়তা', 'AI assistance') }}</h1>
+  <p class="cb-sub">{{ t('কোন সহায়ক দরকার, বেছে নিন।', 'Choose the assistant you need.') }}</p>
+  <div class="ai-hub">
+    <section class="ai-card ai-fos">
+      <h2><span class="ai-ic" aria-hidden="true"><i class="fa-solid fa-book-open"></i></span>ফসলি <small style="font-size:.9rem;opacity:.7">Fosholi</small></h2>
+      <p class="ai-tag">আপনার কৃষি সহায়ক, কৃষি জ্ঞানের বিশ্বস্ত সঙ্গী।</p>
+      <p>{{ t('কৃষি হ্যান্ডবুক ও নির্ভরযোগ্য কৃষি তথ্যের ভিত্তিতে আপনার প্রশ্নের উত্তর পান।', 'Answers based on the farming handbook and reliable farming information.') }}</p>
+      <ul><li>{{ t('হাটবই-ভিত্তিক উত্তর, পৃষ্ঠা নম্বরসহ', 'Handbook-based answers with page numbers') }}</li>
+        <li>{{ t('বাংলায় লিখে বা বলে প্রশ্ন', 'Ask in Bangla by typing or speaking') }}</li>
+        <li>{{ t('উত্তর বাংলায় শুনুন', 'Listen to the answer in Bangla') }}</li></ul>
+      <a class="cb-btn cb-btn-main" href="/assistant/fosholi"><i class="fa-solid fa-comments"></i>{{ t('ফসলির সাথে কথা বলুন', 'Talk to Fosholi') }}</a>
+    </section>
+    <section class="ai-card ai-dr">
+      <h2><span class="ai-ic" aria-hidden="true"><i class="fa-solid fa-user-doctor"></i></span>ড. কৃষি <small style="font-size:.9rem;opacity:.7">Dr. Krishi</small></h2>
+      <p class="ai-tag">আপনার স্মার্ট কৃষি চিকিৎসক ও ডিজিটাল কৃষি পরামর্শক।</p>
+      <p>{{ t('ছবি বিশ্লেষণ, রোগ শনাক্তকরণ, আবহাওয়া এবং স্মার্ট কৃষি পরামর্শের জন্য আপনার AI বিশেষজ্ঞ।', 'Your AI expert for photo checks, possible diseases, weather and farming advice.') }}</p>
+      <ul><li>{{ t('ছবি দিয়ে সম্ভাব্য রোগ-পোকা দেখা', 'Photo check of possible diseases and pests') }}</li>
+        <li>{{ t('আপনার এলাকার আসল আবহাওয়া ও জলবায়ু-ইতিহাস', 'Real weather and climate history for your area') }}</li>
+        <li>{{ t('যেকোনো কৃষি প্রশ্ন, বাংলায় লিখে বা বলে', 'Any farming question, typed or spoken in Bangla') }}</li></ul>
+      <a class="cb-btn cb-btn-main" href="/assistant/drkrishi" ><i class="fa-solid fa-user-doctor"></i>{{ t('ড. কৃষির সাথে কথা বলুন', 'Talk to Dr. Krishi') }}</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

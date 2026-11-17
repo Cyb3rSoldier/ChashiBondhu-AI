@@ -1,0 +1,113 @@
+{% extends "farmer/_layout.html" %}
+{% import "farmer/_harvest_labels.html" as H %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'আগাম ফসল — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+{% set U = H.UN[f.unit] %}
+<div class="cb-head-row"><h1>{{ f.product_name }}{% if f.variety %} · {{ f.variety }}{% endif %}</h1>
+  <span class="cb-badge {{ '' if f.status in ('open', 'harvest_confirmed') else 'soil' }}">{{ t(H.FST[f.status][0], H.FST[f.status][1]) }}</span></div>
+
+<section class="cb-stats" aria-label="quantities">
+  <div class="cb-stat warn"><i class="fa-solid fa-seedling"></i><b>{{ num(f.expected_qty) }}</b><span>{{ t('আনুমানিক (মাঠে)', 'Expected (in the field)') }} · {{ t(U[0], U[1]) }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-scale-balanced"></i><b>{% if f.actual_qty is not none %}{{ num(f.actual_qty) }}{% else %}—{% endif %}</b><span>{{ t('আসল তোলা পরিমাণ', 'Actual harvested') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-calendar"></i><b style="font-size:20px">{{ f.harvest_from }}{% if f.harvest_to != f.harvest_from %} – {{ f.harvest_to }}{% endif %}</b><span>{{ t('সম্ভাব্য তোলার সময়', 'Expected harvest time') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-location-dot"></i><b style="font-size:20px">{% if f.upazila_code or f.district_code %}<span data-area-name="{{ f.upazila_code or f.district_code }}">{{ f.upazila_code or f.district_code }}</span>{% else %}—{% endif %}</b><span>{{ t('এলাকা', 'Area') }}{% if f.quality_grade %} · {{ f.quality_grade }}{% endif %}</span></div>
+</section>
+{% if f.description %}<p>{{ f.description }}</p>{% endif %}
+
+{% if f.status == 'open' %}
+<div class="cb-item-actions" style="margin-bottom:18px">
+  <a class="cb-mini" href="/farmer/forecasts/{{ f.id }}/edit"><i class="fa-solid fa-pen"></i>{{ t('বদলান', 'Edit') }}</a>
+  <a class="cb-mini main" href="#confirm"><i class="fa-solid fa-check"></i>{{ t('ফসল তোলা হয়েছে', 'I have harvested') }}</a>
+  <form method="post" action="/farmer/forecasts/{{ f.id }}/cancel" data-confirm-bn="এই আগাম ফসল বাতিল করবেন? ক্রেতাদের সাথে কথাগুলোও বাতিল হবে।" data-confirm-en="Cancel this forecast? Buyer matches are cancelled too."><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('বাতিল করুন', 'Cancel forecast') }}</button></form>
+</div>
+{% elif f.listing_id %}
+<div class="cb-tip" style="margin-bottom:18px"><i class="fa-solid fa-store"></i><div><b>{{ t('আসল ফসল এখন বাজারে আছে।', 'The actual harvest is now in the market.') }}</b>
+  <span><a href="/farmer/listings/{{ f.listing_id }}/edit">{{ t('পণ্যটি দেখুন/বদলান', 'View or edit the product') }}</a></span></div></div>
+{% endif %}
+
+<section class="cb-box">
+  <h2>{{ t('ক্রেতাদের সাথে কথা', 'Buyers') }}</h2>
+  {% if matches %}
+  <ul class="cb-list">
+    {% for m in matches %}
+    <li class="cb-row cb-row-wrap">
+      <span class="cb-thumb"><i class="fa-solid fa-user"></i></span>
+      <div><b>{{ m.buyer_name }} · {{ num(m.match_qty) }} {{ t(U[0], U[1]) }}{% if m.confirmed_qty is not none %} → {{ t('নিশ্চিত', 'confirmed') }} {{ num(m.confirmed_qty) }}{% endif %}</b>
+        <small>{{ t('দরকার', 'Needed') }} {{ m.needed_from }}{% if m.needed_to != m.needed_from %} – {{ m.needed_to }}{% endif %}
+          {% if m.buyer_district %} · <span data-area-name="{{ m.buyer_district }}">{{ m.buyer_district }}</span>{% endif %}
+          {% if m.buyer_phone %} · <a href="tel:{{ m.buyer_phone }}"><i class="fa-solid fa-phone"></i> {{ m.buyer_phone }}</a>{% endif %}
+          {% if m.order_number %} · {{ t('অর্ডার', 'Order') }} {{ m.order_number }}{% endif %}</small></div>
+      <span class="cb-pill {{ 'ok' if m.status in ('agreed', 'qty_confirmed', 'converted') else 'no' }}">{{ t(H.MST[m.status][0], H.MST[m.status][1]) }}</span>
+      {% if m.status == 'buyer_interested' and f.status == 'open' %}
+      <div class="cb-item-actions" style="width:100%">
+        {% for ans, bn, en, cls in [('accept', 'রাজি', 'Accept', 'main'), ('decline', 'না', 'Decline', 'danger')] %}
+        <form method="post" action="/farmer/matches/{{ m.id }}/respond"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="forecast_id" value="{{ f.id }}"><input type="hidden" name="answer" value="{{ ans }}"><button class="cb-mini {{ cls }}">{{ t(bn, en) }}</button></form>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="cb-hint" style="margin-top:10px">{{ t('রাজি হওয়া মানে অর্ডার নয়। ফসল তোলার পর আসল পরিমাণ নিশ্চিত করলে ক্রেতা বাজার থেকে অর্ডার দেবেন।', 'Agreeing is not an order. After you confirm the actual harvest, the buyer orders from the market.') }}</p>
+  {% else %}<p class="cb-hint">{{ t('এখনো কোনো ক্রেতা আগ্রহ দেখাননি।', 'No buyer interest yet.') }}</p>{% endif %}
+</section>
+
+{% if f.status == 'open' %}
+<section class="cb-box" style="margin-top:22px">
+  <h2>{{ t('মিলে যাওয়া ক্রেতার চাহিদা', 'Matching buyer requests') }}</h2>
+  {% if potential %}
+  <ul class="cb-list">
+    {% for r in potential %}
+    <li class="cb-row cb-row-wrap">
+      <span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>
+      <div><b>{{ r.buyer_name }} · {{ r.product_name }}{% if r.variety %} ({{ r.variety }}){% endif %}</b>
+        <small>{{ t('চায়', 'Wants') }} {{ num(r.request_free_qty) }} {{ t(U[0], U[1]) }} · {{ r.needed_from }}{% if r.needed_to != r.needed_from %} – {{ r.needed_to }}{% endif %}
+          {% if r.district_code %} · <span data-area-name="{{ r.district_code }}">{{ r.district_code }}</span>{% endif %}
+          {% if r.near == 2 %} · {{ t('একই জেলা', 'same district') }}{% elif r.near == 1 %} · {{ t('একই বিভাগ', 'same division') }}{% endif %}</small>
+        {% if r.note %}<small>{{ r.note }}</small>{% endif %}</div>
+      <form class="cb-offer" method="post" action="/farmer/forecasts/{{ f.id }}/offer">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="request_id" value="{{ r.id }}">
+        <label class="cb-sr" for="q{{ r.id }}">{{ t('পরিমাণ', 'Quantity') }}</label>
+        <input class="cb-input" id="q{{ r.id }}" name="qty" inputmode="decimal" value="{{ r.possible_qty|float|round(2) }}" style="max-width:120px;min-height:42px">
+        <button class="cb-mini main">{{ t('প্রস্তাব দিন', 'Offer') }}</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="cb-hint">{{ t('এই মুহূর্তে মিলে যাওয়া কোনো ক্রেতার চাহিদা নেই। নতুন চাহিদা এলে এখানে দেখা যাবে।', 'No matching buyer requests right now. New ones will show here.') }}</p>{% endif %}
+</section>
+
+<section class="cb-box" id="confirm" style="margin-top:22px">
+  <h2>{{ t('ফসল তোলা নিশ্চিত করুন', 'Confirm the harvest') }}</h2>
+  <p class="cb-hint">{{ t('আসলে কত হয়েছে লিখুন। এই পরিমাণ বাজারে বিক্রির পণ্য হিসেবে যাবে, আর রাজি হওয়া ক্রেতারা অর্ডার দিতে পারবেন। ফসল না হলে ০ লিখুন।', 'Write how much you actually harvested. It goes to the market as a product and agreed buyers can order it. Write 0 if there is nothing.') }}</p>
+  <form class="cb-form" method="post" action="/farmer/forecasts/{{ f.id }}/confirm" data-confirm-bn="আসল পরিমাণ নিশ্চিত করবেন? এরপর এই আগাম ফসল আর বদলানো যাবে না।" data-confirm-en="Confirm the actual quantity? The forecast cannot be edited after this.">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-row2">
+      <div class="cb-field"><label for="actual_qty">{{ t('আসল পরিমাণ', 'Actual quantity') }} ({{ t(U[0], U[1]) }})</label>
+        <input class="cb-input" id="actual_qty" name="actual_qty" inputmode="decimal" required></div>
+      <div class="cb-field"><label for="actual_harvest_date">{{ t('তোলার তারিখ', 'Harvest date') }}</label>
+        <input class="cb-input" type="date" id="actual_harvest_date" name="actual_harvest_date" max="{{ today }}" value="{{ today }}" required></div>
+    </div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="price_per_unit">{{ t('বিক্রির দাম (প্রতি একক)', 'Selling price per unit') }}</label>
+        <input class="cb-input" id="price_per_unit" name="price_per_unit" inputmode="decimal"></div>
+      <div class="cb-field"><label for="min_order">{{ t('সর্বনিম্ন অর্ডার', 'Minimum order') }}</label>
+        <input class="cb-input" id="min_order" name="min_order" inputmode="decimal" value="1"></div>
+    </div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="title">{{ t('বাজারে পণ্যের নাম', 'Product name in the market') }}</label>
+        <input class="cb-input" id="title" name="title" maxlength="120" value="{{ f.product_name }}{% if f.variety %} ({{ f.variety }}){% endif %}"></div>
+      <div class="cb-field"><label for="category">{{ t('বিভাগ', 'Category') }}</label>
+        <select class="cb-select" id="category" name="category">{% for k in categories %}<option value="{{ k }}">{{ L.CA[k][0] }} / {{ L.CA[k][1] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="cb-field"><span class="cb-label">{{ t('চাষের পদ্ধতি', 'Farming method') }}</span>
+      <div class="cb-checks">{% for mth in methods %}<label class="cb-check"><input type="radio" name="farming_method" value="{{ mth }}" {% if mth == 'conventional' %}checked{% endif %}><span>{{ t(L.FM[mth][0], L.FM[mth][1]) }}</span></label>{% endfor %}</div></div>
+    <div class="cb-field"><label for="cdesc">{{ t('বিবরণ (ইচ্ছামতো)', 'Description (optional)') }}</label>
+      <textarea class="cb-textarea" id="cdesc" name="description" maxlength="2000">{{ f.description or '' }}</textarea></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-check"></i>{{ t('নিশ্চিত করুন', 'Confirm harvest') }}</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

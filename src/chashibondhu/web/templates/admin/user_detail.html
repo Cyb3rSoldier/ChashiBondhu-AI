@@ -1,0 +1,51 @@
+{% extends "admin/_layout.html" %}
+{% set FARM = kind == 'farmers' %}
+{% block title %}{{ u.full_name }} — অ্যাডমিন{% endblock %}
+{% block page %}
+<a class="cb-hint" href="/admin/{{ kind }}"><i class="fa-solid fa-arrow-left"></i> {{ t('তালিকায় ফিরুন', 'Back to list') }}</a>
+<h1>{{ u.full_name }} <small class="cb-hint">#{{ u.id }}</small></h1>
+<section class="cb-box">
+  <dl class="cb-pv">
+    <dt>{{ t('ভূমিকা', 'Role') }}</dt><dd>{{ t('কৃষক', 'Farmer') if FARM else t('ক্রেতা', 'Consumer') }}</dd>
+    <dt>{{ t('ফোন', 'Phone') }}</dt><dd>{{ u.phone }}</dd>
+    {% if u.email %}<dt>{{ t('ইমেইল', 'Email') }}</dt><dd>{{ u.email }}</dd>{% endif %}
+    <dt>{{ t('এলাকা', 'Area') }}</dt><dd>{% if u.district_code %}<span data-area-name="{{ u.upazila_code or u.district_code }}">{{ u.upazila_code or u.district_code }}</span>{% else %}—{% endif %}</dd>
+    <dt>{{ t('যোগ দিয়েছেন', 'Joined') }}</dt><dd>{{ u.created_at.strftime('%Y-%m-%d') }}</dd>
+    <dt>{{ t('শেষ লগইন', 'Last login') }}</dt><dd>{{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else '—' }}</dd>
+    <dt>{{ t('অবস্থা', 'Status') }}</dt><dd><span class="cb-pill {{ 'ok' if u.status == 'active' else 'no' }}">{{ u.status }}</span>{% if u.suspended_reason %} · {{ u.suspended_reason }}{% endif %}</dd>
+  </dl>
+  {% if u.status == 'active' %}
+  <form class="cb-form" method="post" action="/admin/{{ kind }}/{{ u.id }}/status" data-confirm-bn="এই অ্যাকাউন্ট স্থগিত করবেন? তিনি সাথে সাথে লগআউট হবেন।" data-confirm-en="Suspend this account? They are logged out at once.">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="suspend">
+    <div class="cb-field"><label for="reason">{{ t('স্থগিতের কারণ (রেকর্ডে থাকবে)', 'Reason for suspension (kept in the record)') }}</label><input class="cb-input" id="reason" name="reason" minlength="3" maxlength="300" required></div>
+    <button class="cb-btn cb-btn-line" type="submit"><i class="fa-solid fa-user-slash"></i>{{ t('স্থগিত করুন', 'Suspend') }}</button>
+  </form>
+  {% else %}
+  <form method="post" action="/admin/{{ kind }}/{{ u.id }}/status" data-confirm-bn="অ্যাকাউন্ট আবার চালু করবেন?" data-confirm-en="Restore this account?">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="restore">
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-user-check"></i>{{ t('আবার চালু করুন', 'Restore') }}</button>
+  </form>
+  {% endif %}
+</section>
+
+{% if FARM %}
+<section class="cb-box"><h2>{{ t('পণ্য', 'Products') }} ({{ num(u.listings|length) }})</h2>
+  {% if u.listings %}<ul class="cb-list">{% for l in u.listings %}<li class="cb-row"><div><b>{{ l.title }}</b> <small class="cb-hint">#{{ l.id }}</small>
+    <small>৳{{ num(l.discount_price or l.price_per_unit) }} / {{ l.unit }} · {{ t('স্টক', 'Stock') }} {{ num(l.quantity) }} · {{ l.status }}{% if l.moderated_at %} · <span class="cb-bad-text">{{ t('অ্যাডমিন সরিয়েছেন', 'removed by admin') }}</span>{% endif %}</small></div>
+    <a class="cb-mini" href="/admin-products?q={{ l.id }}">{{ t('মডারেশন', 'Moderate') }}</a></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কোনো পণ্য নেই।', 'No products.') }}</p>{% endif %}</section>
+<section class="cb-box"><h2>{{ t('অর্ডার আইটেম', 'Order items') }}</h2>
+  {% if u.order_items %}<ul class="cb-list">{% for i in u.order_items %}<li class="cb-row"><div><b>{{ i.title }}</b> · {{ num(i.quantity) }} {{ i.unit }} · ৳{{ num(i.line_total) }}
+    <small>{{ i.order_number }} · {{ i.order_status }} / {{ i.farmer_status }} · {{ i.created_at.strftime('%Y-%m-%d') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কোনো অর্ডার নেই।', 'No orders.') }}</p>{% endif %}</section>
+{% else %}
+<section class="cb-box"><h2>{{ t('অর্ডার', 'Orders') }}</h2>
+  {% if u.orders %}<ul class="cb-list">{% for o in u.orders %}<li class="cb-row"><div><b>{{ o.order_number }}</b> · ৳{{ num(o.total) }}
+    <small>{{ o.status }} · {{ o.payment_status }} · {{ o.created_at.strftime('%Y-%m-%d') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কোনো অর্ডার নেই।', 'No orders.') }}</p>{% endif %}</section>
+{% endif %}
+
+<section class="cb-box"><h2>{{ t('অ্যাডমিন ইতিহাস', 'Admin history') }}</h2>
+  {% if u.history %}<ul class="cb-list">{% for a in u.history %}<li class="cb-row"><div><b>{{ a.action }}</b>{% if a.reason %} · {{ a.reason }}{% endif %}<small>{{ a.actor_name or '—' }} · {{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</p>{% endif %}</section>
+{% endblock %}

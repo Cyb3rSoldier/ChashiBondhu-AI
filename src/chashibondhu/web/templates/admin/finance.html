@@ -1,0 +1,39 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'হিসাব — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('হিসাব ও পেমেন্ট', 'Finance & payments') }}</h1>
+<p class="cb-hint">{{ t('কৃষকের হিসাব শুধু ডাটাবেসের নিয়মে লেখা হয়: অর্ডার ডেলিভারি হয়েছে এবং টাকা পাওয়া গেছে → জমা; ফেরত বা বাতিল → কাটা। একই আইটেম দুবার জমা হতে পারে না।', "The farmer ledger is written only by the database rule: delivered AND paid → credit; refunded or cancelled → reversal. An item can never be credited twice.") }}</p>
+<section class="cb-stats">
+  <div class="cb-stat"><i class="fa-solid fa-receipt"></i><b>৳{{ num(s.order_value) }}</b><span>{{ t('মোট অর্ডার মূল্য (বাতিল ছাড়া)', 'Order value (not cancelled)') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-circle-check"></i><b>৳{{ num(s.paid_sum) }}</b><span>{{ num(s.paid_n) }} {{ t('টি পেমেন্ট সম্পন্ন', 'payments completed') }}</span></div>
+  <a class="cb-stat warn" href="/admin-orders?status=delivered&payment=unpaid"><i class="fa-solid fa-hand-holding-dollar"></i><b>৳{{ num(s.to_collect_sum) }}</b><span>{{ num(s.to_collect_n) }} {{ t('টি COD টাকা বাকি', 'COD payments to collect') }}</span></a>
+  <div class="cb-stat"><i class="fa-solid fa-hourglass-half"></i><b>৳{{ num(s.open_sum) }}</b><span>{{ num(s.open_n) }} {{ t('টি অর্ডার চলমান', 'orders in progress') }}</span></div>
+</section>
+<section class="cb-stats">
+  <div class="cb-stat"><i class="fa-solid fa-rotate-left"></i><b>৳{{ num(s.refunded_sum) }}</b><span>{{ num(s.refunded_n) }} {{ t('টি ফেরত', 'refunded') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-wallet"></i><b>৳{{ num(s.farmer_balance) }}</b><span>{{ t('কৃষকদের মোট আয় (হিসাব)', 'Farmer earnings (ledger)') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-clock"></i><b>৳{{ num(s.pending_earnings) }}</b><span>{{ t('কৃষকের অপেক্ষমাণ আয়', 'Pending farmer earnings') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-percent"></i><b>—</b><span>{{ t('প্ল্যাটফর্ম আয়: কমিশন সেট করা নেই', 'Platform revenue: no commission set') }}</span></div>
+</section>
+<section class="cb-box"><h2>{{ t('পেমেন্টের উপায়', 'Payment methods') }}</h2>
+  <ul class="cb-list"><li class="cb-row"><div><b>{{ t('ক্যাশ অন ডেলিভারি (COD)', 'Cash on Delivery (COD)') }}</b><small><span class="cb-pill ok">{{ t('চালু', 'On') }}</span></small></div></li>
+    {% for m in ('bKash', 'Nagad', 'Rocket') %}<li class="cb-row"><div><b>{{ m }}</b><small><span class="cb-pill no">{{ t('সেট করা নেই — চালু নয়', 'Not configured — off') }}</span></small></div></li>{% endfor %}</ul>
+  <p class="cb-hint">{{ t('অনলাইন পেমেন্ট আসল সার্ভার-যাচাই ছাড়া কখনো "সফল" দেখানো হবে না।', 'Online payments will never be shown as successful without real server-side verification.') }}</p>
+  <p><a class="cb-mini" href="/admin-finance/export/payments.csv"><i class="fa-solid fa-file-csv"></i>{{ t('পেমেন্ট CSV', 'Payments CSV') }}</a>
+     <a class="cb-mini" href="/admin-finance/export/ledger.csv"><i class="fa-solid fa-file-csv"></i>{{ t('কৃষকের হিসাব CSV', 'Farmer ledger CSV') }}</a></p>
+</section>
+<section class="cb-box"><h2>{{ t('কৃষকের আয়', 'Farmer earnings') }}</h2>
+  <div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse">
+    <thead><tr><th scope="col">{{ t('কৃষক', 'Farmer') }}</th><th scope="col">{{ t('হিসাবে জমা', 'Ledger balance') }}</th><th scope="col">{{ t('অপেক্ষমাণ', 'Pending') }}</th><th scope="col"></th></tr></thead>
+    <tbody>{% for f in farmers %}<tr><td><a href="/admin/farmers/{{ f.id }}">{{ f.full_name }}</a> <small class="cb-hint">{{ f.phone }}</small></td><td>৳{{ num(f.balance) }}</td><td>৳{{ num(f.pending) }}</td>
+      <td><a class="cb-mini" href="/admin-finance?farmer={{ f.id }}#ledger">{{ t('হিসাব', 'Ledger') }}</a></td></tr>
+    {% else %}<tr><td colspan="4" class="cb-hint">{{ t('এখনো কোনো আয় নেই।', 'No earnings yet.') }}</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<section class="cb-box" id="ledger"><h2>{{ t('হিসাবের এন্ট্রি', 'Ledger entries') }}{% if farmer %} · {{ t('কৃষক', 'farmer') }} #{{ farmer }} <a class="cb-mini" href="/admin-finance#ledger">{{ t('সব', 'All') }}</a>{% endif %}</h2>
+  <ul class="cb-list">{% for l in ledger %}
+    <li class="cb-row"><div><b class="{{ 'cb-bad-text' if l.amount < 0 }}">৳{{ num(l.amount) }}</b> · {{ l.entry_type }} · {{ l.title }} ({{ num(l.quantity) }} {{ l.unit }})
+      <small><a href="/admin-orders/{{ l.order_number }}">{{ l.order_number }}</a> · <a href="/admin/farmers/{{ l.farmer_id }}">{{ l.farmer_name }}</a> · {{ l.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div></li>
+  {% else %}<li class="cb-hint">{{ t('কোনো এন্ট্রি নেই।', 'No entries.') }}</li>{% endfor %}</ul>
+  {% include "admin/_pager.html" %}
+</section>
+{% endblock %}

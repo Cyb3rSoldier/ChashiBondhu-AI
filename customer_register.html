@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ 'ক্রেতা অ্যাকাউন্ট — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap"><section class="cb-auth">
+  <h1>{{ t('নতুন ক্রেতা অ্যাকাউন্ট', 'New customer account') }}</h1>
+  <p class="cb-sub">{{ t('কৃষকের কাছ থেকে সরাসরি কিনতে অ্যাকাউন্ট খুলুন। কৃষক হলে', 'Open an account to buy directly from farmers. If you are a farmer,') }} <a href="/register" style="color:var(--cb-paddy);font-weight:700">{{ t('এখানে যোগ দিন', 'join here') }}</a>.</p>
+  {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
+  <form class="cb-form" method="post" action="/register/customer"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label><input class="cb-input" id="full_name" name="full_name" required maxlength="100" value="{{ form.full_name or '' }}"></div>
+    <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label><input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+    {% with code=form.upazila_code, label=form.upazila_label %}{% include "_upazila_picker.html" %}{% endwith %}
+    <div class="cb-field"><label for="address">{{ t('ঠিকানা (ইচ্ছামতো)', 'Address (optional)') }}</label><textarea class="cb-textarea" id="address" name="address" maxlength="300">{{ form.address or '' }}</textarea></div>
+    <div class="cb-field"><label for="password">{{ t('পাসওয়ার্ড', 'Password') }}</label><input class="cb-input" id="password" name="password" type="password" autocomplete="new-password" required></div>
+    <div class="cb-field"><label for="password2">{{ t('আবার পাসওয়ার্ড', 'Password again') }}</label><input class="cb-input" id="password2" name="password2" type="password" autocomplete="new-password" required></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('অ্যাকাউন্ট খুলুন', 'Create account') }}</button>
+  </form>
+  <p class="cb-hint" style="margin-top:14px">{{ t('অ্যাকাউন্ট আছে?', 'Have an account?') }} <a href="/login?as=customer">{{ t('লগইন', 'Log in') }}</a></p>
+</section></div>
+{% endblock %}
+{% block scripts %}<script src="/static/upazila.js?v=1"></script>{% endblock %}

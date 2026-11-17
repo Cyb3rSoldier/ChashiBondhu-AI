@@ -1,0 +1,31 @@
+{% extends "customer/_layout.html" %}
+{% import "customer/_status.html" as S %}
+{% block title %}{{ o.order_number }} — চাষীবন্ধু{% endblock %}
+{% block page %}
+{% set steps = ['pending', 'accepted', 'packed', 'handed_over'] %}
+<div class="cb-head-row"><h1>{{ t('অর্ডার', 'Order') }} {{ o.order_number }}</h1>
+  <span class="cb-badge {{ 'bad' if o.status == 'cancelled' else ('' if o.status == 'delivered' else 'soil') }}">{{ t(S.OS[o.status][0], S.OS[o.status][1]) }}</span></div>
+<p class="cb-hint">{{ (o.created_at|string)[:16] }} · {{ t(S.PS[o.payment_status][0], S.PS[o.payment_status][1]) }} · {{ o.delivery_address }} · {{ o.phone }}</p>
+<div class="cb-item-actions" style="margin-bottom:16px">
+  <a class="cb-mini main" href="/customer/orders/{{ o.order_number }}/invoice" target="_blank" rel="noopener"><i class="fa-solid fa-file-invoice"></i>{{ t('ইনভয়েস', 'Invoice') }}</a>
+  <form method="post" action="/customer/orders/{{ o.order_number }}/reorder"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini"><i class="fa-solid fa-rotate-right"></i>{{ t('আবার অর্ডার', 'Reorder') }}</button></form>
+  {% if o.status == 'pending' %}<form method="post" action="/customer/orders/{{ o.order_number }}/cancel" data-confirm-bn="অর্ডারটি বাতিল করবেন?" data-confirm-en="Cancel this order?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('বাতিল করুন', 'Cancel order') }}</button></form>{% endif %}
+</div>
+<div class="cb-cardlist">{% for it in o['items'] %}
+  <div class="cb-item"><div class="cb-item-top">
+    {% if it.image_path %}<img src="{{ it.image_path }}" alt="">{% else %}<span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+    <div><b>{{ it.title }}</b><small>{{ num(it.quantity) }} {{ it.unit }} × ৳{{ num(it.unit_price) }} = ৳{{ num(it.line_total) }}</small>
+      <small>{{ t('কৃষক', 'Farmer') }}: {{ it.farmer_name }}{% if it.farmer_district %} · <span data-area-name="{{ it.farmer_district }}">{{ it.farmer_district }}</span>{% endif %}{% if it.farmer_phone %} · <a href="tel:{{ it.farmer_phone }}"><i class="fa-solid fa-phone"></i> {{ it.farmer_phone }}</a>{% endif %}</small></div>
+    <span class="cb-pill {{ 'no' if it.farmer_status == 'rejected' else 'ok' }}">{{ t(S.IS[it.farmer_status][0], S.IS[it.farmer_status][1]) }}</span></div>
+    {% if it.farmer_status != 'rejected' and o.status != 'cancelled' %}
+    <ol class="cb-track">{% for s in steps %}<li class="{{ 'done' if (o.status == 'delivered' or steps.index(it.farmer_status) >= loop.index0) else '' }}">{{ t(S.IS[s][0], S.IS[s][1]) }}</li>{% endfor %}
+      <li class="{{ 'done' if o.status == 'delivered' else '' }}">{{ t('ডেলিভারি সম্পন্ন', 'Delivered') }}</li></ol>
+    {% endif %}
+  </div>{% endfor %}
+</div>
+<dl class="cb-pv cb-box" style="margin-top:16px;max-width:420px">
+  <dt>{{ t('পণ্যের দাম', 'Subtotal') }}</dt><dd>৳{{ num(o.subtotal) }}</dd>
+  <dt>{{ t('ডেলিভারি চার্জ', 'Delivery charge') }}</dt><dd>৳{{ num(o.delivery_fee) }}</dd>
+  <dt><b>{{ t('মোট', 'Total') }}</b></dt><dd><b>৳{{ num(o.total) }}</b></dd>
+</dl>
+{% endblock %}

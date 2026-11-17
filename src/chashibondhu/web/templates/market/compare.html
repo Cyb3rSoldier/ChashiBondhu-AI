@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'পণ্য তুলনা — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <div class="cb-head-row"><h1>{{ t('পণ্য তুলনা', 'Compare products') }}</h1>
+    {% if count %}<form method="post" action="/compare/clear"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('সব সরান', 'Clear all') }}</button></form>{% endif %}</div>
+  <p class="cb-sub">{{ t('শুধু একই ধরনের এককের দাম তুলনা হয়: কেজি/গ্রাম/মণ → প্রতি কেজি, পিস/ডজন → প্রতি পিস। ১ মণ = ৩৭.৩২ কেজি (প্রচলিত মণ)। প্যাকেটের মাপ জানা নেই, তাই আলাদা দেখানো হয়।', 'Only matching kinds of units are compared: kg/gram/maund → per kg, piece/dozen → per piece. 1 maund = 37.32 kg (standard maund). Packet sizes are unknown, so packets are shown separately.') }}</p>
+
+  {% if not count %}
+  <div class="cb-empty-box"><i class="fa-solid fa-scale-balanced"></i>{{ t('তুলনার তালিকা খালি। পণ্যের পাতায় "তুলনায় যোগ করুন" চাপুন (সর্বোচ্চ ৪টি)।', 'Nothing to compare yet. Press "Add to compare" on a product page (up to 4).') }}<br><br><a class="cb-btn cb-btn-main" href="/market">{{ t('বাজারে যান', 'Go to market') }}</a></div>
+  {% endif %}
+
+  {% for g in groups %}{% set B = base_label[g.base] %}
+  <section class="cb-box" style="margin-bottom:18px;overflow-x:auto">
+    <h2>{{ t('প্রতি', 'Per') }} {{ t(B[0], B[1]) }} {{ t('দামে তুলনা', 'price comparison') }}</h2>
+    {% if g.rows|length < 2 %}<p class="cb-hint">{{ t('তুলনার জন্য একই ধরনের এককের আরও একটি পণ্য যোগ করুন।', 'Add one more product with the same kind of unit to compare.') }}</p>{% endif %}
+    <table class="cb-table" style="width:100%;border-collapse:collapse">
+      <thead><tr><th scope="col" style="text-align:left">{{ t('পণ্য', 'Product') }}</th>
+        <th scope="col">{{ t('প্রতি', 'Per') }} {{ t(B[0], B[1]) }}</th><th scope="col">{{ t('বিক্রির দাম', 'Selling price') }}</th>
+        <th scope="col">{{ t('আছে / সর্বনিম্ন', 'Stock / min') }}</th><th scope="col">{{ t('চাষ', 'Farming') }}</th>
+        <th scope="col">{{ t('রিভিউ', 'Reviews') }}</th><th scope="col">{{ t('কৃষক ও এলাকা', 'Farmer & area') }}</th><th scope="col"></th></tr></thead>
+      <tbody>{% for r in g.rows %}{% set U = L.UN.get(r.unit, (r.unit, r.unit)) %}
+        <tr{% if r.cheapest %} style="background:rgba(46,125,50,.08)"{% endif %}>
+          <th scope="row" style="text-align:left"><a href="/market/{{ r.id }}">{{ r.title }}</a>{% if r.cheapest %}<br><small class="cb-pill ok">{{ t('সবচেয়ে কম দাম', 'Lowest price') }}</small>{% endif %}</th>
+          <td><b>৳{{ num(r.base_price, 2) }}</b></td>
+          <td>৳{{ num(r.price_now) }} / {{ t(U[0], U[1]) }}{% if r.discount_price %}<br><s>৳{{ num(r.price_per_unit) }}</s>{% endif %}</td>
+          <td>{% if r.listing_type == 'expected' %}{{ t('আগাম ফসল', 'Pre-harvest') }} {{ r.available_from }}{% elif r.quantity >= r.min_order %}{{ num(r.quantity) }} / {{ num(r.min_order) }}{% else %}{{ t('স্টক শেষ', 'Out of stock') }}{% endif %}</td>
+          <td>{{ t(L.FM.get(r.farming_method, L.FM['conventional'])[0], L.FM.get(r.farming_method, L.FM['conventional'])[1]) }}</td>
+          <td>{% if r.review_n %}★ {{ num(r.review_avg, 1) }} ({{ num(r.review_n) }}){% else %}—{% endif %}</td>
+          <td>{{ r.farmer_name }}{% if r.district_code %}<br><span data-area-name="{{ r.district_code }}">{{ r.district_code }}</span>{% endif %}</td>
+          <td><form method="post" action="/compare/toggle"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ r.id }}"><input type="hidden" name="go" value="1"><button class="cb-mini">{{ t('সরান', 'Remove') }}</button></form></td>
+        </tr>{% endfor %}</tbody>
+    </table>
+  </section>
+  {% endfor %}
+
+  {% if alone %}
+  <section class="cb-box">
+    <h2>{{ t('তুলনা করা যায় না (প্যাকেট)', 'Cannot be compared (packet)') }}</h2>
+    <ul class="cb-list">{% for r in alone %}
+      <li class="cb-row"><div><b><a href="/market/{{ r.id }}">{{ r.title }}</a></b><small>৳{{ num(r.price_now) }} / {{ t('প্যাকেট', 'packet') }} · {{ r.farmer_name }}</small></div>
+        <form method="post" action="/compare/toggle"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="listing_id" value="{{ r.id }}"><input type="hidden" name="go" value="1"><button class="cb-mini">{{ t('সরান', 'Remove') }}</button></form></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

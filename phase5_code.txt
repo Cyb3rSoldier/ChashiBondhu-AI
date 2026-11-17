@@ -1,0 +1,322 @@
+﻿========== engine.py lines 1-44
+"""Rule-based crop suitability engine (Phase 4).
+
+Principles:
+  1. Only status == verified knowledge is used (crop_requirements, crop_calendar,
+     seasons). A requirement that is not verified gives 'unknown', never a pass.
+  2. Agricultural suitability only. Market demand is NOT used here; it may later
+     re-rank crops that are already suitable, never rescue an unsuitable one.
+  3. Every check returns a reason with the value, the requirement, its source
+     page, and the data type of the area value.
+
+Check logic (per check):
+  outside absolute [min, max]       -> not_suitable
+  outside optimum [opt_min, opt_max] -> marginal
+  inside optimum                    -> suitable
+  requirement or data missing       -> unknown
+Crop status: not_suitable if any check fails; unknown if NEITHER the BARC
+crop zoning check NOR both core checks (temperature and soil pH) could be
+evaluated; marginal if any check is marginal; otherwise suitable.
+
+BARC crop zoning check (expert land suitability, upazila level):
+  >= 50% of farmland very suitable/suitable  -> suitable
+  >= 80% marginally/not suitable              -> not_suitable
+  otherwise                                   -> marginal (mixed area)
+"""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+
+import pandas as pd
+
+from chashibondhu.crop_planning.features.area_features import AreaFeatures
+from chashibondhu.crop_planning.features.barc_zoning import BarcStore
+from chashibondhu.reference.validate import read_reference, verified_only
+
+STATUS_ORDER = {"suitable": 0, "marginal": 1, "unknown": 2, "not_suitable": 3}
+CORE_CHECKS = {"temperature", "soil_ph"}
+PLANTING = ("seedbed_sowing", "sowing", "transplanting")
+BARC_GOOD_MIN = 0.50
+BARC_POOR_MIN = 0.80
+LAND_TYPES = {"highland", "medium_highland", "medium_lowland", "lowland", "very_lowland"}
+
+
+@dataclass
+
+========== CheckResult
+@dataclass
+class CheckResult:
+    check: str
+    status: str
+    message: str
+    value: str = ""
+    requirement: str = ""
+    source: str = ""          # e.g. BARI_KPH p. 87
+    data_type: str = ""
+
+========== CropResult
+@dataclass
+class CropResult:
+    crop_id: str
+    name_en: str
+    name_bn: str
+    status: str
+    checks: list[CheckResult] = field(default_factory=list)
+    growing_months: list[int] = field(default_factory=list)
+    missing_inputs: list[str] = field(default_factory=list)
+    evidence_coverage: float = 0.0   # share of checks that could be evaluated
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+========== SuitabilityEngine.evaluate
+    def evaluate(self, area: AreaFeatures, crops: list[str] | None = None,
+                 land_type: str | None = None, irrigation: bool | None = None
+                 ) -> list[CropResult]:
+        if land_type is not None and land_type not in LAND_TYPES:
+            raise ValueError(f"land_type must be one of {sorted(LAND_TYPES)}")
+        crops = crops or [c for c in self.k.catalogue.index
+                          if self.k.catalogue.loc[c, "initial_ml_model"] == "true"]
+        unknown = [c for c in crops if c not in self.k.catalogue.index]
+        if unknown:
+            raise ValueError(f"unknown crop_id(s): {unknown}")
+        results = [self._evaluate_crop(c, area, land_type, irrigation) for c in crops]
+        return sorted(results, key=lambda r: (STATUS_ORDER[r.status], r.crop_id))
+
+========== SuitabilityEngine._evaluate_crop
+    def _evaluate_crop(self, crop: str, area: AreaFeatures, land_type: str | None,
+                       irrigation: bool | None) -> CropResult:
+        cat = self.k.catalogue.loc[crop]
+        months, window_src = self.k.growing_months(crop)
+        res = CropResult(crop, cat["name_en"], cat["name_bn"], "unknown", growing_months=months)
+        res.checks = [
+            self._temperature(crop, area, months, window_src),
+            self._rainfall(crop, area, months, window_src, irrigation, res),
+            self._ph(crop, area),
+            self._texture(crop, area),
+            self._land_type(crop, land_type, res),
+        ]
+        if self.barc is not None:
+            res.checks.insert(0, self._barc_zoning(crop, area))
+        for flag in area.flags:
+            res.checks.append(CheckResult("data_quality", "info", flag))
+        scored = [c for c in res.checks if c.status != "info"]
+        res.evidence_coverage = round(
+            sum(c.status != "unknown" for c in scored) / len(scored), 2)
+        statuses = {c.check: c.status for c in scored}
+        if "not_suitable" in statuses.values():
+            res.status = "not_suitable"
+        elif (statuses.get("barc_zoning", "unknown") == "unknown"
+              and any(statuses[c] == "unknown" for c in CORE_CHECKS)):
+            res.status = "unknown"
+        elif "marginal" in statuses.values():
+            res.status = "marginal"
+        else:
+            res.status = "suitable"
+        return res
+
+========== SuitabilityEngine._land_type
+    def _land_type(self, crop, land_type, res) -> CheckResult:
+        req = self.k.requirement(crop, "land_type")
+        if req is None or isinstance(req, str):
+            return CheckResult("land_type", "unknown", "no verified land-type requirement yet")
+        if land_type is None:
+            res.missing_inputs.append("land_type")
+            return CheckResult("land_type", "unknown",
+                               "farmer's land type not given (how deep does it flood?)",
+                               requirement=req["value_text"], source=_src(req))
+        allowed = set(req["value_text"].split("|"))
+        ok = land_type in allowed
+        return CheckResult("land_type", "suitable" if ok else "not_suitable",
+                           f"farmer land type {land_type}"
+                           + ("" if ok else " is not recommended for this crop"),
+                           value=land_type, requirement="|".join(sorted(allowed)),
+                           source=_src(req), data_type="farmer_stated")
+
+========== SuitabilityEngine._rainfall
+    def _rainfall(self, crop, area, months, window_src, irrigation, res) -> CheckResult:
+        dt = area.data_types.get("rainfall", "")
+        req = self.k.requirement(crop, "season_rain_mm")
+        if req is None or isinstance(req, str):
+            return CheckResult("rainfall", "unknown",
+                               "conflicting verified sources" if req == "conflict"
+                               else "no verified seasonal rainfall requirement yet",
+                               data_type=dt)
+        if not months or any(m not in area.rain_mean for m in months):
+            return CheckResult("rainfall", "unknown", "no growing window or rainfall data",
+                               data_type=dt)
+        total = sum(area.rain_mean[m] for m in months)
+        p10 = sum(area.rain_p10.get(m, 0) for m in months)
+        p90 = sum(area.rain_p90.get(m, 0) for m in months)
+        status = _range_check(total, req)
+        low = _f(req["opt_min"]) if req["opt_min"] else _f(req["min"])
+        msg = f"season rain {total:.0f} mm (dry-to-wet years ~{p10:.0f}-{p90:.0f} mm)"
+        if status != "suitable" and low is not None and total < low:
+            regime = self.k.requirement(crop, "water_regime")
+            can_irrigate = (regime is not None and not isinstance(regime, str)
+                            and {"irrigated", "supplementary_irrigation"}
+                            & set(regime["value_text"].split("|")))
+            if can_irrigate:
+                if irrigation is True:
+                    status, msg = "suitable", msg + "; shortfall covered by irrigation"
+                elif irrigation is None:
+                    status = "marginal"
+                    msg += "; needs irrigation - ask farmer"
+                    res.missing_inputs.append("irrigation_available")
+                else:
+                    status, msg = "not_suitable", msg + "; needs irrigation, none available"
+        return CheckResult("rainfall", status, msg + f" [window: {window_src}]",
+                           value=f"{total:.0f} mm", requirement=_req_text(req, "mm"),
+                           source=_src(req), data_type=dt)
+
+========== AreaFeatures
+@dataclass
+class AreaFeatures:
+    area_code: str
+    level: str                      # district | upazila
+    name_en: str
+    district_code: str
+    t_mean: dict[int, float]        # month -> deg C (district)
+    rain_mean: dict[int, float]     # month -> mm
+    rain_p10: dict[int, float]
+    rain_p90: dict[int, float]
+    ph_mean: float | None
+    ph_p10: float | None
+    ph_p90: float | None
+    texture: str | None             # normalised: clay_loam
+    texture_share: float | None
+    data_types: dict[str, str] = field(default_factory=dict)
+    sources: dict[str, str] = field(default_factory=dict)
+    flags: list[str] = field(default_factory=list)
+
+========== FeatureStore.__init__
+    def __init__(self, processed_dir: Path):
+        self.dir = Path(processed_dir)
+        self.temp = self._read(TEMP_FILE, ["district_code", "month", "t_mean_c"])
+        self.rain = {lvl: self._read(f, [f"{lvl}_code", "month", "rain_mm_mean",
+                                         "rain_mm_p10", "rain_mm_p90"])
+                     for lvl, f in RAIN_FILES.items()}
+        self.soil = {lvl: self._read(f, [f"{lvl}_code", "ph_mean", "ph_p10", "ph_p90",
+                                         "texture_dominant", "texture_dominant_share",
+                                         "valid_fraction"])
+                     for lvl, f in SOIL_FILES.items()}
+        grid_path = self.dir / GRID_FILE
+        self.grid = pd.read_csv(grid_path, dtype={"district_code": str}) \
+            if grid_path.exists() else None
+        upz = self.soil["upazila"]
+        if "district_code" not in upz.columns:
+            raise ValueError(f"{SOIL_FILES['upazila']}: needs district_code column")
+        self.upazila_to_district = dict(zip(upz["upazila_code"], upz["district_code"]))
+
+========== FeatureStore.level_of
+    def level_of(self, code: str) -> str:
+        if code in set(self.soil["upazila"]["upazila_code"]):
+            return "upazila"
+        if code in set(self.soil["district"]["district_code"]):
+            return "district"
+        raise KeyError(f"unknown area code '{code}' (not a district or upazila code)")
+
+========== FeatureStore.get
+    def get(self, code: str) -> AreaFeatures:
+        level = self.level_of(code)
+        district = code if level == "district" else self.upazila_to_district[code]
+        flags: list[str] = []
+
+        t = self.temp[self.temp["district_code"] == district]
+        if t.empty:
+            raise KeyError(f"no temperature climatology for district {district}")
+        if level == "upazila":
+            flags.append("temperature is the district average (no upazila temperature data)")
+        if self.grid is not None:
+            g = self.grid[self.grid["district_code"] == district]
+            if not g.empty and int(g["n_districts_in_cell"].iloc[0]) > 1:
+                flags.append(f"temperature grid cell shared by "
+                             f"{int(g['n_districts_in_cell'].iloc[0])} districts (~50 km cell)")
+
+        rain = self.rain[level]
+        r = rain[rain[f"{level}_code"] == code]
+        if r.empty:
+            raise KeyError(f"no rainfall climatology for {level} {code}")
+
+        soil = self.soil[level]
+        s = soil[soil[f"{level}_code"] == code]
+        if s.empty:
+            raise KeyError(f"no soil data for {level} {code}")
+        s = s.iloc[0]
+        valid = float(s["valid_fraction"]) if pd.notna(s["valid_fraction"]) else 0.0
+        if valid < LOW_SOIL_VALID:
+            flags.append(f"soil estimate covers only {valid:.0%} of the area")
+        texture = s["texture_dominant"]
+        texture = None if pd.isna(texture) else str(texture).strip().lower().replace(" ", "_")
+
+        name_col = f"{level}_name"
+        name = str(s[name_col]) if name_col in s.index else code
+        num = lambda v: None if pd.isna(v) else float(v)  # noqa: E731
+        return AreaFeatures(
+            area_code=code, level=level, name_en=name, district_code=district,
+            t_mean=_monthly(t, "t_mean_c"),
+            rain_mean=_monthly(r, "rain_mm_mean"), rain_p10=_monthly(r, "rain_mm_p10"),
+            rain_p90=_monthly(r, "rain_mm_p90"),
+            ph_mean=num(s["ph_mean"]), ph_p10=num(s["ph_p10"]), ph_p90=num(s["ph_p90"]),
+            texture=texture,
+            texture_share=num(s["texture_dominant_share"]),
+            data_types={
+                "temperature": str(t["data_type"].iloc[0]) if "data_type" in t else "",
+                "rainfall": str(r["data_type"].iloc[0]) if "data_type" in r else "",
+                "soil": str(s.get("data_type", "")),
+            },
+            sources={
+                "temperature": str(t["source"].iloc[0]) if "source" in t else "",
+                "rainfall": str(r["source"].iloc[0]) if "source" in r else "",
+                "soil": str(s.get("source", "")),
+            },
+            flags=flags,
+        )
+
+========== LandUnitError
+class LandUnitError(ValueError):
+    """Unknown, unverified or ambiguous unit."""
+
+========== AreaResult
+@dataclass
+class AreaResult:
+    sqm: float
+    parts: list[tuple[float, str, str]] = field(default_factory=list)  # value, unit, basis
+    original_text: str = ""
+
+    @property
+    def basis(self) -> str:
+        bases = {b for _, _, b in self.parts}
+        return "farmer_stated" if "farmer_stated" in bases else "standard"
+
+========== LandUnits.__init__
+    def __init__(self, table: pd.DataFrame, allowed_status: tuple[str, ...] = ("verified",),
+                 strict: bool = True):
+        self.table = table.set_index("unit_id")
+        self.allowed = set(allowed_status)
+        self.strict = strict
+        self._alias = self._build_aliases()
+        for uid in self.table.index:  # detect cycles early
+            if self.table.loc[uid, "status"] != "todo":
+                self._chain_sqm(uid, seen=())
+
+========== LandUnits.parse
+    def parse(self, text: str, local_decimals: dict[str, float] | None = None) -> AreaResult:
+        """Parse 'αº¿ αª¼αª┐αªÿαª╛ αº½ αªòαª╛αªáαª╛', '2 bigha 5 katha', '33 shotok' into square metres."""
+        clean = text.translate(BN_DIGITS).replace(",", ".")
+        tokens = NUMBER_RE.split(clean)
+        # tokens: [prefix, num1, rest1, num2, rest2, ...]
+        if len(tokens) < 3 or tokens[0].strip():
+            raise LandUnitError(f"could not read an amount from '{text}'")
+        result = AreaResult(sqm=0.0, original_text=text)
+        for num, rest in zip(tokens[1::2], tokens[2::2]):
+            words = rest.strip().split()
+            if not words:
+                raise LandUnitError(f"number {num} has no unit in '{text}'")
+            unit = self._match_prefix(words)
+            sqm, basis = self.to_sqm(float(num), unit, local_decimals)
+            result.sqm += sqm
+            result.parts.append((float(num), self.resolve(unit), basis))
+        return result
+

@@ -1,0 +1,57 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'আয়ের হিসাব — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('আয়ের হিসাব', 'Earnings report') }}</h1></div>
+<p class="cb-sub">{{ t('আয় যোগ হয় শুধু তখন, যখন অর্ডার ডেলিভারি হয়েছে এবং টাকা পরিশোধ নিশ্চিত হয়েছে। টাকা ফেরত হলে হিসাব থেকে বাদ যায়।', 'Money is added only when an order is delivered AND payment is confirmed. Refunds are taken out again.') }}</p>
+<section class="cb-stats" aria-label="earnings">
+  <div class="cb-stat"><i class="fa-solid fa-sack-dollar"></i><b>৳{{ num(summary.lifetime_sales or 0) }}</b><span>{{ t('মোট বিক্রি (সব সময়)', 'Lifetime sales') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-wallet"></i><b>৳{{ num(summary.balance or 0) }}</b><span>{{ t('বর্তমান ব্যালেন্স', 'Current balance') }}</span></div>
+  <div class="cb-stat warn"><i class="fa-solid fa-clock"></i><b>৳{{ num(stats.pending_earnings or 0) }}</b><span>{{ t('আসন্ন আয় (এখনো পরিশোধ হয়নি)', 'Pending (not paid yet)') }}</span></div>
+  <div class="cb-stat"><i class="fa-solid fa-circle-check"></i><b>{{ num(summary.completed_count or 0) }}</b><span>{{ t('সম্পন্ন লেনদেন', 'Completed transactions') }}</span></div>
+</section>
+<p class="cb-hint" style="margin:-10px 0 18px">{{ t('টাকা তোলার (পেআউট) ব্যবস্থা এখনো চালু হয়নি, তাই ব্যালেন্স = পরিশোধিত বিক্রি − ফেরত।', 'Payouts are not built yet, so balance = paid sales − refunds.') }}</p>
+
+<section class="cb-box">
+  <div class="cb-head-row" style="margin:0 0 12px"><h2 style="margin:0">{{ t('বিক্রির চার্ট', 'Sales chart') }}</h2>
+    <nav class="cb-cats" aria-label="span">
+      {% for s, bn, en in [('7d', 'গত ৭ দিন', 'Last 7 days'), ('30d', 'গত ৩০ দিন', 'Last 30 days'), ('12m', 'গত ১২ মাস', 'Last 12 months')] %}
+      <a class="cb-cat" href="/farmer/earnings?span={{ s }}"{% if span == s %} aria-current="true"{% endif %}>{{ t(bn, en) }}</a>
+      {% endfor %}
+    </nav></div>
+  {% if peak > 0 %}
+  <div class="cb-bars" role="img" aria-label="sales per {{ 'month' if span == '12m' else 'day' }}">
+    {% for r in series %}
+    {% set h = ((r.amount|float) / peak * 100) if peak else 0 %}
+    <div class="cb-bar" title="{{ r.label }}: ৳{{ r.amount }}"><span class="cb-bar-fill{{ ' neg' if (r.amount|float) < 0 else '' }}" style="height:{{ [h|abs, 2]|max if (r.amount|float) != 0 else 0 }}%"></span><small>{{ r.label[-2:] if span != '12m' else r.label[5:] }}</small></div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cb-empty-box"><i class="fa-solid fa-chart-column"></i>{{ t('এই সময়ে কোনো পরিশোধিত বিক্রি নেই।', 'No paid sales in this period.') }}</div>
+  {% endif %}
+</section>
+
+<div class="cb-cols" style="margin-top:22px">
+  <section class="cb-box">
+    <h2>{{ t('বিক্রির ইতিহাস', 'Sales history') }}</h2>
+    {% if history %}
+    <ul class="cb-list">
+      {% for h in history %}
+      <li class="cb-row"><span class="cb-thumb"><i class="fa-solid {{ 'fa-arrow-down' if h.entry_type == 'sale_credit' else 'fa-rotate-left' }}"></i></span>
+        <div><b>{{ h.title }} · {{ num(h.quantity) }} {{ h.unit }}</b><small>{{ h.order_number }} · {{ (h.created_at|string)[:16] }}</small></div>
+        <span class="cb-pill {{ 'ok' if h.amount|float >= 0 else 'no' }}">{{ '+' if h.amount|float >= 0 else '' }}৳{{ num(h.amount) }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="cb-hint">{{ t('এখনো কোনো পরিশোধিত বিক্রি নেই।', 'No paid sales yet.') }}</p>{% endif %}
+  </section>
+  <aside class="cb-box">
+    <h2>{{ t('সবচেয়ে বেশি বিক্রি', 'Top-selling products') }}</h2>
+    {% if top %}
+    <ul class="cb-list">
+      {% for p in top %}
+      <li class="cb-row"><span class="cb-thumb">{{ loop.index }}</span><div><b>{{ p.title }}</b><small>{{ num(p.quantity) }} {{ p.unit }}</small></div><span class="cb-pill ok">৳{{ num(p.amount) }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="cb-hint">{{ t('বিক্রি হলে এখানে দেখা যাবে।', 'Will show after your first paid sale.') }}</p>{% endif %}
+  </aside>
+</div>
+{% endblock %}

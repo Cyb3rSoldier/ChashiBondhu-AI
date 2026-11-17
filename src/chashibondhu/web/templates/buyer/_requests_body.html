@@ -1,0 +1,104 @@
+{# shared by buyer/requests.html (admin) and customer/requests.html (customer dashboard) #}
+{% import "farmer/_harvest_labels.html" as H %}
+{% set RST = {'open': ('খোলা', 'Open'), 'fulfilled': ('পূর্ণ', 'Fulfilled'), 'cancelled': ('বাতিল', 'Cancelled'), 'expired': ('মেয়াদ শেষ', 'Expired')} %}
+<div class="cb-head-row"><h1>{{ t('আমার চাহিদা (আগাম কেনা)', 'My buying requests') }}</h1></div>
+  <p class="cb-sub">{{ t('কী, কতটা, কবে লাগবে লিখুন। মিলে যাওয়া কৃষকের আগাম ফসল দেখাবে। আগ্রহ জানানো অর্ডার নয় — কৃষক আসল ফসল নিশ্চিত করার পর বাজার থেকে অর্ডার দেবেন।', 'Write what you need, how much and when. Matching harvest forecasts from farmers will show. Interest is not an order — you order from the market after the farmer confirms the real harvest.') }}</p>
+
+  <details class="cb-add" {% if not items %}open{% endif %}>
+    <summary><i class="fa-solid fa-plus"></i>{{ t('নতুন চাহিদা', 'New request') }}</summary>
+    <form class="cb-form" method="post" action="/requests/new">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-row2">
+        <div class="cb-field"><label for="crop_id">{{ t('ফসল (তালিকা থেকে)', 'Crop (from list)') }}</label>
+          <select class="cb-select" id="crop_id" name="crop_id" data-fill-name="#product_name"><option value="">{{ '— অন্য / Other —' }}</option>
+            {% for c in crops %}<option value="{{ c.crop_id }}" data-name="{{ c.name_bn }}">{{ c.name_bn }} / {{ c.name_en }}</option>{% endfor %}</select></div>
+        <div class="cb-field"><label for="product_name">{{ t('পণ্যের নাম', 'Product name') }}</label>
+          <input class="cb-input" id="product_name" name="product_name" maxlength="120" required></div>
+      </div>
+      <div class="cb-row2">
+        <div class="cb-field"><label for="quantity">{{ t('পরিমাণ', 'Quantity') }}</label>
+          <input class="cb-input" id="quantity" name="quantity" inputmode="decimal" required></div>
+        <div class="cb-field"><label for="unit">{{ t('একক', 'Unit') }}</label>
+          <select class="cb-select" id="unit" name="unit">{% for k in units %}<option value="{{ k }}">{{ H.UN[k][0] }} / {{ H.UN[k][1] }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="cb-row2">
+        <div class="cb-field"><label for="needed_from">{{ t('কবে থেকে লাগবে', 'Needed from') }}</label>
+          <input class="cb-input" type="date" id="needed_from" name="needed_from" required></div>
+        <div class="cb-field"><label for="needed_to">{{ t('কবে পর্যন্ত (ইচ্ছামতো)', 'Until (optional)') }}</label>
+          <input class="cb-input" type="date" id="needed_to" name="needed_to"></div>
+      </div>
+      {% with code='', label='' %}{% include "_upazila_picker.html" %}{% endwith %}
+      <div class="cb-row2">
+        <div class="cb-field"><label for="variety">{{ t('জাত (ইচ্ছামতো)', 'Variety (optional)') }}</label>
+          <input class="cb-input" id="variety" name="variety" maxlength="80"></div>
+        <div class="cb-field"><label for="note">{{ t('নোট (ইচ্ছামতো)', 'Note (optional)') }}</label>
+          <input class="cb-input" id="note" name="note" maxlength="1000"></div>
+      </div>
+      <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-check"></i>{{ t('চাহিদা দিন', 'Add request') }}</button>
+    </form>
+  </details>
+
+  {% for r in items %}
+  <section class="cb-box" style="margin-bottom:18px">
+    <div class="cb-head-row" style="margin:0 0 8px"><h2 style="margin:0">{{ r.product_name }}{% if r.variety %} ({{ r.variety }}){% endif %} · {{ num(r.quantity) }} {{ t(H.UN[r.unit][0], H.UN[r.unit][1]) }}</h2>
+      <span class="cb-badge {{ '' if r.status == 'open' else 'soil' }}">{{ t(RST[r.status][0], RST[r.status][1]) }}</span></div>
+    <p class="cb-hint">{{ r.needed_from }}{% if r.needed_to != r.needed_from %} – {{ r.needed_to }}{% endif %}{% if r.district_code %} · <span data-area-name="{{ r.district_code }}">{{ r.district_code }}</span>{% endif %}</p>
+    {% set SL = stage_labels[r.stage] %}
+    <p style="margin:6px 0"><b>{{ t('এখনকার ধাপ', 'Current stage') }}:</b> <span class="cb-pill {{ 'ok' if r.stage in ('available', 'converted') else ('no' if r.stage in ('cancelled', 'expired') else '') }}">{{ t(SL[0], SL[1]) }}</span></p>
+    {% if r.step is not none %}
+    <ol class="cb-steps" aria-label="{{ 'progress' }}" style="display:flex;flex-wrap:wrap;gap:4px;list-style:none;padding:0;margin:6px 0 10px">
+      {% for key, bn, en in steps %}
+      <li style="flex:1 1 120px;font-size:13px;padding:6px 8px;border-radius:8px;border:1px solid var(--cb-line, #ccd);{% if loop.index0 < r.step %}opacity:.75;{% elif loop.index0 == r.step %}border-color:var(--cb-paddy, #2e7d32);font-weight:700;{% else %}opacity:.45;{% endif %}"{% if loop.index0 == r.step %} aria-current="step"{% endif %}>
+        {% if loop.index0 < r.step %}<i class="fa-solid fa-check"></i> {% endif %}{{ t(bn, en) }}</li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+
+    {% if r.matches %}
+    <ul class="cb-list" style="margin:10px 0">
+      {% for m in r.matches %}
+      <li class="cb-row cb-row-wrap"><span class="cb-thumb"><i class="fa-solid fa-tractor"></i></span>
+        <div><b>{{ m.farmer_name }} · {{ num(m.match_qty) }}{% if m.confirmed_qty is not none %} → {{ t('নিশ্চিত', 'confirmed') }} {{ num(m.confirmed_qty) }}{% endif %}</b>
+          <small>{{ t('ফসল', 'Harvest') }} {{ m.harvest_from }}{% if m.harvest_to != m.harvest_from %} – {{ m.harvest_to }}{% endif %}
+            {% if m.farmer_district %} · <span data-area-name="{{ m.farmer_district }}">{{ m.farmer_district }}</span>{% endif %}
+            {% if m.farmer_phone %} · <a href="tel:{{ m.farmer_phone }}"><i class="fa-solid fa-phone"></i> {{ m.farmer_phone }}</a>{% endif %}
+            {% if m.order_number %} · {{ t('অর্ডার', 'Order') }} {{ m.order_number }}{% endif %}</small>
+          {% if m.status == 'qty_confirmed' %}<small>{{ t('ফসল তোলা হয়েছে — নিশ্চিত পরিমাণ', 'Harvested — confirmed quantity') }} {{ num(m.confirmed_qty) }}. {{ t('অর্ডার না দেওয়া পর্যন্ত এটা কেনা হয়নি; দাম ও স্টক অর্ডারের সময় যাচাই হবে।', 'It is not bought until you order; price and stock are checked at checkout.') }}</small>{% endif %}</div>
+        <span class="cb-pill {{ 'ok' if m.stage in ('awaiting_harvest', 'awaiting_qty', 'available', 'converted') else 'no' }}">{{ t(stage_labels[m.stage][0], stage_labels[m.stage][1]) }}</span>
+        {% if m.stage == 'available' and m.listing_id %}
+        <div class="cb-item-actions" style="width:100%"><a class="cb-btn cb-btn-main" href="/market/{{ m.listing_id }}"><i class="fa-solid fa-cart-plus"></i>{{ t('পণ্যের পাতায় গিয়ে অর্ডার দিন', 'Open the product and order') }}</a></div>
+        {% endif %}
+        {% if m.status == 'farmer_offered' %}
+        <div class="cb-item-actions" style="width:100%">
+          {% for ans, bn, en, cls in [('accept', 'রাজি', 'Accept', 'main'), ('decline', 'না', 'Decline', 'danger')] %}
+          <form method="post" action="/requests/matches/{{ m.id }}/respond"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="answer" value="{{ ans }}"><button class="cb-mini {{ cls }}">{{ t(bn, en) }}</button></form>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if r.status == 'open' %}
+      {% if r.potential %}
+      <h3 style="font-size:17px;margin:12px 0 6px">{{ t('মিলে যাওয়া আগাম ফসল', 'Matching harvest forecasts') }}</h3>
+      <ul class="cb-list">
+        {% for f in r.potential %}
+        <li class="cb-row cb-row-wrap"><span class="cb-thumb"><i class="fa-solid fa-seedling"></i></span>
+          <div><b>{{ f.farmer_name }} · {{ f.product_name }}{% if f.variety %} ({{ f.variety }}){% endif %}</b>
+            <small>{{ t('আনুমানিক', 'Expected') }} {{ num(f.expected_qty) }} · {{ f.harvest_from }}{% if f.harvest_to != f.harvest_from %} – {{ f.harvest_to }}{% endif %}
+              {% if f.district_code %} · <span data-area-name="{{ f.district_code }}">{{ f.district_code }}</span>{% endif %}{% if f.quality_grade %} · {{ f.quality_grade }}{% endif %}</small></div>
+          <form class="cb-offer" method="post" action="/requests/{{ r.id }}/interest">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="forecast_id" value="{{ f.id }}">
+            <label class="cb-sr" for="i{{ r.id }}-{{ f.id }}">{{ t('পরিমাণ', 'Quantity') }}</label>
+            <input class="cb-input" id="i{{ r.id }}-{{ f.id }}" name="qty" inputmode="decimal" value="{{ f.possible_qty|float|round(2) }}" style="max-width:120px;min-height:42px">
+            <button class="cb-mini main">{{ t('আগ্রহ জানান', 'Show interest') }}</button>
+          </form></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="cb-hint">{{ t('এখন মিলে যাওয়া কোনো আগাম ফসল নেই।', 'No matching harvest forecasts right now.') }}</p>{% endif %}
+      <form method="post" action="/requests/{{ r.id }}/cancel" style="margin-top:10px" data-confirm-bn="চাহিদা বাতিল করবেন?" data-confirm-en="Cancel this request?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('চাহিদা বাতিল', 'Cancel request') }}</button></form>
+    {% endif %}
+  </section>
+  {% endfor %}

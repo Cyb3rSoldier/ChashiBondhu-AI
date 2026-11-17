@@ -1,0 +1,9 @@
+{# simple accessible bar list: rows of (label, value); `fmt` = 'num' or 'taka' #}
+{% set mx = (rows|map(attribute=1)|max) if rows else 0 %}
+<table class="cb-table" style="width:100%;border-collapse:collapse;font-size:14px">
+  <tbody>{% for label, v in rows %}
+  <tr><th scope="row" style="text-align:left;font-weight:400;white-space:nowrap;padding:2px 8px 2px 0">{{ label }}</th>
+    <td style="width:70%"><div style="height:12px;border-radius:6px;background:var(--cb-paddy, #2e7d32);width:{{ ((v / mx) * 100)|round(1) if mx else 0 }}%;min-width:{{ '2px' if v else '0' }}" aria-hidden="true"></div></td>
+    <td style="text-align:right;padding-left:8px;white-space:nowrap">{{ '৳' if fmt == 'taka' }}{{ num(v) }}</td></tr>
+  {% else %}<tr><td class="cb-hint">{{ t('এখনো কোনো তথ্য নেই।', 'No data yet.') }}</td></tr>{% endfor %}</tbody>
+</table>

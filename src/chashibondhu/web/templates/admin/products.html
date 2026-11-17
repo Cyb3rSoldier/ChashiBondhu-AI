@@ -1,0 +1,30 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'পণ্য — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('পণ্য মডারেশন', 'Product moderation') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<p class="cb-hint">{{ t('অ্যাডমিন দাম বা স্টক বদলাতে পারেন না। শুধু বাজার থেকে সরানো বা ফেরানো যায়, কারণসহ। সরানো পণ্য কৃষক নিজে চালু করতে পারবেন না।', 'Admins cannot change price or stock. You can only remove from or restore to the market, with a reason. The farmer cannot re-activate a removed product.') }}</p>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="q">{{ t('পণ্য / কৃষক / আইডি', 'Product / farmer / ID') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>
+  <div class="cb-field"><label for="category">{{ t('ধরন', 'Category') }}</label><input class="cb-input" id="category" name="category" value="{{ f.category }}" placeholder="vegetable" style="max-width:140px"></div>
+  <div class="cb-field"><label for="district">{{ t('জেলা কোড', 'District code') }}</label><input class="cb-input" id="district" name="district" value="{{ f.district }}" placeholder="BD2626" style="max-width:120px"></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for s in ('active', 'hidden', 'sold_out', 'draft', 'archived') %}<option value="{{ s }}"{% if f.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="avail">{{ t('প্রাপ্যতা', 'Availability') }}</label><select class="cb-select" id="avail" name="avail"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    <option value="out"{% if f.avail == 'out' %} selected{% endif %} data-en="{{ 'Out of stock' }}">{{ 'স্টক শেষ' }}</option><option value="preorder"{% if f.avail == 'preorder' %} selected{% endif %} data-en="{{ 'Pre-harvest' }}">{{ 'আগাম ফসল' }}</option>
+    <option value="moderated"{% if f.avail == 'moderated' %} selected{% endif %} data-en="{{ 'Removed by admin' }}">{{ 'অ্যাডমিন সরানো' }}</option></select></div>
+  {% if f.farmer %}<input type="hidden" name="farmer" value="{{ f.farmer }}">{% endif %}
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+<ul class="cb-list">{% for l in rows %}
+  <li class="cb-row cb-row-wrap"><div><b><a href="/market/{{ l.id }}">{{ l.title }}</a></b> <small class="cb-hint">#{{ l.id }}</small>
+    <small>{{ l.category }} · ৳{{ num(l.discount_price or l.price_per_unit) }} / {{ l.unit }} · {{ t('স্টক', 'Stock') }} {{ num(l.quantity) }} · {{ l.listing_type }} · <b>{{ l.status }}</b>
+      · <a href="/admin/farmers/{{ l.farmer_id }}">{{ l.farmer_name }}</a>{% if l.district_code %} · {{ l.district_code }}{% endif %}</small>
+    {% if l.moderated_at %}<small class="cb-bad-text"><i class="fa-solid fa-shield-halved"></i> {{ t('অ্যাডমিন সরিয়েছেন', 'Removed by admin') }}: {{ l.moderation_reason }}</small>{% endif %}</div>
+    <form class="cb-offer" method="post" action="/admin-products/{{ l.id }}/moderate" data-confirm-bn="{{ 'বাজার থেকে সরাবেন?' if not l.moderated_at else 'আবার বাজারে ফেরাবেন?' }}" data-confirm-en="{{ 'Remove from the market?' if not l.moderated_at else 'Restore to the market?' }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ 'restore' if l.moderated_at else 'remove' }}">
+      <input type="hidden" name="back" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+      <label class="cb-sr" for="r{{ l.id }}">{{ t('কারণ', 'Reason') }}</label><input class="cb-input" id="r{{ l.id }}" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'কারণ / reason' }}" style="max-width:200px;min-height:40px">
+      <button class="cb-mini {{ 'main' if l.moderated_at else 'danger' }}">{{ t('ফেরান', 'Restore') if l.moderated_at else t('সরান', 'Remove') }}</button></form></li>
+{% else %}<li class="cb-hint">{{ t('কিছু পাওয়া যায়নি।', 'Nothing found.') }}</li>{% endfor %}</ul>
+{% include "admin/_pager.html" %}
+{% endblock %}

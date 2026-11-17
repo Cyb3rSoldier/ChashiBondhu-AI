@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ 'পাসওয়ার্ড ভুলে গেছেন — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap"><section class="cb-auth">
+  <h1>{{ t('পাসওয়ার্ড ভুলে গেছেন?', 'Forgot your password?') }}</h1>
+  {% if sent %}
+  <div role="status" style="border:1px solid var(--cb-paddy);border-radius:10px;padding:12px 14px;margin:8px 0 14px">
+    <p style="margin:0">{{ t('এই ইমেইলে ক্রেতা অ্যাকাউন্ট থাকলে একটি রিসেট লিংক পাঠানো হয়েছে। লিংক ৩০ মিনিট চলবে, একবারই। স্প্যাম ফোল্ডারও দেখুন।', 'If this email has a customer account, a reset link was sent. It works for 30 minutes, only once. Check the spam folder too.') }}</p>
+  </div>
+  {% endif %}
+  {% if not mail %}
+  <div class="cb-errors" role="alert"><p>{{ t('ইমেইল পাঠানো এখনো চালু হয়নি। সাহায্যের জন্য অ্যাডমিনের সাথে যোগাযোগ করুন।', 'Email sending is not set up yet. Please contact the admin for help.') }}</p></div>
+  {% endif %}
+  {% if not sent %}
+  <p class="cb-sub">{{ t('ক্রেতা অ্যাকাউন্টের ইমেইল দিন। আমরা পাসওয়ার্ড বদলানোর লিংক পাঠাব।', 'Enter the email of your customer account. We will send a link to set a new password.') }}</p>
+  {% include "auth/_msgs.html" %}
+  <form class="cb-form" method="post" action="/forgot/customer"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="email">{{ t('ইমেইল', 'Email') }}</label>
+      <input class="cb-input" id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required value="{{ form.email or '' }}" placeholder="name@gmail.com"></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-envelope"></i>{{ t('লিংক পাঠান', 'Send link') }}</button>
+  </form>
+  {% endif %}
+  <p class="cb-hint" style="margin-top:16px"><a href="/login?as=customer">{{ t('লগইনে ফিরে যান', 'Back to login') }}</a></p>
+</section></div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'রিভিউ — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('রিভিউ মডারেশন', 'Review moderation') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="q">{{ t('পণ্য / লেখা', 'Product / text') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    <option value="visible"{% if f.status == 'visible' %} selected{% endif %} data-en="{{ 'Visible' }}">{{ 'দেখা যায়' }}</option><option value="hidden"{% if f.status == 'hidden' %} selected{% endif %} data-en="{{ 'Hidden' }}">{{ 'লুকানো' }}</option></select></div>
+  <div class="cb-field"><label for="rating">{{ t('তারা', 'Stars') }}</label><select class="cb-select" id="rating" name="rating"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for n in range(1, 6) %}<option value="{{ n }}"{% if f.rating == n %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+<ul class="cb-list">{% for r in rows %}
+  <li class="cb-row cb-row-wrap"><div><b>{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</b> · <a href="/market/{{ r.listing_id }}">{{ r.title }}</a> <small class="cb-hint">#{{ r.id }}</small>
+    <small>{{ t('ক্রেতা', 'Customer') }}: <a href="/admin/consumers/{{ r.customer_id }}">{{ r.customer_name }}</a> · {{ t('কৃষক', 'Farmer') }}: <a href="/admin/farmers/{{ r.farmer_id }}">{{ r.farmer_name }}</a>
+      · {% if r.verified %}✓ {{ t('যাচাই করা ক্রয়', 'Verified purchase') }}{% else %}{{ t('ক্রয় যাচাই নেই', 'Purchase not verified') }}{% endif %} · {{ r.created_at.strftime('%Y-%m-%d') }}</small>
+    {% if r.comment %}<p style="margin:4px 0;white-space:pre-line">{{ r.comment }}</p>{% endif %}
+    {% if r.status == 'hidden' %}<small class="cb-bad-text">{{ t('লুকানো', 'Hidden') }}: {{ r.moderation_reason }}</small>{% endif %}</div>
+    <form class="cb-offer" method="post" action="/admin-reviews/{{ r.id }}/moderate">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ 'restore' if r.status == 'hidden' else 'hide' }}">
+      {% if r.status != 'hidden' %}<label class="cb-sr" for="r{{ r.id }}">{{ t('কারণ', 'Reason') }}</label><input class="cb-input" id="r{{ r.id }}" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'কারণ / reason' }}" style="max-width:200px;min-height:40px">{% endif %}
+      <button class="cb-mini {{ 'main' if r.status == 'hidden' else 'danger' }}">{{ t('ফেরান', 'Restore') if r.status == 'hidden' else t('লুকান', 'Hide') }}</button></form></li>
+{% else %}<li class="cb-hint">{{ t('কোনো রিভিউ নেই।', 'No reviews.') }}</li>{% endfor %}</ul>
+{% include "admin/_pager.html" %}
+{% endblock %}

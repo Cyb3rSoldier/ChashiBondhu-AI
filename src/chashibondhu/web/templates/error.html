@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ 'চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap">
+  <section class="cb-auth" style="text-align:center">
+    {% if code == 403 %}
+    <i class="fa-solid fa-lock" style="font-size:40px;color:var(--cb-soil)"></i>
+    <h1>{{ t('এই পাতাটি আপনার অ্যাকাউন্টের জন্য নয়', 'This page is not for your account') }}</h1>
+    <p class="cb-sub">{{ t('যেমন: কৃষকের পাতা শুধু কৃষক অ্যাকাউন্টে খোলে। অন্য অ্যাকাউন্টে ঢুকতে আগে লগআউট করুন।', 'For example, farmer pages open only for farmer accounts. Log out first to use another account.') }}</p>
+    {% else %}
+    <i class="fa-solid fa-circle-question" style="font-size:40px;color:var(--cb-paddy)"></i>
+    <h1>{{ t('পাতাটি পাওয়া যায়নি', 'Page not found') }}</h1>
+    <p class="cb-sub">{{ t('লিংকটি ভুল অথবা জিনিসটি আর নেই।', 'The link is wrong or the item no longer exists.') }}</p>
+    {% endif %}
+    <div class="cb-item-actions" style="justify-content:center">
+      <a class="cb-btn cb-btn-main" href="/"><i class="fa-solid fa-house"></i>{{ t('হোমে যান', 'Go home') }}</a>
+      {% if user and code == 403 %}<form class="cb-logout" method="post" action="/logout" style="width:auto"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-btn cb-btn-line" type="submit" style="color:var(--cb-bad)"><i class="fa-solid fa-right-from-bracket"></i>{{ t('লগআউট', 'Log out') }}</button></form>{% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

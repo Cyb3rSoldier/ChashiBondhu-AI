@@ -1,0 +1,16 @@
+{# one market card; expects `l` #}
+<a class="cb-card" href="/market/{{ l.id }}">
+  <div class="cb-card-img">
+    {% if l.image_path %}<img src="{{ l.image_path }}" alt="{{ l.title }}" loading="lazy">{% else %}<span class="cb-noimg"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+    {% if l.listing_type == 'expected' %}<span class="cb-flag l">{{ t('আগাম', 'Pre-order') }}</span>{% endif %}
+    {% if l.is_organic %}<span class="cb-flag r"><i class="fa-solid fa-leaf"></i> {{ t('জৈব', 'Organic') }}</span>{% endif %}
+  </div>
+  <div class="cb-card-body">
+    <h3>{{ l.title }}</h3>
+    <div class="cb-price"><b>৳{{ num(l.price_per_unit) }}</b><small>/ {{ l.unit }}</small></div>
+    <div class="cb-who"><i class="fa-solid fa-user"></i> {{ l.farmer_name }}</div>
+    {% if l.listing_type == 'expected' and l.available_from %}
+    <div class="cb-who"><i class="fa-solid fa-calendar"></i> {{ t('ফসল উঠবে', 'Harvest') }} {{ l.available_from }}</div>
+    {% endif %}
+  </div>
+</a>

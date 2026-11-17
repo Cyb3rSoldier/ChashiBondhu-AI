@@ -1,0 +1,48 @@
+{% extends "customer/_layout.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'সংরক্ষিত ও প্রিয় — চাষীবন্ধু' }}{% endblock %}
+{% block page %}
+<h1>{{ t('সংরক্ষিত ও প্রিয়', 'Saved & favourites') }}</h1>
+
+<section class="cb-box">
+  <h2><i class="fa-solid fa-heart"></i> {{ t('সংরক্ষিত পণ্য', 'Saved products') }}</h2>
+  {% if items %}
+  <ul class="cb-list">{% for it in items %}{% set U = L.UN.get(it.unit, (it.unit, it.unit)) %}
+    <li class="cb-row">
+      {% if it.image_path %}<img class="cb-thumb" src="{{ it.image_path }}" alt="" style="object-fit:cover">{% else %}<span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+      <div><b><a href="/market/{{ it.id }}">{{ it.title }}</a></b>
+        <small>{{ it.farmer_name }} · ৳{{ num(it.price_now) }} / {{ t(U[0], U[1]) }}{% if it.discount_price %} <s>৳{{ num(it.price_per_unit) }}</s>{% endif %}</small>
+        <small>{% if not it.on_sale %}<span class="cb-bad-text">{{ t('এখন বিক্রি হচ্ছে না', 'Not for sale now') }}</span>
+          {% elif it.listing_type == 'expected' %}{{ t('আগাম ফসল', 'Pre-harvest') }}
+          {% elif it.quantity >= it.min_order %}{{ t('কেনা যাবে', 'Available') }}{% else %}{{ t('স্টক শেষ', 'Out of stock') }}{% endif %}</small></div>
+      <form method="post" action="/market/{{ it.id }}/save"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger"><i class="fa-solid fa-trash"></i>{{ t('সরান', 'Remove') }}</button></form>
+    </li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কিছু সংরক্ষণ করা নেই। পণ্যের পাতায় "সংরক্ষণ করুন" চাপুন।', 'Nothing saved yet. Press "Save" on a product page.') }}</p>{% endif %}
+</section>
+
+<section class="cb-box">
+  <h2><i class="fa-solid fa-user-check"></i> {{ t('প্রিয় কৃষক', 'Favourite farmers') }}</h2>
+  <p class="cb-hint">{{ t('এঁরা নতুন পণ্য দিলে নোটিফিকেশন পাবেন।', 'You get a notification when they add a new product.') }}</p>
+  {% if farmers %}
+  <ul class="cb-list">{% for f in farmers %}
+    <li class="cb-row">
+      <span class="cb-thumb">{% if f.avatar_path %}<img src="{{ f.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</span>
+      <div><b><a href="/market/farmer/{{ f.id }}">{{ f.full_name }}</a></b>
+        <small>{% if f.district_code %}<span data-area-name="{{ f.upazila_code or f.district_code }}">{{ f.upazila_code or f.district_code }}</span> · {% endif %}{{ num(f.active_listings) }} {{ t('টি পণ্য', 'products') }}</small></div>
+      <form method="post" action="/farmers/{{ f.id }}/follow"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('সরান', 'Remove') }}</button></form>
+    </li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('এখনো কোনো প্রিয় কৃষক নেই।', 'No favourite farmers yet.') }}</p>{% endif %}
+</section>
+
+<section class="cb-box">
+  <h2><i class="fa-solid fa-bell"></i> {{ t('পণ্যের নোটিফিকেশন', 'Product alerts') }}</h2>
+  {% if alerts %}
+  <ul class="cb-list">{% for a in alerts %}
+    <li class="cb-row">
+      <div><b><a href="/market/{{ a.listing_id }}">{{ a.title }}</a></b>
+        <small>{% if a.on_restock %}{{ t('স্টকে এলে', 'Back in stock') }}{% endif %}{% if a.on_restock and a.on_price_drop %} · {% endif %}{% if a.on_price_drop %}{{ t('দাম কমলে', 'Price drop') }}{% endif %}</small></div>
+      <form method="post" action="/market/{{ a.listing_id }}/alert"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger">{{ t('বন্ধ করুন', 'Turn off') }}</button></form>
+    </li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কোনো নোটিফিকেশন চালু নেই।', 'No alerts are on.') }}</p>{% endif %}
+</section>
+{% endblock %}

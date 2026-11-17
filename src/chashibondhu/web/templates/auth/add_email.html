@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ 'ইমেইল যোগ করুন — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap"><section class="cb-auth">
+  <h1>{{ t('আপনার ইমেইল যোগ করুন', 'Add your email') }}</h1>
+  <p class="cb-sub">{{ t('ক্রেতারা এখন ইমেইল দিয়ে লগইন করেন, আর পাসওয়ার্ড ভুলে গেলে ইমেইলে লিংক যায়।', 'Customers now log in with email, and password reset links go to email.') }}</p>
+  {% include "auth/_msgs.html" %}
+  <form class="cb-form" method="post" action="/account/email"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="email">{{ t('ইমেইল', 'Email') }}</label>
+      <input class="cb-input" id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required maxlength="254" value="{{ form.email or '' }}" placeholder="name@gmail.com"></div>
+    <div class="cb-field"><label for="password">{{ t('বর্তমান পাসওয়ার্ড', 'Current password') }}</label>
+      <input class="cb-input" id="password" name="password" type="password" autocomplete="current-password" required></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-floppy-disk"></i>{{ t('সংরক্ষণ', 'Save') }}</button>
+  </form>
+</section></div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "farmer/_layout.html" %}
+{% import "farmer/_harvest_labels.html" as H %}
+{% block title %}{{ 'আগাম ফসল ও ক্রেতা — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('আগাম ফসল ও ক্রেতা', 'Harvest & buyers') }}</h1>
+  <a class="cb-btn cb-btn-main" href="/farmer/forecasts/new"><i class="fa-solid fa-plus"></i>{{ t('আগাম ফসল জানান', 'Add harvest forecast') }}</a></div>
+<p class="cb-sub">{{ t('ফসল তোলার আগে জানিয়ে দিন কত হতে পারে। মিলে যাওয়া ক্রেতারা আগ্রহ দেখাবেন। এটা অর্ডার নয় — ফসল তোলার পর আসল পরিমাণ নিশ্চিত করলে তবেই ক্রেতা অর্ডার দিতে পারবেন।', 'Tell buyers what you expect to harvest. Matching buyers can show interest. This is not an order — buyers can order only after you confirm the actual harvest.') }}</p>
+{% if items %}
+<div class="cb-cardlist">
+  {% for f in items %}
+  <a class="cb-item cb-item-link" href="/farmer/forecasts/{{ f.id }}">
+    <div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-seedling"></i></span>
+      <div><b>{{ f.product_name }}{% if f.variety %} · {{ f.variety }}{% endif %}</b>
+        <small>{{ t('আনুমানিক', 'Expected') }} {{ num(f.expected_qty) }} {{ t(H.UN[f.unit][0], H.UN[f.unit][1]) }}
+          {% if f.actual_qty is not none %} · {{ t('আসল', 'Actual') }} {{ num(f.actual_qty) }}{% endif %}
+          · {{ f.harvest_from }}{% if f.harvest_to != f.harvest_from %} – {{ f.harvest_to }}{% endif %}</small>
+        <small>{{ t('ক্রেতার সাথে মিলেছে', 'Matched with buyers') }}: {{ num(f.matched_qty) }}
+          {% if f.need_response %} · <span class="cb-badge soil">{{ num(f.need_response) }} {{ t('জন উত্তরের অপেক্ষায়', 'need your answer') }}</span>{% endif %}</small></div>
+      <span class="cb-badge {{ '' if f.status in ('open', 'harvest_confirmed') else 'soil' }}">{{ t(H.FST[f.status][0], H.FST[f.status][1]) }}</span></div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cb-empty-box"><i class="fa-solid fa-seedling"></i>{{ t('এখনো কোনো আগাম ফসল জানাননি।', 'No harvest forecasts yet.') }}</div>
+{% endif %}
+{% endblock %}

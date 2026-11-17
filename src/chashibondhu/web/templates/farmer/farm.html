@@ -1,0 +1,97 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'জমি ও ফসল — চাষীবন্ধু' }}{% endblock %}
+{% set LT = {'high': ('উঁচু জমি', 'High land'), 'medium_high': ('মাঝারি উঁচু', 'Medium high'), 'medium_low': ('মাঝারি নিচু', 'Medium low'), 'low': ('নিচু জমি', 'Low land'), 'very_low': ('খুব নিচু', 'Very low')} %}
+{% set ST = {'planned': ('পরিকল্পনা', 'Planned'), 'growing': ('মাঠে আছে', 'Growing'), 'harvested': ('তোলা হয়েছে', 'Harvested'), 'failed': ('নষ্ট হয়েছে', 'Failed')} %}
+{% block farmer_content %}
+<div>
+  <div class="cb-head-row"><h1>{{ t('আমার জমি ও ফসল', 'My land and crops') }}</h1>{% include "farmer/_season.html" %}</div>
+
+  <details class="cb-add" {% if not plots %}open{% endif %}>
+    <summary><i class="fa-solid fa-plus"></i>{{ t('নতুন জমি যোগ করুন', 'Add a plot of land') }}</summary>
+    <form class="cb-form" method="post" action="/farmer/farm/plots">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-field"><label for="pname">{{ t('জমির নাম', 'Plot name') }}</label>
+        <input class="cb-input" id="pname" name="name" maxlength="80" required data-ph-bn="যেমন: বাড়ির পাশের জমি" data-ph-en="e.g. Field near home"></div>
+      <div class="cb-row2">
+        <div class="cb-field"><label for="parea">{{ t('পরিমাণ (শতাংশ)', 'Size (decimal)') }}</label><input class="cb-input" id="parea" name="area_decimal" inputmode="decimal"></div>
+        <div class="cb-field"><label for="ptype">{{ t('জমির ধরন', 'Land type') }}</label>
+          <select class="cb-select" id="ptype" name="land_type"><option value="">—</option>
+            {% for k, v in LT.items() %}<option value="{{ k }}">{{ v[0] }} / {{ v[1] }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="cb-field"><span class="cb-label">{{ t('সেচের ব্যবস্থা আছে?', 'Is there irrigation?') }}</span>
+        <div class="cb-checks">
+          <label class="cb-check"><input type="radio" name="irrigation" value="yes"><span>{{ t('হ্যাঁ', 'Yes') }}</span></label>
+          <label class="cb-check"><input type="radio" name="irrigation" value="no"><span>{{ t('না', 'No') }}</span></label>
+        </div></div>
+      <button class="cb-btn cb-btn-main" type="submit">{{ t('জমি যোগ করুন', 'Add plot') }}</button>
+    </form>
+  </details>
+
+  {% if plots %}
+  <details class="cb-add" open>
+    <summary><i class="fa-solid fa-seedling"></i>{{ t('জমিতে ফসল যোগ করুন', 'Add a crop to a plot') }}</summary>
+    <form class="cb-form" method="post" action="/farmer/farm/plantings">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="cb-row2">
+        <div class="cb-field"><label for="plot">{{ t('কোন জমি', 'Which plot') }}</label>
+          <select class="cb-select" id="plot" name="plot_id" required>{% for p in plots %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+        <div class="cb-field"><label for="crop">{{ t('কোন ফসল', 'Which crop') }}</label>
+          <select class="cb-select" id="crop" name="crop_id" required><option value="">—</option>
+            {% for c in crops %}<option value="{{ c.crop_id }}">{{ c.name_bn }} / {{ c.name_en }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="cb-row2">
+        <div class="cb-field"><label for="variety">{{ t('জাত (ইচ্ছামতো)', 'Variety (optional)') }}</label><input class="cb-input" id="variety" name="variety" maxlength="80" data-ph-bn="যেমন: বারি আলু-৭" data-ph-en="e.g. BARI Alu-7"></div>
+        <div class="cb-field"><label for="season">{{ t('মৌসুম', 'Season') }}</label>
+          <select class="cb-select" id="season" name="season">
+            <option value="rabi" {% if season == 'rabi' %}selected{% endif %}>রবি / Rabi</option>
+            <option value="kharif1" {% if season == 'kharif1' %}selected{% endif %}>খরিফ-১ / Kharif-1</option>
+            <option value="kharif2" {% if season == 'kharif2' %}selected{% endif %}>খরিফ-২ / Kharif-2</option></select></div>
+      </div>
+      <div class="cb-row2">
+        <div class="cb-field"><label for="pon">{{ t('লাগানোর তারিখ', 'Planting date') }}</label><input class="cb-input" type="date" id="pon" name="planted_on" max="{{ today }}"></div>
+        <div class="cb-field"><label for="hon">{{ t('তোলার সম্ভাব্য তারিখ', 'Expected harvest date') }}</label><input class="cb-input" type="date" id="hon" name="expected_harvest_on"></div>
+      </div>
+      <button class="cb-btn cb-btn-main" type="submit">{{ t('ফসল যোগ করুন', 'Add crop') }}</button>
+    </form>
+  </details>
+  {% endif %}
+
+  <h2 class="cb-h2" style="font-size:26px;margin-top:20px">{{ t('মাঠের ফসল', 'Crops') }}</h2>
+  {% if plantings %}
+  <div class="cb-cardlist">
+    {% for p in plantings %}
+    <div class="cb-item">
+      <div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-wheat-awn"></i></span>
+        <div><b>{{ crop_name(p.crop_id) }}{% if p.variety %} · {{ p.variety }}{% endif %}</b>
+          <small>{{ p.plot_name }}{% if p.planted_on %} · {{ t('লাগানো', 'Planted') }} {{ p.planted_on }}{% endif %}{% if p.expected_harvest_on %} · {{ t('তোলা', 'Harvest') }} {{ p.expected_harvest_on }}{% endif %}</small></div>
+        <span class="cb-badge {{ 'soil' if p.status == 'harvested' else ('bad' if p.status == 'failed' else '') }}">{{ t(ST[p.status][0], ST[p.status][1]) }}</span></div>
+      {% if p.status in ('planned', 'growing') %}
+      <div class="cb-item-actions">
+        {% if p.status == 'planned' %}
+        <form method="post" action="/farmer/farm/plantings/{{ p.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="growing"><button class="cb-mini">{{ t('লাগানো হয়েছে', 'Planted') }}</button></form>
+        {% endif %}
+        <form method="post" action="/farmer/farm/plantings/{{ p.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="harvested"><button class="cb-mini">{{ t('তোলা হয়েছে', 'Harvested') }}</button></form>
+        <a class="cb-mini main" href="/farmer/listings/new?type=expected&crop_id={{ p.crop_id }}">{{ t('আগাম বিক্রি', 'Pre-sell') }}</a>
+        <a class="cb-mini" href="/assistant?q={{ ((crop_name(p.crop_id)|striptags)[:20] ~ ' চাষে এখন কী করতে হবে?') | urlencode }}">{{ t('পরামর্শ', 'Advice') }}</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cb-empty-box"><i class="fa-solid fa-wheat-awn"></i>{{ t('প্রথমে জমি যোগ করুন, তারপর সেই জমিতে কোন ফসল লাগালেন তা দিন।', 'First add a plot, then add the crop you planted there.') }}</div>
+  {% endif %}
+
+  {% if plots %}
+  <h2 class="cb-h2" style="font-size:26px;margin-top:24px">{{ t('আমার জমি', 'My plots') }}</h2>
+  <div class="cb-cardlist">
+    {% for p in plots %}
+    <div class="cb-item"><div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-map"></i></span>
+      <div><b>{{ p.name }}</b><small>{% if p.area_decimal %}{{ num(p.area_decimal, 0) }} {{ t('শতাংশ', 'decimal') }}{% endif %}{% if p.land_type %} · {{ t(LT[p.land_type][0], LT[p.land_type][1]) }}{% endif %}{% if p.irrigation is not none %} · {{ t('সেচ আছে', 'Irrigated') if p.irrigation else t('সেচ নেই', 'No irrigation') }}{% endif %}</small></div>
+      <form method="post" action="/farmer/farm/plots/{{ p.id }}/delete" onsubmit="return confirm(window.cbLang()==='en'?'Remove this plot and its crops?':'এই জমি আর এর ফসলের তথ্য মুছে ফেলবেন?')"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger" aria-label="delete"><i class="fa-solid fa-trash"></i></button></form>
+    </div></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

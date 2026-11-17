@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'বাজার — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap" style="padding-top:20px">
+  <div class="cb-center-head">
+    <p class="cb-pill">{{ t('বাজার', 'Marketplace') }}</p>
+    <h1 class="cb-h2">{{ t('কৃষকের কাছ থেকে সরাসরি কিনুন', 'Buy directly from farmers') }}</h1>
+    <p class="cb-sub">{{ t('দেখতে লগইন লাগে না। কিনতে ক্রেতা হিসেবে লগইন করুন।', 'Browse without logging in. Log in as a customer to buy.') }}</p>
+  </div>
+
+  <nav class="cb-tabs-big" aria-label="section">
+    {% set base_qs = qs | dictsort | rejectattr(0, 'equalto', 'section') | list %}
+    <a href="/market?{% for k, v in base_qs %}{{ k }}={{ v|urlencode }}&{% endfor %}"{% if not f.section %} aria-current="true"{% endif %}><i class="fa-solid fa-store"></i>{{ t('সব', 'All') }}</a>
+    <a href="/market?{% for k, v in base_qs %}{{ k }}={{ v|urlencode }}&{% endfor %}section=fresh"{% if f.section == 'fresh' %} aria-current="true"{% endif %}><i class="fa-solid fa-carrot"></i>{{ t('মাঠের টাটকা পণ্য', "Fresh from farmers' fields") }}</a>
+    <a href="/market?{% for k, v in base_qs %}{{ k }}={{ v|urlencode }}&{% endfor %}section=tools"{% if f.section == 'tools' %} aria-current="true"{% endif %}><i class="fa-solid fa-screwdriver-wrench"></i>{{ t('যন্ত্রপাতি ও সরঞ্জাম', 'Tools & equipment') }}</a>
+  </nav>
+
+  <form class="cb-mfilter" method="get" action="/market" role="search">
+    {% if f.section %}<input type="hidden" name="section" value="{{ f.section }}">{% endif %}
+    <div class="cb-ac" data-autocomplete>
+      <label class="cb-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <span class="cb-sr">{{ t('খুঁজুন', 'Search') }}</span>
+        <input name="q" value="{{ f.q }}" maxlength="80" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="acList"
+               data-ph-bn="খুঁজুন: আলু, alu, potato, ডিম…" data-ph-en="Search: potato, alu, আলু, eggs…"></label>
+      <ul class="cb-ac-list" id="acList" role="listbox" hidden></ul>
+    </div>
+    <select class="cb-select" name="category" aria-label="বিভাগ / Category">
+      <option value="">{{ 'সব বিভাগ / All categories' }}</option>
+      {% for k in categories %}<option value="{{ k }}" {% if f.category == k %}selected{% endif %}>{{ L.CA[k][0] }} / {{ L.CA[k][1] }}</option>{% endfor %}
+    </select>
+    <select class="cb-select" name="district" aria-label="জেলা / District" data-area-select>
+      <option value="">{{ 'সব জেলা / All districts' }}</option>
+      {% for d in districts %}<option value="{{ d }}" {% if f.district == d %}selected{% endif %} data-area-name="{{ d }}">{{ d }}</option>{% endfor %}
+    </select>
+    <input class="cb-input" name="min" inputmode="decimal" value="{{ f.min if f.min is not none else '' }}" data-ph-bn="সর্বনিম্ন ৳" data-ph-en="Min ৳" aria-label="Min price">
+    <input class="cb-input" name="max" inputmode="decimal" value="{{ f.max if f.max is not none else '' }}" data-ph-bn="সর্বোচ্চ ৳" data-ph-en="Max ৳" aria-label="Max price">
+    <select class="cb-select" name="avail" aria-label="Availability">
+      <option value="">{{ 'সব / All' }}</option>
+      <option value="now" {% if f.avail == 'now' %}selected{% endif %}>{{ 'এখন কেনা যায় / In stock' }}</option>
+      <option value="preorder" {% if f.avail == 'preorder' %}selected{% endif %}>{{ 'আগাম ফসল / Pre-harvest' }}</option>
+    </select>
+    <select class="cb-select" name="sort" aria-label="Sort">
+      {% for k, lab in [('best', 'মিল অনুযায়ী / Best match'), ('new', 'নতুন আগে / Newest'), ('price_asc', 'কম দাম আগে / Price: low'), ('price_desc', 'বেশি দাম আগে / Price: high')] %}
+      <option value="{{ k }}" {% if f.sort == k %}selected{% endif %}>{{ lab }}</option>{% endfor %}
+    </select>
+    <label class="cb-check"><input type="checkbox" name="organic" value="1" {% if f.organic %}checked{% endif %}><span><i class="fa-solid fa-leaf"></i>{{ t('শুধু জৈব', 'Organic only') }}</span></label>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-filter"></i>{{ t('খুঁজুন', 'Search') }}</button>
+    <a class="cb-btn cb-btn-line" href="/market">{{ t('মুছুন', 'Reset') }}</a>
+  </form>
+
+  {% if not db_ok %}
+  <div class="cb-empty-box"><i class="fa-solid fa-triangle-exclamation"></i>{{ t('এখন বাজারের তথ্য আনা যাচ্ছে না। একটু পরে চেষ্টা করুন।', 'Market data is not available right now. Please try again soon.') }}</div>
+  {% elif rows %}
+  <p class="cb-hint">{{ t('মোট', 'Total') }} {{ num(total) }} {{ t('টি পণ্য', 'products') }}</p>
+  <div class="cb-grid">{% for l in rows %}{% include "market/_card.html" %}{% endfor %}</div>
+  {% if pages > 1 %}
+  <nav class="cb-pages" aria-label="pages">
+    {% for p in range(1, pages + 1) %}{% if p == page or p == 1 or p == pages or (p - page)|abs <= 2 %}
+    <a href="/market?{% for k, v in qs|dictsort %}{{ k }}={{ v|urlencode }}&{% endfor %}page={{ p }}"{% if p == page %} aria-current="page"{% endif %}>{{ num(p) }}</a>
+    {% endif %}{% endfor %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <div class="cb-empty-box"><i class="fa-solid fa-magnifying-glass"></i>{{ t('কোনো পণ্য পাওয়া যায়নি। অন্য নাম লিখুন বা ফিল্টার কমান।', 'No products found. Try another word or fewer filters.') }}</div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/market.js?v=1"></script><script src="/static/farmer.js?v=2"></script>{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "admin/_layout.html" %}
+{% set ST = {'draft': ('খসড়া', 'Draft'), 'published': ('প্রকাশিত', 'Published'), 'archived': ('আর্কাইভ', 'Archived')} %}
+{% block title %}{{ 'লেখা ও খবর — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<div class="cb-head-row"><h1>{{ t('লেখা ও খবর', 'Articles & news') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+  <a class="cb-btn cb-btn-main" href="/admin-content/new"><i class="fa-solid fa-plus"></i>{{ t('নতুন', 'New') }}</a></div>
+<p class="cb-hint">{{ t('শুধু আসল তথ্য প্রকাশ করুন। খবরে উৎস দেওয়া বাধ্যতামূলক। প্রকাশিত লেখা দেখা যায়', 'Publish real information only. News must name its source. Published items appear at') }} <a href="/articles">/articles</a>.</p>
+<form class="cb-form" method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+  <div class="cb-field"><label for="kind">{{ t('ধরন', 'Type') }}</label><select class="cb-select" id="kind" name="kind"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>{% for k, v in kinds.items() %}<option value="{{ k }}"{% if f.kind == k %} selected{% endif %} data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>{% for k, v in ST.items() %}<option value="{{ k }}"{% if f.status == k %} selected{% endif %} data-en="{{ v[1] }}">{{ v[0] }}</option>{% endfor %}</select></div>
+  <button class="cb-btn cb-btn-main" type="submit">{{ t('দেখুন', 'Show') }}</button></form>
+<ul class="cb-list">{% for c in rows %}
+  <li class="cb-row"><div><b><a href="/admin-content/{{ c.id }}">{{ c.title }}</a></b>
+    <small>{{ t(kinds[c.kind][0], kinds[c.kind][1]) }} · {{ t(ST[c.status][0], ST[c.status][1]) }}{% if c.published_at %} · {{ c.published_at.strftime('%Y-%m-%d') }}{% endif %}{% if c.source_name %} · {{ c.source_name }}{% endif %}</small></div></li>
+{% else %}<li class="cb-hint">{{ t('এখনো কিছু নেই।', 'Nothing yet.') }}</li>{% endfor %}</ul>
+{% include "admin/_pager.html" %}
+{% endblock %}

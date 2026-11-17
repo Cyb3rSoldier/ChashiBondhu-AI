@@ -1,0 +1,50 @@
+{% extends "farmer/_layout.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'অর্ডার — চাষীবন্ধু' }}{% endblock %}
+{# farmer step names shown with the order-status words customers also understand #}
+{% set FS = {'pending': ('নতুন (অপেক্ষমাণ)', 'Pending'), 'accepted': ('নিশ্চিত করেছেন', 'Confirmed'), 'packed': ('ডেলিভারির জন্য প্রস্তুত', 'Ready for delivery'), 'handed_over': ('পাঠানো হয়েছে', 'Out for delivery'), 'rejected': ('বাতিল', 'Cancelled')} %}
+{% set BTN = {'accepted': ('নিশ্চিত করুন', 'Confirm'), 'packed': ('প্রস্তুত', 'Ready for delivery'), 'handed_over': ('পাঠিয়ে দিয়েছি', 'Handed to delivery'), 'rejected': ('বাতিল করুন', 'Cancel item')} %}
+{% set PAY = {'unpaid': ('টাকা বাকি', 'Unpaid'), 'paid': ('টাকা পরিশোধ', 'Paid'), 'refunded': ('টাকা ফেরত', 'Refunded')} %}
+{% set NEXT = {'pending': ['accepted', 'rejected'], 'accepted': ['packed', 'rejected'], 'packed': ['handed_over']} %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('অর্ডার দেখুন', 'View orders') }}</h1></div>
+<nav class="cb-cats" aria-label="period" style="margin-bottom:16px">
+  {% for p, bn, en in [('all', 'সব', 'All'), ('today', 'আজ', 'Today'), ('week', 'এই সপ্তাহ (৭ দিন)', 'Last 7 days'), ('month', 'এই মাস (৩০ দিন)', 'Last 30 days')] %}
+  <a class="cb-cat" href="/farmer/orders?period={{ p }}"{% if period == p %} aria-current="true"{% endif %}>{{ t(bn, en) }}</a>
+  {% endfor %}
+</nav>
+{% if items %}
+<div class="cb-cardlist">
+  {% for it in items %}
+  {% set done = it.order_status == 'delivered' and it.farmer_status != 'rejected' %}
+  {% set cancelled = it.order_status == 'cancelled' or it.farmer_status == 'rejected' %}
+  <div class="cb-item">
+    <div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-receipt"></i></span>
+      <div><b>{{ it.title }} · {{ num(it.quantity) }} {{ t(L.UN.get(it.unit, (it.unit, it.unit))[0], L.UN.get(it.unit, (it.unit, it.unit))[1]) }}</b>
+        <small>{{ t('অর্ডার', 'Order') }} {{ it.order_number }} · {{ (it.created_at|string)[:16] }} · ৳{{ num(it.line_total) }}</small>
+        <small>{{ t('ক্রেতা', 'Customer') }}: {{ it.customer_name }}
+          · {{ t('পেমেন্ট', 'Payment') }}: {{ t('ক্যাশ অন ডেলিভারি', 'Cash on delivery') if it.payment_method == 'cod' else it.payment_method }}, {{ t(PAY.get(it.payment_status, (it.payment_status, it.payment_status))[0], PAY.get(it.payment_status, (it.payment_status, it.payment_status))[1]) }}</small>
+        {% if it.delivery_address %}<small><i class="fa-solid fa-location-dot"></i> {{ it.delivery_address }}{% if it.customer_phone %} · <i class="fa-solid fa-phone"></i> {{ it.customer_phone }}{% endif %}</small>
+        {% elif not cancelled %}<small class="cb-hint">{{ t('নিশ্চিত করলে ক্রেতার ঠিকানা ও ফোন দেখা যাবে।', 'Customer address and phone show after you confirm.') }}</small>{% endif %}
+      </div>
+      {% if done %}<span class="cb-badge">{{ t('সম্পন্ন', 'Completed') }}</span>
+      {% elif it.order_status == 'cancelled' %}<span class="cb-badge bad">{{ t('বাতিল', 'Cancelled') }}</span>
+      {% else %}<span class="cb-badge {{ 'bad' if it.farmer_status == 'rejected' else '' }}">{{ t(FS[it.farmer_status][0], FS[it.farmer_status][1]) }}</span>{% endif %}
+    </div>
+    {% set next_steps = [] if (done or it.order_status == 'cancelled') else NEXT.get(it.farmer_status, []) %}
+    {% if next_steps %}
+    <div class="cb-item-actions">
+      {% for s in next_steps %}
+      <form method="post" action="/farmer/orders/items/{{ it.id }}"{% if s == 'rejected' %} data-confirm-bn="এই অর্ডারটি বাতিল করবেন?" data-confirm-en="Cancel this order item?"{% endif %}><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="{{ s }}"><button class="cb-mini {{ 'danger' if s == 'rejected' else 'main' }}">{{ t(BTN[s][0], BTN[s][1]) }}</button></form>
+      {% endfor %}
+    </div>
+    {% if it.farmer_status == 'pending' %}<p class="cb-hint">{{ t('নিশ্চিত করলে আপনার পণ্যের পরিমাণ থেকে এই অর্ডারের পরিমাণ কমে যাবে।', 'Confirming takes this quantity out of your product stock.') }}</p>{% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cb-empty-box"><i class="fa-solid fa-receipt"></i>{{ t('এই সময়ে কোনো অর্ডার নেই। ক্রেতা অংশ চালু হলে অর্ডার এখানে আসবে।', 'No orders in this period. Orders will appear here once the customer side is live.') }}</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

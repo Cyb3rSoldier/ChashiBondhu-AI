@@ -1,0 +1,32 @@
+target,crop_id,variety_scope,item,unit,min,opt_min,opt_max,max,value_text,start_month,start_day,end_month,end_day,region_scope,page,quote_bn,note
+requirement,mustard,general,soil_texture,category,,,,,sandy_loam|loam,,,,,,115,সরিষা বেলে দোআঁশ ও দোআঁশ মাটিতে ভালো জন্মে,
+requirement,mustard,general,water_regime,category,,,,,supplementary_irrigation,,,,,,116,উফশী জাতসমূহে পানি সেচ দিলে ফলন বেশি হয়,mapping is our interpretation: 2 irrigations at 20-25 and 50-55 days raise yield
+requirement,mustard,tori_type,crop_duration_days,days,70,,,90,,,,,,,116,টরি জাতীয় সরিষা ৭০-৯০ দিনের মধ্যে সংগ্রহ,
+requirement,mustard,rai_type,crop_duration_days,days,90,,,120,,,,,,,116,রাই জাতীয় সরিষা ৯০-১২০ দিনের মধ্যে সংগ্রহ,
+requirement,mustard,Tori-7,crop_duration_days,days,70,,,80,,,,,,,110,বোনা থেকে পাকা পর্যন্ত ৭০-৮০ দিন,
+requirement,mustard,BARI Sarisha-11,crop_duration_days,days,105,,,110,,,,,,,111,ফসল ১০৫-১১০ দিনে পাকে,
+requirement,mustard,BARI Sarisha-12,crop_duration_days,days,85,,,90,,,,,,,111,ফসল ৮৫-৯০ দিনে পাকে,
+requirement,mustard,BARI Sarisha-13,crop_duration_days,days,90,,,95,,,,,,,111,ফসল ৯০-৯৫ দিনে পাকে,
+requirement,mustard,BARI Sarisha-14,crop_duration_days,days,75,,,80,,,,,,,112,স্থিতিকাল ৭৫-৮০ দিন,short duration: T.Aman-mustard-Boro pattern
+requirement,mustard,BARI Sarisha-15,crop_duration_days,days,80,,,85,,,,,,,112,স্থিতিকাল ৮০-৮৫ দিন,short duration: T.Aman-mustard-Boro pattern
+requirement,mustard,BARI Sarisha-16,crop_duration_days,days,105,,,115,,,,,,,113,স্থিতিকাল ১০৫-১১৫ দিন,late variety; drought and salinity tolerant
+requirement,mustard,BARI Sarisha-17,crop_duration_days,days,82,,,86,,,,,,,113,স্থিতিকাল ৮২-৮৬ দিন,short duration: T.Aman-mustard-Boro pattern
+requirement,mustard,BARI Sarisha-18,crop_duration_days,days,95,,,100,,,,,,,113,বপন হতে কর্তন পর্যন্ত ৯৫-১০০ দিন,canola type
+requirement,mustard,BARI Sarisha-19,crop_duration_days,days,90,,,105,,,,,,,113,জীবনকাল ৯০-১০৫ দিন,salinity tolerant
+requirement,mustard,BARI Sarisha-20,crop_duration_days,days,80,,,85,,,,,,,114,জীবনকাল ৮০-৮৫ দিন,short duration: T.Aman-mustard-Boro pattern
+requirement,mustard,BARI Sarisha-21,crop_duration_days,days,95,,,110,,,,,,,114,জীবনকাল ৯৫-১১০ দিন,released 2024
+requirement,mustard,BARI Sarisha-22,crop_duration_days,days,84,,,85,,,,,,,114,জীবনকাল ৮৪-৮৫ দিন,released 2025
+requirement,mustard,BARI Sarisha-23,crop_duration_days,days,88,,,90,,,,,,,115,জীবনকাল ৮৮-৯০ দিন,released 2025
+calendar,mustard,general,sowing,,,,,,,10,15,11,15,national,115,কার্তিক মাসের ১ম সপ্তাহ থেকে শেষ সপ্তাহ (মধ্য-অক্টোবর থেকে মধ্য-নভেম্বর),book says mid-Oct to mid-Nov; 15th used for mid
+calendar,mustard,general,harvest,,,,,,,12,24,3,15,national,115-116,(derived) বপন সময় + ৭০-১২০ দিনে সংগ্রহ,DERIVED not stated: earliest 15 Oct + 70 days; latest 15 Nov + 120 days
+calendar,mustard,BARI Sarisha-19,sowing,,,,,,,10,15,11,30,national,114,বপন কাল: ১৫ অক্টোবর থেকে ৩০ নভেম্বর,
+calendar,mustard,BARI Sarisha-21,sowing,,,,,,,10,15,11,30,national,114,জাতটির বপন কাল ১৫ অক্টোবর থেকে ৩০ নভেম্বর,
+requirement,potato,general,soil_texture,category,,,,,sandy_loam|loam,,,,,,25,বেলে দো-আঁশ থেকে দো-আঁশ মাটি আলু চাষের জন্য উত্তম,book: potato can grow on any soil; these are best
+requirement,potato,general,land_type,category,,,,,highland|medium_highland,,,,,,25,উঁচু থেকে মাঝারী উঁচু জমি যেখানে সেচ ও নিষ্কাশনের সুব্যবস্থা আছে,
+requirement,potato,general,water_regime,category,,,,,irrigated,,,,,,27,২-৩টি সেচ প্রয়োগ করা প্রয়োজন হতে পারে,
+calendar,potato,general,sowing,,,,,,,11,1,11,30,national,26,১৫ কার্তিক থেকে ১৫ অগ্রহায়ণ (নভেম্বর মাস) আলু লাগানোর উপযুক্ত সময়,activity=sowing means planting seed tubers
+requirement,tomato,general,air_temp_c,degC,,20,25,,,,,,,,142,গড় তাপমাত্রা ২০-২৫° সে. টমেটোর ভাল ফলনের জন্য সবচেয়ে উপযোগী,also: night temperature below 23 C is better for flowering and fruit set
+requirement,tomato,general,soil_ph,pH,,6,7,,,,,,,,142,মাটির পিএইচ ৬-৭ হলে ভাল হয়,book: below 6 apply lime
+requirement,tomato,general,soil_texture,category,,,,,sandy_loam|loam|clay_loam,,,,,,142,দোআঁশ মাটি সবচেয়ে ভাল; বেলে দোআঁশ থেকে এঁটেল দোআঁশ সব মাটিতেই ভাল জন্মে,loam is best
+requirement,tomato,general,water_regime,category,,,,,irrigated,,,,,,143,প্রতি কিস্তি সার প্রয়োগের পর জমিতে সেচ দিতে হয়,does not tolerate waterlogging
+calendar,tomato,general,seedbed_sowing,,,,,,,10,1,11,30,national,145,বীজ বপনের সময়: শীতকালে অক্টোবর-নভেম্বর (আশ্বিন-কার্তিক),CHECK: stated in the hybrid tomato section; confirm it applies to all winter tomato

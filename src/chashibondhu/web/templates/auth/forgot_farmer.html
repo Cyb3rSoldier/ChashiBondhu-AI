@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ 'পাসওয়ার্ড ভুলে গেছেন — চাষীবন্ধু' }}{% endblock %}
+{% block content %}
+<div class="cb-wrap"><section class="cb-auth">
+  <h1>{{ t('পাসওয়ার্ড ভুলে গেছেন?', 'Forgot your password?') }}</h1>
+  {% if sms %}
+  <p class="cb-sub">{{ t('আপনার কৃষক অ্যাকাউন্টের মোবাইল নম্বর দিন। SMS-এ ৬ সংখ্যার কোড যাবে।', 'Enter the mobile number of your farmer account. We will send a 6-digit code by SMS.') }}</p>
+  {% include "auth/_msgs.html" %}
+  <form class="cb-form" method="post" action="/forgot/farmer"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
+      <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-comment-sms"></i>{{ t('কোড পাঠান', 'Send code') }}</button>
+  </form>
+  {% else %}
+  <p class="cb-sub">{{ t('এখনো SMS চালু হয়নি। চাষীবন্ধু অ্যাডমিনকে ফোন করুন। অ্যাডমিন আপনার নম্বর যাচাই করে ৬ সংখ্যার একটি কোড দেবেন।', 'SMS is not switched on yet. Call the ChashiBondhu admin. The admin checks your number and gives you a 6-digit code.') }}</p>
+  <a class="cb-btn cb-btn-main" href="/forgot/farmer/code"><i class="fa-solid fa-key"></i>{{ t('আমার কাছে কোড আছে', 'I have a code') }}</a>
+  {% endif %}
+  <p class="cb-hint" style="margin-top:16px"><a href="/login?as=farmer">{{ t('লগইনে ফিরে যান', 'Back to login') }}</a></p>
+</section></div>
+{% endblock %}

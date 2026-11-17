@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+{% set MENU = [
+  ('c_dash', '/customer', 'fa-gauge', 'সারসংক্ষেপ', 'Overview'),
+  ('market', '/market', 'fa-store', 'বাজার দেখুন', 'Browse marketplace'),
+  ('c_shopai', '/shop-assistant', 'fa-wand-magic-sparkles', 'কেনাকাটা সহায়ক', 'Shopping helper'),
+  ('cart', '/cart', 'fa-cart-shopping', 'আমার কার্ট', 'My cart'),
+  ('c_orders', '/customer/orders', 'fa-receipt', 'আমার অর্ডার', 'My orders'),
+  ('c_saved', '/customer/saved', 'fa-heart', 'সংরক্ষিত ও প্রিয়', 'Saved & favourites'),
+  ('requests', '/requests', 'fa-handshake', 'আগাম চাহিদা', 'Demand requests'),
+  ('c_notes', '/customer/notifications', 'fa-bell', 'নোটিফিকেশন', 'Notifications'),
+  ('c_complaints', '/customer/complaints', 'fa-comment-dots', 'অভিযোগ', 'Complaints'),
+  ('c_settings', '/customer/settings', 'fa-gear', 'সেটিংস', 'Settings'),
+] %}
+<div class="cb-wrap cb-fdash">
+  <nav class="cb-side" aria-label="customer menu"><ul>
+    {% for key, href, icon, bn, en in MENU %}<li><a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}><i class="fa-solid {{ icon }}"></i>{{ t(bn, en) }}</a></li>{% endfor %}
+    <li class="cb-side-out"><form class="cb-logout" method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button type="submit"><i class="fa-solid fa-right-from-bracket"></i>{{ t('লগআউট', 'Log out') }}</button></form></li>
+  </ul></nav>
+  <div class="cb-fmain">{% block page %}{% endblock %}</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

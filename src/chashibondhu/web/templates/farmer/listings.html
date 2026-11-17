@@ -1,0 +1,45 @@
+{% extends "farmer/_layout.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'আমার পণ্য — চাষীবন্ধু' }}{% endblock %}
+{% set ST = {'active': ('বাজারে আছে', 'Active'), 'sold_out': ('স্টক শেষ', 'Out of stock'), 'hidden': ('লুকানো', 'Hidden'), 'draft': ('খসড়া', 'Draft')} %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('আমার পণ্য', 'My products') }}</h1>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="cb-btn cb-btn-main" href="/farmer/listings/new"><i class="fa-solid fa-plus"></i>{{ t('পণ্য যোগ করুন', 'Add product') }}</a>
+    <a class="cb-btn cb-btn-line" href="/farmer/listings/new?type=expected"><i class="fa-solid fa-calendar"></i>{{ t('আগাম বিক্রি', 'Pre-sell harvest') }}</a>
+  </div></div>
+{% if listings %}
+<div class="cb-cardlist">
+  {% for l in listings %}
+  {% set out = l.status == 'sold_out' or (l.quantity is not none and l.quantity <= 0) %}
+  {% set st = 'sold_out' if (out and l.status == 'active') else l.status %}
+  <div class="cb-item">
+    <div class="cb-item-top">
+      {% if l.image_path %}<img src="{{ l.image_path }}" alt="">{% else %}<span class="cb-thumb"><i class="fa-solid fa-basket-shopping"></i></span>{% endif %}
+      <div><b>{{ l.title }}</b>
+        <small>{{ t(L.CA.get(l.category, ('অন্যান্য','Others'))[0], L.CA.get(l.category, ('অন্যান্য','Others'))[1]) }}
+          · ৳{{ num(l.price_per_unit) }} / {{ t(L.UN.get(l.unit, (l.unit, l.unit))[0], L.UN.get(l.unit, (l.unit, l.unit))[1]) }}
+          · {{ t('পরিমাণ', 'Qty') }} {{ num(l.quantity) }}
+          {% if l.listing_type == 'expected' %} · {{ t('আগাম — ফসল উঠবে', 'Pre-sell — harvest') }} {{ l.available_from }}{% endif %}</small>
+        <small>{{ t(L.FM.get(l.farming_method or 'conventional')[0], L.FM.get(l.farming_method or 'conventional')[1]) }}
+          · {{ t('যোগ হয়েছে', 'Added') }} {{ (l.created_at|string)[:10] if l.created_at else '' }}</small></div>
+      <span class="cb-badge {{ '' if st == 'active' else 'soil' }}">{{ t(ST.get(st, (st, st))[0], ST.get(st, (st, st))[1]) }}</span>
+    </div>
+    <div class="cb-item-actions">
+      <a class="cb-mini" href="/farmer/listings/{{ l.id }}/edit"><i class="fa-solid fa-pen"></i>{{ t('বদলান', 'Edit') }}</a>
+      {% if l.status == 'active' %}
+      <form method="post" action="/farmer/listings/{{ l.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="sold_out"><button class="cb-mini">{{ t('স্টক শেষ', 'Mark out of stock') }}</button></form>
+      <form method="post" action="/farmer/listings/{{ l.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="hidden"><button class="cb-mini">{{ t('লুকান', 'Hide') }}</button></form>
+      {% else %}
+      <form method="post" action="/farmer/listings/{{ l.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="active"><button class="cb-mini main">{{ t('আবার বাজারে দিন', 'Put on sale again') }}</button></form>
+      {% endif %}
+      <form method="post" action="/farmer/listings/{{ l.id }}/delete" data-confirm-bn="পণ্যটি মুছে ফেলবেন? পুরনো অর্ডারের তথ্য থেকে যাবে।" data-confirm-en="Delete this product? Old order records will be kept."><input type="hidden" name="csrf" value="{{ csrf }}"><button class="cb-mini danger"><i class="fa-solid fa-trash"></i>{{ t('মুছুন', 'Delete') }}</button></form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cb-empty-box"><i class="fa-solid fa-store"></i>{{ t('এখনো কোনো পণ্য দেননি। দাম আর পরিমাণ আপনি ঠিক করবেন।', 'No products yet. You decide the price and quantity.') }}</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

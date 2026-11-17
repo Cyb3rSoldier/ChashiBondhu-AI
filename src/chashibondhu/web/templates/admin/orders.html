@@ -1,0 +1,26 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'অর্ডার — অ্যাডমিন' }}{% endblock %}
+{% block page %}
+<h1>{{ t('অর্ডার', 'Orders') }} <small class="cb-hint">({{ num(total) }})</small></h1>
+<form class="cb-form" method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="cb-field"><label for="q">{{ t('অর্ডার নম্বর / ক্রেতা / ফোন', 'Order no. / customer / phone') }}</label><input class="cb-input" id="q" name="q" value="{{ f.q }}"></div>
+  <div class="cb-field"><label for="status">{{ t('অবস্থা', 'Status') }}</label><select class="cb-select" id="status" name="status"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for s in ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled') %}<option value="{{ s }}"{% if f.status == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="payment">{{ t('পেমেন্ট', 'Payment') }}</label><select class="cb-select" id="payment" name="payment"><option value="" data-en="{{ 'All' }}">{{ 'সব' }}</option>
+    {% for s in ('unpaid', 'paid', 'refunded') %}<option value="{{ s }}"{% if f.payment == s %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="cb-field"><label for="from">{{ t('থেকে', 'From') }}</label><input class="cb-input" type="date" id="from" name="from" value="{{ f['from'] }}"></div>
+  <div class="cb-field"><label for="to">{{ t('পর্যন্ত', 'To') }}</label><input class="cb-input" type="date" id="to" name="to" value="{{ f.to }}"></div>
+  {% if f.farmer %}<input type="hidden" name="farmer" value="{{ f.farmer }}">{% endif %}{% if f.customer %}<input type="hidden" name="customer" value="{{ f.customer }}">{% endif %}
+  <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-magnifying-glass"></i>{{ t('খুঁজুন', 'Search') }}</button>
+</form>
+{% if f.farmer or f.customer %}<p class="cb-hint">{{ t('ফিল্টার', 'Filter') }}: {% if f.farmer %}{{ t('কৃষক', 'farmer') }} #{{ f.farmer }}{% endif %}{% if f.customer %}{{ t('ক্রেতা', 'customer') }} #{{ f.customer }}{% endif %} · <a href="/admin-orders">{{ t('সরান', 'clear') }}</a></p>{% endif %}
+<div style="overflow-x:auto"><table class="cb-table" style="width:100%;border-collapse:collapse">
+  <thead><tr><th scope="col">{{ t('অর্ডার', 'Order') }}</th><th scope="col">{{ t('তারিখ', 'Date') }}</th><th scope="col">{{ t('ক্রেতা', 'Customer') }}</th><th scope="col">{{ t('কৃষক / আইটেম', 'Farmers / items') }}</th><th scope="col">{{ t('মোট', 'Total') }}</th><th scope="col">{{ t('অবস্থা', 'Status') }}</th><th scope="col">{{ t('পেমেন্ট', 'Payment') }}</th></tr></thead>
+  <tbody>{% for o in rows %}
+    <tr><td><a href="/admin-orders/{{ o.order_number }}">{{ o.order_number }}</a></td><td>{{ o.created_at.strftime('%Y-%m-%d') }}</td>
+      <td><a href="/admin/consumers/{{ o.customer_id }}">{{ o.customer_name }}</a></td><td>{{ num(o.farmers) }} / {{ num(o.items) }}</td>
+      <td>৳{{ num(o.total) }}</td><td>{{ o.status }}</td><td>{{ o.payment_method|upper }} · {{ o.payment_status }}</td></tr>
+  {% else %}<tr><td colspan="7" class="cb-hint">{{ t('কোনো অর্ডার নেই।', 'No orders.') }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "admin/_pager.html" %}
+{% endblock %}

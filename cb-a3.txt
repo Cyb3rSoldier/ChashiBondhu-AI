@@ -1,0 +1,92 @@
+TABLES: admin_audit_log, admin_staff, ai_conversations, ai_feedback, ai_messages, announcements, auth_rate_events, buyer_demand_requests, cart_items, complaint_notes, complaints, contact_messages, farm_plots, farmer_ledger, farmer_profiles, favourite_farmers, harvest_forecasts, harvest_matches, listings, market_prices, notifications, order_items, orders, password_resets, plantings, product_alerts, reviews, saved_items, schema_migrations, users, users_backup_20261113, users_backup_20261114
+ai_conversations.id bigint null=NO def=None
+ai_conversations.user_id bigint null=YES def=None
+ai_conversations.title text null=YES def=None
+ai_conversations.created_at timestamp with time zone null=NO def=now()
+ai_conversations.updated_at timestamp with time zone null=NO def=now()
+ai_feedback.id bigint null=NO def=None
+ai_feedback.message_id bigint null=NO def=None
+ai_feedback.user_id bigint null=YES def=None
+ai_feedback.helpful boolean null=NO def=None
+ai_feedback.comment text null=YES def=None
+ai_feedback.created_at timestamp with time zone null=NO def=now()
+ai_messages.id bigint null=NO def=None
+ai_messages.conversation_id bigint null=NO def=None
+ai_messages.role text null=NO def=None
+ai_messages.kind text null=NO def='text'::text
+ai_messages.content text null=NO def=None
+ai_messages.status text null=YES def=None
+ai_messages.crop_id text null=YES def=None
+ai_messages.sources jsonb null=YES def=None
+ai_messages.candidates jsonb null=YES def=None
+ai_messages.model text null=YES def=None
+ai_messages.created_at timestamp with time zone null=NO def=now()
+announcements.id bigint null=NO def=None
+announcements.title text null=NO def=None
+announcements.body text null=NO def=None
+announcements.audience text null=NO def='all'::text
+announcements.created_by bigint null=YES def=None
+announcements.created_at timestamp with time zone null=NO def=now()
+market_prices.id bigint null=NO def=None
+market_prices.product_key text null=NO def=None
+market_prices.product_name_bn text null=YES def=None
+market_prices.product_name_en text null=YES def=None
+market_prices.market_name text null=NO def=None
+market_prices.district_code text null=YES def=None
+market_prices.unit text null=NO def=None
+market_prices.price_min numeric null=YES def=None
+market_prices.price_max numeric null=YES def=None
+market_prices.price_avg numeric null=YES def=None
+market_prices.observed_at timestamp with time zone null=NO def=None
+market_prices.source_name text null=NO def=None
+market_prices.source_url text null=YES def=None
+market_prices.imported_at timestamp with time zone null=NO def=now()
+ai_feedback ai_feedback_message_id_user_id_key: UNIQUE (message_id, user_id)
+announcements announcements_audience_check: CHECK ((audience = ANY (ARRAY['all'::text, 'farmer'::text, 'customer'::text])))
+ai_messages ai_messages_role_check: CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))
+ai_messages ai_messages_kind_check: CHECK ((kind = ANY (ARRAY['text'::text, 'photo'::text])))
+market_prices market_prices_price_max_check: CHECK ((price_max >= (0)::numeric))
+market_prices market_prices_district_code_check: CHECK ((district_code ~ '^BD[0-9]{4}$'::text))
+market_prices market_prices_price_min_check: CHECK ((price_min >= (0)::numeric))
+market_prices market_prices_price_avg_check: CHECK ((price_avg >= (0)::numeric))
+market_prices market_prices_check: CHECK (((price_min IS NULL) OR (price_max IS NULL) OR (price_min <= price_max)))
+market_prices market_prices_check1: CHECK ((COALESCE(price_min, price_max, price_avg) IS NOT NULL))
+market_prices market_prices_product_key_market_name_observed_at_source_na_key: UNIQUE (product_key, market_name, observed_at, source_name)
+def price_products() -> list[dict]:
+    return fetch_all("SELECT product_key, max(product_name_bn) AS name_bn, max(product_name_en) AS name_en, "
+                     "max(observed_at) AS last_seen FROM market_prices GROUP BY product_key ORDER BY product_key")
+def latest_prices(product_key: str) -> list[dict]:
+    """Newest observation per market for one product (comparison across locations)."""
+    return fetch_all("SELECT DISTINCT ON (market_name) * FROM market_prices WHERE product_key = %s "
+                     "ORDER BY market_name, observed_at DESC", (product_key,))
+def price_history(product_key: str, limit: int = 60) -> list[dict]:
+    return fetch_all("SELECT observed_at, market_name, unit, price_min, price_max, price_avg, source_name "
+                     "FROM market_prices WHERE product_key = %s ORDER BY observed_at DESC LIMIT %s",
+                     (product_key, limit))
+def farmer_tips(limit: int = 30) -> list[dict]:
+    return fetch_all("SELECT id, title, body, created_at FROM announcements WHERE audience IN ('all', 'farmer') "
+                     "ORDER BY created_at DESC LIMIT %s", (limit,))
+def add_ai_message(conversation_id: int, role: str, content: str, kind: str = "text", status: str | None = None,
+                   crop_id: str | None = None, sources=None, candidates=None, model: str | None = None) -> int:
+    from psycopg.types.json import Jsonb
+    r = fetch_one("INSERT INTO ai_messages (conversation_id, role, kind, content, status, crop_id, sources, "
+                  "candidates, model) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                  (conversation_id, role, kind, content, status, crop_id,
+                   Jsonb(sources) if sources is not None else None,
+                   Jsonb(candidates) if candidates is not None else None, model))
+    execute("UPDATE ai_conversations SET updated_at = now(), title = COALESCE(title, left(%s::text, 80)) "
+            "WHERE id = %s", (content if role == "user" else None, conversation_id))
+    return int(r["id"])
+def add_feedback(message_id: int, user_id: int | None, helpful: bool, comment: str | None) -> None:
+    if user_id is None:
+        execute("INSERT INTO ai_feedback (message_id, user_id, helpful, comment) VALUES (%s, NULL, %s, %s)",
+                (message_id, helpful, comment))
+    else:
+        execute("INSERT INTO ai_feedback (message_id, user_id, helpful, comment) VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (message_id, user_id) DO UPDATE SET helpful = EXCLUDED.helpful, "
+                "comment = EXCLUDED.comment", (message_id, user_id, helpful, comment))
+def recent_questions(user_id: int, limit: int = 5) -> list[dict]:
+    return fetch_all("SELECT m.content, m.kind, m.created_at FROM ai_messages m "
+                     "JOIN ai_conversations c ON c.id = m.conversation_id "
+                     "WHERE c.user_id = %s AND m.role = 'user' ORDER BY m.created_at DESC LIMIT %s",
+                     (user_id, limit))

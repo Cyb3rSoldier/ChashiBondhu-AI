@@ -1,0 +1,18 @@
+{% extends "farmer/_layout.html" %}
+{% block title %}{{ 'কৃষকের পরামর্শ — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+<div class="cb-head-row"><h1>{{ t('কৃষকের পরামর্শ', 'Farmers tips') }}</h1></div>
+<p class="cb-sub">{{ t('চাষীবন্ধু দলের দেওয়া পরামর্শ ও ঘোষণা। নিজের জমির নির্দিষ্ট সমস্যার জন্য কৃষি সহকারীকে জিজ্ঞেস করুন বা উপজেলা কৃষি অফিসে যোগাযোগ করুন।', 'Tips and notices from the ChashiBondhu team. For your own field, ask the farm assistant or contact your Upazila Agriculture Office.') }}</p>
+{% if tips %}
+<div class="cb-cardlist">
+  {% for tip in tips %}
+  <article class="cb-item"><div class="cb-item-top"><span class="cb-thumb"><i class="fa-solid fa-lightbulb"></i></span>
+    <div><b style="white-space:normal">{{ tip.title }}</b><small>{{ (tip.created_at|string)[:10] }}</small></div></div>
+    <p style="margin:0;white-space:pre-line">{{ tip.body }}</p></article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="cb-empty-box"><i class="fa-solid fa-lightbulb"></i>{{ t('এখনো কোনো পরামর্শ দেওয়া হয়নি।', 'No tips posted yet.') }}<br><br>
+  <a class="cb-btn cb-btn-main" href="/assistant"><i class="fa-solid fa-seedling"></i>{{ t('কৃষি সহকারীকে জিজ্ঞেস করুন', 'Ask the farm assistant') }}</a></div>
+{% endif %}
+{% endblock %}

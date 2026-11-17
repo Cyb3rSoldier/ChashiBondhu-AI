@@ -1,0 +1,65 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ o.order_number }} — অ্যাডমিন{% endblock %}
+{% block page %}
+<a class="cb-hint" href="/admin-orders"><i class="fa-solid fa-arrow-left"></i> {{ t('অর্ডার তালিকা', 'All orders') }}</a>
+<h1>{{ o.order_number }} <small class="cb-pill {{ 'ok' if o.status == 'delivered' else ('no' if o.status == 'cancelled' else '') }}">{{ o.status }}</small></h1>
+<section class="cb-box">
+  <dl class="cb-pv">
+    <dt>{{ t('তারিখ', 'Date') }}</dt><dd>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+    <dt>{{ t('ক্রেতা', 'Customer') }}</dt><dd><a href="/admin/consumers/{{ o.customer_id }}">{{ o.customer_name }}</a>{% if o.customer_email %} · {{ o.customer_email }}{% endif %}</dd>
+    <dt>{{ t('ডেলিভারি ফোন', 'Delivery phone') }}</dt><dd>{{ o.phone }}</dd>
+    <dt>{{ t('ঠিকানা', 'Address') }}</dt><dd style="white-space:pre-line">{{ o.delivery_address }}</dd>
+    {% if o.note %}<dt>{{ t('নোট', 'Note') }}</dt><dd>{{ o.note }}</dd>{% endif %}
+    <dt>{{ t('টাকা', 'Money') }}</dt><dd>৳{{ num(o.subtotal) }} + ৳{{ num(o.delivery_fee) }} {{ t('ডেলিভারি', 'delivery') }} = <b>৳{{ num(o.total) }}</b></dd>
+    <dt>{{ t('পেমেন্ট', 'Payment') }}</dt><dd>{{ o.payment_method|upper }} · <b>{{ o.payment_status }}</b></dd>
+    {% if o.cancel_reason %}<dt>{{ t('বাতিলের কারণ', 'Cancel reason') }}</dt><dd>{{ o.cancel_reason }}</dd>{% endif %}
+  </dl>
+</section>
+
+<section class="cb-box"><h2>{{ t('কৃষক অনুযায়ী আইটেম', 'Items by farmer') }}</h2>
+  <p class="cb-hint">{{ t('কৃষকের ধাপ: pending → accepted (নিশ্চিত) → packed (ডেলিভারির জন্য প্রস্তুত) → handed_over (পাঠানো)। এগুলো কৃষক নিজে দেন।', "Farmer steps: pending → accepted (confirmed) → packed (ready for delivery) → handed_over (out for delivery). Farmers set these themselves.") }}</p>
+  <ul class="cb-list">{% for i in o.order_items %}
+    <li class="cb-row"><div><b>{{ i.title }}</b> · {{ num(i.quantity) }} {{ i.unit }} × ৳{{ num(i.unit_price) }} = ৳{{ num(i.line_total) }}
+      <small><a href="/admin/farmers/{{ i.farmer_id }}">{{ i.farmer_name }}</a> · {{ i.farmer_phone }} · <b>{{ i.farmer_status }}</b>{% if i.stock_deducted %} · {{ t('স্টক থেকে কাটা', 'stock taken') }}{% endif %}{% if i.ledger_net %} · {{ t('কৃষকের হিসাবে', 'farmer ledger') }} ৳{{ num(i.ledger_net) }}{% endif %}</small></div></li>{% endfor %}</ul>
+</section>
+
+<section class="cb-box"><h2>{{ t('অ্যাডমিন কাজ', 'Admin actions') }}</h2>
+  {% set N = o.next %}
+  {% if not N %}<p class="cb-hint">{{ t('এখন কোনো কাজ বাকি নেই।', 'Nothing to do right now.') }}</p>{% endif %}
+  {% if 'orders' in admin.perms %}
+  <div style="display:flex;flex-wrap:wrap;gap:8px">
+    {% for step, bn, en in [('confirm', 'অর্ডার নিশ্চিত', 'Mark confirmed'), ('ship', 'পাঠানো হয়েছে', 'Mark shipped'), ('deliver', 'ডেলিভারি হয়েছে', 'Mark delivered')] %}{% if step in N %}
+    <form method="post" action="/admin-orders/{{ o.order_number }}/step" data-confirm-bn="নিশ্চিত?" data-confirm-en="Are you sure?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="step" value="{{ step }}">
+      <button class="cb-btn cb-btn-main" type="submit">{{ t(bn, en) }}</button></form>{% endif %}{% endfor %}
+  </div>
+  {% if o.status == 'pending' and 'confirm' not in N %}<p class="cb-hint">{{ t('সব কৃষক নিশ্চিত না করা পর্যন্ত অর্ডার নিশ্চিত করা যায় না।', 'The order can be confirmed only after every farmer has confirmed.') }}</p>{% endif %}
+  {% if o.status == 'confirmed' and 'ship' not in N %}<p class="cb-hint">{{ t('সব কৃষক পণ্য পাঠানোর পরেই "পাঠানো হয়েছে" দেওয়া যায়।', 'Mark shipped only after every farmer has handed over.') }}</p>{% endif %}
+  {% if 'cancel' in N %}
+  <form class="cb-offer" method="post" action="/admin-orders/{{ o.order_number }}/step" style="margin-top:10px" data-confirm-bn="অর্ডার বাতিল করবেন? ক্রেতা নোটিফিকেশন পাবেন।" data-confirm-en="Cancel this order? The customer is notified.">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="step" value="cancel">
+    <input class="cb-input" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'বাতিলের কারণ / reason' }}" aria-label="reason" style="max-width:260px;min-height:40px">
+    <button class="cb-mini danger">{{ t('অর্ডার বাতিল', 'Cancel order') }}</button></form>
+  <p class="cb-hint">{{ t('বাতিল করলে যে পণ্য কৃষক নিশ্চিত করেছিলেন কিন্তু পাঠাননি, তার স্টক ফেরত যাবে।', 'Cancelling returns stock for items the farmer confirmed but has not handed over.') }}</p>
+  {% endif %}
+  {% endif %}
+  {% if 'finance' in admin.perms and ('paid' in N or 'refund' in N) %}
+  <h3>{{ t('পেমেন্ট (হিসাব অনুমতি)', 'Payment (finance permission)') }}</h3>
+  {% if 'paid' in N %}
+  <form method="post" action="/admin-orders/{{ o.order_number }}/step" data-confirm-bn="ক্যাশ (COD) টাকা সত্যিই পাওয়া গেছে? এটি কৃষকের হিসাবে জমা হবে।" data-confirm-en="Was the COD cash really received? This credits the farmers' ledger.">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="step" value="paid">
+    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-hand-holding-dollar"></i>{{ t('COD টাকা পাওয়া গেছে', 'COD cash received') }}</button></form>{% endif %}
+  {% if 'refund' in N %}
+  <form class="cb-offer" method="post" action="/admin-orders/{{ o.order_number }}/step" style="margin-top:8px" data-confirm-bn="টাকা ফেরত দেওয়া হয়েছে? কৃষকের হিসাব থেকে কাটা হবে।" data-confirm-en="Money was refunded? The farmers' ledger is reversed.">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="step" value="refund">
+    <input class="cb-input" name="reason" minlength="3" maxlength="300" required placeholder="{{ 'ফেরতের কারণ / reason' }}" aria-label="reason" style="max-width:260px;min-height:40px">
+    <button class="cb-mini danger">{{ t('ফেরত দেওয়া হয়েছে', 'Mark refunded') }}</button></form>{% endif %}
+  {% endif %}
+</section>
+
+{% if o.complaints %}<section class="cb-box"><h2>{{ t('এই অর্ডার নিয়ে অভিযোগ', 'Complaints mentioning this order') }}</h2>
+  <ul class="cb-list">{% for c in o.complaints %}<li class="cb-row"><div><a href="/admin-complaints/{{ c.id }}">{{ c.complaint_number }}</a> · {{ c.subject }}<small>{{ c.status }} · {{ c.created_at.strftime('%Y-%m-%d') }}</small></div></li>{% endfor %}</ul></section>{% endif %}
+
+<section class="cb-box"><h2>{{ t('অ্যাডমিন ইতিহাস', 'Admin history') }}</h2>
+  {% if o.history %}<ul class="cb-list">{% for a in o.history %}<li class="cb-row"><div><b>{{ a.action }}</b>{% if a.reason %} · {{ a.reason }}{% endif %}<small>{{ a.actor_name or '—' }} · {{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div></li>{% endfor %}</ul>
+  {% else %}<p class="cb-hint">{{ t('কিছু নেই।', 'Nothing yet.') }}</p>{% endif %}</section>
+{% endblock %}

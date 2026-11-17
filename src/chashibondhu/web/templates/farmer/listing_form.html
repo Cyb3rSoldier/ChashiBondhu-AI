@@ -1,0 +1,83 @@
+{% extends "farmer/_layout.html" %}
+{% import "farmer/_labels.html" as L %}
+{% block title %}{{ 'পণ্য — চাষীবন্ধু' }}{% endblock %}
+{% block farmer_content %}
+{% set expected = item.listing_type == 'expected' %}
+<section class="cb-auth cb-auth-wide">
+  <h1>{% if mode == 'edit' %}{{ t('পণ্য বদলান', 'Edit product') }}{% elif expected %}{{ t('আগাম বিক্রি (ফসল ওঠার আগে)', 'Pre-sell (before harvest)') }}{% else %}{{ t('পণ্য যোগ করুন', 'Add product') }}{% endif %}</h1>
+  <p class="cb-sub">{{ t('দাম আর পরিমাণ আপনি ঠিক করবেন। পরে যেকোনো সময় বদলাতে পারবেন।', 'You set the price and quantity. You can change them any time.') }}</p>
+  {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
+  <form class="cb-form" method="post" enctype="multipart/form-data" data-preview-form{% if mode != 'edit' %} data-offline="listing"{% endif %}
+        action="{{ '/farmer/listings/' ~ item.id ~ '/edit' if mode == 'edit' else '/farmer/listings/new' }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="cb-field"><span class="cb-label">{{ t('কী ধরনের বিক্রি', 'Type of sale') }}</span>
+      <div class="cb-checks">
+        <label class="cb-check"><input type="radio" name="listing_type" value="available" {% if not expected %}checked{% endif %}><span>{{ t('এখন আছে', 'Available now') }}</span></label>
+        <label class="cb-check"><input type="radio" name="listing_type" value="expected" {% if expected %}checked{% endif %}><span>{{ t('ফসল উঠবে (আগাম)', 'Expected harvest') }}</span></label>
+      </div>
+      <p class="cb-hint">{{ t('"ফসল উঠবে" মানে এখনো মাঠে আছে — এটা আসল স্টক নয়, ক্রেতা আগে থেকে জানতে পারবেন।', '"Expected harvest" means it is still in the field — it is not real stock yet; buyers can plan ahead.') }}</p></div>
+    <div class="cb-field"><label for="title">{{ t('পণ্যের নাম', 'Product name') }}</label>
+      <input class="cb-input" id="title" name="title" maxlength="120" required value="{{ item.title or '' }}" data-ph-bn="যেমন: ডায়মন্ড আলু" data-ph-en="e.g. Diamond potato"></div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="category">{{ t('বিভাগ', 'Category') }}</label>
+        <select class="cb-select" id="category" name="category">{% for k in categories %}<option value="{{ k }}" {% if item.category == k %}selected{% endif %}>{{ L.CA[k][0] }} / {{ L.CA[k][1] }}</option>{% endfor %}</select></div>
+      <div class="cb-field"><label for="crop_id">{{ t('ফসল (তালিকা থেকে, ইচ্ছামতো)', 'Crop (from list, optional)') }}</label>
+        <select class="cb-select" id="crop_id" name="crop_id"><option value="">{{ '— অন্য / Other —' }}</option>
+          {% for c in crops %}<option value="{{ c.crop_id }}" {% if item.crop_id == c.crop_id %}selected{% endif %}>{{ c.name_bn }} / {{ c.name_en }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="price">{{ t('দাম (টাকা, প্রতি একক)', 'Price (taka, per unit)') }}</label>
+        <input class="cb-input" id="price" name="price_per_unit" inputmode="decimal" required value="{{ item.price_per_unit or '' }}"></div>
+      <div class="cb-field"><label for="unit">{{ t('একক', 'Unit') }}</label>
+        <select class="cb-select" id="unit" name="unit">{% for k in units %}<option value="{{ k }}" {% if item.unit == k %}selected{% endif %}>{{ L.UN[k][0] }} / {{ L.UN[k][1] }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="cb-field"><label for="discount_price">{{ t('ছাড়ের দাম (ইচ্ছামতো, আসল দামের চেয়ে কম)', 'Discount price (optional, lower than the price)') }}</label>
+      <input class="cb-input" id="discount_price" name="discount_price" inputmode="decimal" value="{{ item.discount_price or '' }}">
+      <p class="cb-hint">{{ t('দিলে ক্রেতা আগের দাম, নতুন দাম আর কত সাশ্রয় দেখবেন।', 'Buyers will see the old price, the new price and the saving.') }}</p></div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="quantity">{{ t('মোট পরিমাণ', 'Total quantity') }}</label>
+        <input class="cb-input" id="quantity" name="quantity" inputmode="decimal" required value="{{ item.quantity if item.quantity is not none else '' }}"></div>
+      <div class="cb-field"><label for="min_order">{{ t('সর্বনিম্ন অর্ডার', 'Minimum order') }}</label>
+        <input class="cb-input" id="min_order" name="min_order" inputmode="decimal" required value="{{ item.min_order or 1 }}"></div>
+    </div>
+    <div class="cb-field"><span class="cb-label">{{ t('চাষের পদ্ধতি', 'Farming method') }}</span>
+      <div class="cb-checks">
+        {% for m in methods %}
+        <label class="cb-check"><input type="radio" name="farming_method" value="{{ m }}" {% if (item.farming_method or ('organic' if item.is_organic else 'conventional')) == m %}checked{% endif %}><span>{% if m == 'organic' %}<i class="fa-solid fa-leaf"></i>{% endif %}{{ t(L.FM[m][0], L.FM[m][1]) }}</span></label>
+        {% endfor %}
+      </div>
+      <p class="cb-hint">{{ t('"জৈব" বাছলে পণ্যে জৈব চিহ্ন দেখাবে — এটা আপনার নিজের দাবি, কোনো সনদ নয়।', 'Choosing "Organic" shows an organic badge — it is your own statement, not a certificate.') }}</p></div>
+    <div class="cb-row2">
+      <div class="cb-field"><label for="harvest_date">{{ t('কবে তোলা হয়েছে (ইচ্ছামতো)', 'Harvest date (optional)') }}</label>
+        <input class="cb-input" type="date" id="harvest_date" name="harvest_date" value="{{ item.harvest_date or '' }}"></div>
+      <div class="cb-field"><label for="available_from">{{ t('ফসল উঠবে যেদিন (আগাম বিক্রির জন্য দরকার)', 'Expected harvest day (needed for pre-sell)') }}</label>
+        <input class="cb-input" type="date" id="available_from" name="available_from" value="{{ item.available_from or '' }}"></div>
+    </div>
+    <div class="cb-field"><label for="description">{{ t('বিবরণ (ইচ্ছামতো)', 'Description (optional)') }}</label>
+      <textarea class="cb-textarea" id="description" name="description" maxlength="2000">{{ item.description or '' }}</textarea></div>
+    <div class="cb-field"><label for="extra_info">{{ t('আরও তথ্য (ইচ্ছামতো) — যেমন জাত, আকার, প্যাকিং', 'More information (optional) — e.g. variety, size, packing') }}</label>
+      <textarea class="cb-textarea" id="extra_info" name="extra_info" maxlength="1000">{{ item.extra_info or '' }}</textarea></div>
+    <div class="cb-field"><label for="image">{{ t('ছবি (ইচ্ছামতো)', 'Photo (optional)') }}</label>
+      <input class="cb-input" type="file" id="image" name="image" accept="image/*">
+      <p class="cb-hint">{{ t('ছবির লোকেশন (GPS) তথ্য মুছে সংরক্ষণ করা হয়। ৮ MB-এর ছোট ছবি দিন।', 'Location (GPS) data is removed from the photo. Use a photo under 8 MB.') }}</p></div>
+    <input type="hidden" name="status" value="active">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-eye"></i>{{ t('দেখে নিন ও প্রকাশ করুন', 'Preview and publish') }}</button>
+      {% if mode != 'edit' %}<button class="cb-btn cb-btn-line" type="button" data-save-draft><i class="fa-solid fa-mobile-screen"></i>{{ t('শুধু ফোনে রাখুন', 'Keep on phone only') }}</button>{% endif %}
+      <a class="cb-btn cb-btn-line" href="/farmer/listings">{{ t('বাতিল', 'Cancel') }}</a>
+    </div>
+  </form>
+</section>
+
+{# preview: filled by farmer.js; if JavaScript is off the form is simply sent #}
+<dialog class="cb-modal" data-preview-modal aria-labelledby="pvTitle">
+  <h2 id="pvTitle">{{ t('একবার দেখে নিন', 'Check before publishing') }}</h2>
+  <dl class="cb-pv" data-preview-list></dl>
+  <p class="cb-hint">{{ t('"নিশ্চিত করুন" চাপলে পণ্যটি বাজারে দেখা যাবে।', 'After "Confirm", the product will show in the market.') }}</p>
+  <div class="cb-item-actions">
+    <button class="cb-btn cb-btn-main" type="button" data-preview-ok><i class="fa-solid fa-check"></i>{{ t('নিশ্চিত করুন', 'Confirm') }}</button>
+    <button class="cb-btn cb-btn-line" type="button" data-preview-edit><i class="fa-solid fa-pen"></i>{{ t('বদলান', 'Edit') }}</button>
+  </div>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="/static/farmer.js?v=2"></script>{% endblock %}

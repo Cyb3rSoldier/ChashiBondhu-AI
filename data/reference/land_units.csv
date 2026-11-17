@@ -1,0 +1,9 @@
+﻿unit_id,name_en,name_bn,aliases_latin,aliases_bn,factor,base_unit,scope,source_id,source_locator,status,verified_by,verified_on,notes
+sq_ft,square foot,বর্গফুট,sqft|sq ft|square feet|ft2|sft,বর্গ ফুট,1,sqft,national,NIST_SP811,,draft,,,root unit
+sq_m,square metre,বর্গমিটার,sqm|sq m|square meter|square meters|m2,বর্গ মিটার,1,sqm,national,NIST_SP811,,draft,,,root unit (storage unit)
+acre,acre,একর,acre|acres|akor,একর,43560,sqft,national,NIST_SP811,,draft,,,"1 acre = 43,560 sq ft"
+hectare,hectare,হেক্টর,ha|hectares,হেক্টর,10000,sqm,national,NIST_SP811,,draft,,,"1 ha = 10,000 m2"
+decimal,decimal,শতাংশ,decimals|dec|shotok|shatak|shotangsho|shotangsha|sotok,শতক|শতাংশ,0.01,acre,national,MINLAND_UNITS,,draft,,,1/100 acre
+katha,katha,কাঠা,kata|kotha|kattha|cottah,কাঠা,720,sqft,national,MINLAND_UNITS,,draft,,,standard katha
+bigha,bigha,বিঘা,biga|bigah|bighas,বিগা,20,katha,national,MINLAND_UNITS,,draft,,,"standard bigha; size differs in some regions -> ask farmer, store farmer_stated"
+kani,kani,কানি,kani|kaani,কানি,,,regional,MINLAND_UNITS,,todo,,,size differs by region; always ask the farmer how many decimals
