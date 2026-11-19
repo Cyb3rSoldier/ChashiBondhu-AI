@@ -1,34 +1,53 @@
 {% extends "farmer/_layout.html" %}
 {% block title %}{{ 'সারসংক্ষেপ — চাষীবন্ধু' }}{% endblock %}
 {% block farmer_content %}
-<section class="cb-fhead">
-  <div class="cb-avatar">{% if profile.avatar_path %}<img src="{{ profile.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
-  <div class="cb-fhead-txt">
-    <p class="cb-greet" id="greet"></p>
-    <h1>{{ profile.full_name }}</h1>
-    <p class="cb-hint">
-      {{ t('কৃষক আইডি', 'Farmer ID') }}: <b><span class="lang-bn">{{ farmer_code | bn_digits }}</span><span class="lang-en">{{ farmer_code }}</span></b>
-      · <i class="fa-solid fa-location-dot"></i>
-      {% if profile.upazila_code or profile.district_code %}<span data-area-name="{{ profile.upazila_code or profile.district_code }}">{{ profile.upazila_code or profile.district_code }}</span>{% if profile.upazila_code and profile.district_code %}, <span data-area-name="{{ profile.district_code }}">{{ profile.district_code }}</span>{% endif %}
-      {% else %}<a href="/farmer/profile">{{ t('এলাকা যোগ করুন', 'Add your area') }}</a>{% endif %}
+{# Every number here is the farmer's real data (repo.farmer_stats). #}
+<section class="cb-banner" aria-label="welcome">
+  <div>
+    <p class="cb-kicker">{{ t('কৃষক ড্যাশবোর্ড', 'Farmer dashboard') }}</p>
+    <h1>{{ t('স্বাগতম,', 'Welcome,') }} <span>{{ profile.full_name }}</span></h1>
+    <p class="cb-meta">
+      <span><i class="fa-solid fa-id-card"></i>{{ t('কৃষক আইডি', 'Farmer ID') }}: <b><span class="lang-bn">{{ farmer_code | bn_digits }}</span><span class="lang-en">{{ farmer_code }}</span></b></span>
+      <span><i class="fa-solid fa-location-dot"></i>{% if profile.upazila_code or profile.district_code %}<span data-area-name="{{ profile.upazila_code or profile.district_code }}">{{ profile.upazila_code or profile.district_code }}</span>{% if profile.upazila_code and profile.district_code %}, <span data-area-name="{{ profile.district_code }}">{{ profile.district_code }}</span>{% endif %}{% else %}<a href="/farmer/profile">{{ t('এলাকা যোগ করুন', 'Add your area') }}</a>{% endif %}</span>
+      <span>{% include "farmer/_season.html" %}</span>
     </p>
-    <p>{% include "farmer/_season.html" %}</p>
+    <div class="cb-banner-cta">
+      <a class="cb-btn cb-btn-white" href="/farmer/listings/new"><i class="fa-solid fa-plus"></i>{{ t('পণ্য যোগ করুন', 'Add product') }}</a>
+      <a class="cb-btn cb-btn-ghost" href="/farmer/forecasts"><i class="fa-solid fa-handshake"></i>{{ t('আগাম ফসল ও ক্রেতা', 'Harvest & buyers') }}</a>
+    </div>
   </div>
-  <a class="cb-btn cb-btn-main" href="/farmer/listings/new"><i class="fa-solid fa-plus"></i>{{ t('পণ্য যোগ করুন', 'Add product') }}</a>
+  <div class="cb-idcard">
+    <div class="cb-idcard-top">
+      <div class="cb-avatar">{% if profile.avatar_path %}<img src="{{ profile.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+      <div><b>{{ profile.full_name }}</b><small>{{ t('কৃষক', 'Farmer') }}</small></div>
+    </div>
+    <div class="cb-idcard-nums">
+      <a href="/farmer/listings"><b>{{ num(stats.active_listings or 0) }}</b><span>{{ t('বাজারে পণ্য', 'Live products') }}</span></a>
+      <a href="/farmer/orders"><b>{{ num(stats.pending_orders or 0) }}</b><span>{{ t('চলমান অর্ডার', 'Open orders') }}</span></a>
+    </div>
+  </div>
 </section>
 
-<section class="cb-stats cb-stats-8" aria-label="summary">
-  <a class="cb-stat" href="/farmer/listings"><i class="fa-solid fa-boxes-stacked"></i><b>{{ num(stats.total_products or 0) }}</b><span>{{ t('মোট পণ্য', 'Total products') }}</span></a>
-  <a class="cb-stat" href="/farmer/listings"><i class="fa-solid fa-store"></i><b>{{ num(stats.active_listings or 0) }}</b><span>{{ t('বাজারে আছে', 'Active products') }}</span></a>
-  <a class="cb-stat warn" href="/farmer/listings"><i class="fa-solid fa-box-open"></i><b>{{ num(stats.out_of_stock or 0) }}</b><span>{{ t('স্টক শেষ', 'Out of stock') }}</span></a>
-  <a class="cb-stat" href="/farmer/orders"><i class="fa-solid fa-receipt"></i><b>{{ num(stats.total_orders or 0) }}</b><span>{{ t('মোট অর্ডার', 'Total orders') }}</span></a>
-  <a class="cb-stat warn" href="/farmer/orders"><i class="fa-solid fa-hourglass-half"></i><b>{{ num(stats.pending_orders or 0) }}</b><span>{{ t('চলমান অর্ডার', 'Pending orders') }}</span></a>
-  <a class="cb-stat" href="/farmer/orders"><i class="fa-solid fa-circle-check"></i><b>{{ num(stats.completed_orders or 0) }}</b><span>{{ t('সম্পন্ন অর্ডার', 'Completed orders') }}</span></a>
-  <a class="cb-stat" href="/farmer/earnings"><i class="fa-solid fa-bangladeshi-taka-sign"></i><b>৳{{ num(stats.earned or 0) }}</b><span>{{ t('মোট আয় (পরিশোধিত)', 'Total earnings (paid)') }}</span></a>
-  <a class="cb-stat warn" href="/farmer/earnings"><i class="fa-solid fa-clock"></i><b>৳{{ num(stats.pending_earnings or 0) }}</b><span>{{ t('আসন্ন আয়', 'Pending earnings') }}</span></a>
+<section class="cb-kpis" aria-label="summary">
+  <a class="cb-kpi t-green" href="/farmer/listings"><div><small>{{ t('মোট পণ্য', 'Total products') }}</small><b>{{ num(stats.total_products or 0) }}</b><em>{{ t('বাজারে আছে', 'Active') }}: {{ num(stats.active_listings or 0) }}</em></div><span class="ic"><i class="fa-solid fa-boxes-stacked"></i></span></a>
+  <a class="cb-kpi t-amber" href="/farmer/orders"><div><small>{{ t('মোট অর্ডার', 'Total orders') }}</small><b>{{ num(stats.total_orders or 0) }}</b><em>{{ t('চলমান', 'Pending') }}: {{ num(stats.pending_orders or 0) }} · {{ t('সম্পন্ন', 'Done') }}: {{ num(stats.completed_orders or 0) }}</em></div><span class="ic"><i class="fa-solid fa-receipt"></i></span></a>
+  <a class="cb-kpi t-blue" href="/farmer/earnings"><div><small>{{ t('মোট আয় (পরিশোধিত)', 'Earnings (paid)') }}</small><b>৳{{ num(stats.earned or 0) }}</b><em>{{ t('আসন্ন', 'Pending') }}: ৳{{ num(stats.pending_earnings or 0) }}</em></div><span class="ic"><i class="fa-solid fa-bangladeshi-taka-sign"></i></span></a>
+  <a class="cb-kpi t-rose" href="/farmer/listings"><div><small>{{ t('স্টক শেষ', 'Out of stock') }}</small><b>{{ num(stats.out_of_stock or 0) }}</b><em>{{ t('আবার স্টক দিন', 'Restock these') }}</em></div><span class="ic"><i class="fa-solid fa-box-open"></i></span></a>
 </section>
 
-<div class="cb-cols">
+<section class="cb-panel">
+  <div class="cb-panel-head"><h2>{{ t('দ্রুত কাজ', 'Quick actions') }}</h2><p>{{ t('যা সবচেয়ে বেশি দরকার', 'What you need most') }}</p></div>
+  <div class="cb-quick">
+    <a class="cb-qa t-green" href="/farmer/listings/new"><span class="ic"><i class="fa-solid fa-plus"></i></span><b>{{ t('পণ্য যোগ করুন', 'Add product') }}</b><span>{{ t('নতুন পণ্য বাজারে দিন', 'Put a new product on the market') }}</span><em>{{ t('শুরু করুন', 'Start') }} →</em></a>
+    <a class="cb-qa t-amber" href="/farmer/listings"><span class="ic"><i class="fa-solid fa-store"></i></span><b>{{ t('আমার পণ্য', 'My products') }}</b><span>{{ t('দাম ও স্টক ঠিক করুন', 'Update price and stock') }}</span><em>{{ t('দেখুন', 'Manage') }} →</em></a>
+    <a class="cb-qa t-blue" href="/farmer/orders"><span class="ic"><i class="fa-solid fa-receipt"></i></span><b>{{ t('অর্ডার', 'Orders') }}</b><span>{{ t('নতুন ও চলমান অর্ডার', 'New and open orders') }}</span><em>{{ t('দেখুন', 'View') }} →</em></a>
+    <a class="cb-qa t-violet" href="/assistant"><span class="ic"><i class="fa-solid fa-wand-magic-sparkles"></i></span><b>{{ t('এআই কৃষি সহায়তা', 'AI farm help') }}</b><span>{{ t('ফসলি ও ড. কৃষি — প্রশ্ন বা ছবি', 'Fosholi & Dr. Krishi — ask or send a photo') }}</span><em>{{ t('জিজ্ঞেস করুন', 'Ask') }} →</em></a>
+    <a class="cb-qa t-teal" href="/farmer/forecasts"><span class="ic"><i class="fa-solid fa-handshake"></i></span><b>{{ t('আগাম ফসল ও ক্রেতা', 'Harvest & buyers') }}</b><span>{{ t('তোলার আগেই ক্রেতা খুঁজুন', 'Find buyers before harvest') }}</span><em>{{ t('দেখুন', 'Open') }} →</em></a>
+    <a class="cb-qa t-rose" href="/farmer/prices"><span class="ic"><i class="fa-solid fa-chart-line"></i></span><b>{{ t('বাজার দর', 'Market prices') }}</b><span>{{ t('শুধু তথ্য — সিদ্ধান্ত আপনার', 'Information only — your decision') }}</span><em>{{ t('দেখুন', 'View') }} →</em></a>
+  </div>
+</section>
+
+<div class="cb-dash-cols">
   <section class="cb-box cb-weather" data-weather data-user="{{ user.id }}" data-w-area="{{ profile.upazila_code or profile.district_code or '' }}">
     <h2><i class="fa-solid fa-cloud-sun"></i>{{ t('আবহাওয়া', 'Weather') }} <small class="cb-hint" data-w-place style="font-weight:400"></small></h2>
     <div data-w-body>
@@ -42,7 +61,7 @@
   </section>
 
   <aside class="cb-box">
-    <h2>{{ t('কৃষি সহকারী', 'Farm assistant') }}</h2>
+    <h2><i class="fa-solid fa-seedling"></i> {{ t('কৃষি সহকারী', 'Farm assistant') }}</h2>
     <form class="cb-ask" action="/assistant" method="get">
       <a class="cb-round soft" href="/assistant?photo=1" aria-label="ছবি পাঠান / Send a photo"><i class="fa-solid fa-camera"></i></a>
       <label class="cb-sr" for="dashQ">{{ t('প্রশ্ন', 'Question') }}</label>
@@ -63,8 +82,8 @@
   </aside>
 </div>
 
-<section class="cb-box" style="margin-top:22px">
-  <h2>{{ t('মাঠে কী আছে', 'In your fields') }}</h2>
+<section class="cb-panel" style="margin-top:22px">
+  <div class="cb-panel-head"><h2>{{ t('মাঠে কী আছে', 'In your fields') }}</h2><a class="cb-mini" href="/farmer/farm">{{ t('জমি ও ফসল', 'Land & crops') }}</a></div>
   {% if plantings %}
   <ul class="cb-list">
     {% for p in plantings %}

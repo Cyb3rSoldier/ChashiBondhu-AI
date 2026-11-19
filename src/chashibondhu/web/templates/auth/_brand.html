@@ -1,0 +1,36 @@
+{# Left / right brand panel of the sign-in and sign-up cards. Needs: who = 'farmer' | 'customer' | 'admin', mode = 'login' | 'join' #}
+<aside class="cb-brandside {{ who }}">
+  <a class="cb-logo" href="/"><span class="cb-logo-img"><img src="/static/img/logo-mark.png" alt=""></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+  {% if who == 'admin' %}
+  <span class="cb-badge-red"><i class="fa-solid fa-lock"></i>{{ t('শুধু অনুমোদিত অ্যাক্সেস', 'AUTHORIZED ACCESS ONLY') }}</span>
+  <h2>{{ t('অ্যাডমিন', 'Admin') }}<em>{{ t('কন্ট্রোল প্যানেল', 'Control Panel') }}</em></h2>
+  <p>{{ t('এই অংশ শুধু প্ল্যাটফর্ম পরিচালনাকারীদের জন্য। অ্যাডমিনের প্রতিটি লগইন ও কাজ লগে রাখা হয়।', 'For platform administrators only. Every admin login and action is recorded in the audit log.') }}</p>
+  <ul class="cb-feats">
+    <li><i class="fa-solid fa-users"></i>{{ t('কৃষক ও ক্রেতা পরিচালনা', 'Manage farmers and customers') }}</li>
+    <li><i class="fa-solid fa-clipboard-check"></i>{{ t('পণ্যের তালিকা যাচাই ও নিয়ন্ত্রণ', 'Review and moderate product listings') }}</li>
+    <li><i class="fa-solid fa-flag"></i>{{ t('অভিযোগ ও রিভিউ দেখা', 'Handle complaints and reviews') }}</li>
+    <li><i class="fa-solid fa-chart-line"></i>{{ t('প্ল্যাটফর্মের হিসাব ও বিশ্লেষণ', 'Platform analytics') }}</li>
+  </ul>
+  {% elif who == 'customer' %}
+  {% if mode == 'join' %}<h2>{{ t('যোগ দিন', 'Join as a') }}<em>{{ t('ক্রেতা হিসেবে', 'Customer') }}</em></h2>
+  <p>{{ t('কৃষকের কাছ থেকে সরাসরি টাটকা পণ্য কিনুন — মাঝে কোনো দালাল নেই।', 'Buy fresh produce straight from farmers — no middlemen.') }}</p>
+  {% else %}<h2>{{ t('আবার স্বাগতম,', 'Welcome back,') }}<em>{{ t('ক্রেতা বন্ধু', 'Shopper') }}</em></h2>
+  <p>{{ t('লগইন করে বাজার দেখুন, অর্ডার দিন আর অর্ডারের খবর রাখুন।', 'Log in to browse the market, place orders and track them.') }}</p>{% endif %}
+  <ul class="cb-feats">
+    <li><i class="fa-solid fa-basket-shopping"></i>{{ t('কৃষকের কাছ থেকে সরাসরি কেনা', 'Buy directly from farmers') }}</li>
+    <li><i class="fa-solid fa-scale-balanced"></i>{{ t('পণ্যের দাম পাশাপাশি তুলনা', 'Compare products side by side') }}</li>
+    <li><i class="fa-solid fa-handshake"></i>{{ t('ফসল ওঠার আগেই চাহিদা জানান', 'Request produce before harvest') }}</li>
+  </ul>
+  {% else %}
+  {% if mode == 'join' %}<h2>{{ t('যোগ দিন', 'Join as a') }}<em>{{ t('কৃষক হিসেবে', 'Farmer') }}</em></h2>
+  <p>{{ t('বিনা খরচে অ্যাকাউন্ট খুলুন। নিজের দামে সরাসরি ক্রেতার কাছে বিক্রি করুন।', 'Open a free account. Sell straight to buyers at your own price.') }}</p>
+  {% else %}<h2>{{ t('আবার স্বাগতম,', 'Welcome back,') }}<em>{{ t('কৃষক বন্ধু', 'Farmer') }}</em></h2>
+  <p>{{ t('আপনার পণ্য, অর্ডার, আয় আর ফসলের খবর — সব এক জায়গায়।', 'Your products, orders, earnings and crops — all in one place.') }}</p>{% endif %}
+  <ul class="cb-feats">
+    <li><i class="fa-solid fa-store"></i>{{ t('পণ্য যোগ করে সরাসরি বিক্রি', 'Add products and sell directly') }}</li>
+    <li><i class="fa-solid fa-sack-dollar"></i>{{ t('অর্ডার ও আয়ের হিসাব', 'Orders and earnings in one view') }}</li>
+    <li><i class="fa-solid fa-wand-magic-sparkles"></i>{{ t('বাংলায় এআই কৃষি সহায়তা', 'AI farming help in Bangla') }}</li>
+  </ul>
+  {% endif %}
+  <p class="cb-small">© ChashiBondhu</p>
+</aside>

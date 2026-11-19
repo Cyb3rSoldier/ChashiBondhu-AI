@@ -1,10 +1,12 @@
 {% extends "base.html" %}
+{% import "farmer/_labels.html" as L %}
 {% set active = 'home' %}
 {% block body_class %}cb-home{% endblock %}
 {% block content %}
 {# ---------- hero: photo background, real numbers only ---------- #}
 <section class="cb-hero2">
   <div class="cb-wrap cb-hero2-in">
+    <p class="cb-hero-brand"><span class="cb-logo-img"><img src="/static/img/logo-mark.png" alt="" width="42" height="42"></span><b>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</b></p>
     <p class="cb-hero2-pill"><span class="cb-dot"></span>{{ t('বাংলাদেশের কৃষকের প্ল্যাটফর্ম', "Bangladeshi farmers' platform") }}</p>
     <h1>{{ t('কৃষকের হাত থেকে', 'From the farmer') }}<span class="cb-hero2-accent">{{ t('সরাসরি আপনার কাছে!', 'straight to you!') }}</span></h1>
     <p class="cb-hero2-lead">{{ t('চাষীবন্ধু কৃষককে সরাসরি ক্রেতার সাথে যুক্ত করে।', 'ChashiBondhu connects farmers directly with buyers.') }}<br>{{ t('টাটকা পণ্য, ন্যায্য দাম, মাঝে কোনো দালাল নেই।', 'Fresh products, fair prices, no middlemen.') }}</p>
@@ -30,70 +32,11 @@
 
     {% if counts %}
     <ul class="cb-hero2-facts" aria-label="numbers">
-      <li><b data-count="{{ counts.farmers }}">{{ num(counts.farmers) }}</b><span>{{ t('সক্রিয় কৃষক', 'Active farmers') }}</span></li>
-      <li><b data-count="{{ counts.listings }}">{{ num(counts.listings) }}</b><span>{{ t('বিক্রির পণ্য', 'Products for sale') }}</span></li>
-      <li><b data-count="{{ counts.districts }}">{{ num(counts.districts) }}</b><span>{{ t('জেলা থেকে কৃষক', 'Districts with farmers') }}</span></li>
+      <li><b>{{ num(counts.farmers) }}</b><span>{{ t('সক্রিয় কৃষক', 'Active farmers') }}</span></li>
+      <li><b>{{ num(counts.listings) }}</b><span>{{ t('বিক্রির পণ্য', 'Products for sale') }}</span></li>
+      <li><b>{{ num(counts.districts) }}</b><span>{{ t('জেলা থেকে কৃষক', 'Districts with farmers') }}</span></li>
     </ul>
     {% endif %}
-    <a class="cb-scrollhint" href="#about" aria-label="{{ t('নিচে দেখুন', 'Scroll down') }}"><span>{{ t('আরও জানুন', 'Learn more') }}</span><i class="fa-solid fa-chevron-down"></i></a>
-  </div>
-</section>
-
-{# ---------- ABOUT / MISSION ---------- #}
-<section class="cb-sec" id="about">
-  <div class="cb-wrap">
-    <div class="cb-center-head cb-reveal">
-      <p class="cb-pill">{{ t('আমাদের কথা', 'About us') }}</p>
-      <h2 class="cb-h2">{{ t('কৃষকের ঘাম, ক্রেতার টেবিলে — মাঝখানে কেউ নয়', 'The farmer’s work to the buyer’s table — nobody in between') }}</h2>
-    </div>
-    <div class="cb-about-grid">
-      <div>
-        <div class="cb-story cb-reveal">
-          <p>{{ t('কৃষক সারা বছর পরিশ্রম করে ফসল ফলান। কিন্তু অনেক সময় ফসল কয়েকটি হাত ঘুরে শহরে আসে — কৃষক কম দাম পান, আর ক্রেতাকে দিতে হয় অনেক বেশি।', 'Farmers work all year to grow their crops. Yet the produce often passes through several hands before it reaches the city — the farmer gets a low price and the buyer pays much more.') }}</p>
-          <p>{{ t('চাষীবন্ধু সেই দূরত্ব কমায়। কৃষক নিজে পণ্য তুলে দেন, নিজের দাম ঠিক করেন, আর ক্রেতা সরাসরি তাঁর কাছ থেকে কেনেন। সঙ্গে বাংলায় চাষের পরামর্শ, আবহাওয়া আর খামারের হিসাব।', 'ChashiBondhu shortens that distance. Farmers list their own produce at their own price, and buyers buy straight from them. Plus farming advice in Bangla, weather and farm records.') }}</p>
-        </div>
-        <div class="cb-values">
-          <div class="cb-value cb-reveal"><i class="fa-solid fa-handshake"></i><b>{{ t('সরাসরি বিক্রি', 'Direct selling') }}</b><span>{{ t('কৃষক থেকে ক্রেতা, মাঝে দালাল নেই।', 'Farmer to buyer, no middlemen.') }}</span></div>
-          <div class="cb-value cb-reveal"><i class="fa-solid fa-tag"></i><b>{{ t('কৃষকের নিজের দাম', 'Farmer-set prices') }}</b><span>{{ t('দাম ঠিক করেন কৃষক নিজে।', 'Farmers decide their own price.') }}</span></div>
-          <div class="cb-value cb-reveal"><i class="fa-solid fa-comments"></i><b>{{ t('বাংলায় পরামর্শ', 'Advice in Bangla') }}</b><span>{{ t('প্রশ্ন করুন, ছবি দিন — উত্তর বই থেকে।', 'Ask or send a photo — answers from the handbook.') }}</span></div>
-        </div>
-      </div>
-
-      <div class="cb-reveal">
-        <div class="cb-demo">
-          <h3>{{ t('ফসল ক্রেতার কাছে কীভাবে যায়?', 'How does produce reach a buyer?') }}</h3>
-          <p>{{ t('দুটি পথ বেছে দেখুন।', 'Tap to compare the two routes.') }}</p>
-          <div class="cb-seg" data-chain-switch role="group" aria-label="route">
-            <button type="button" data-show="before" aria-pressed="true">{{ t('সাধারণ পথ', 'Usual route') }}</button>
-            <button type="button" data-show="after" aria-pressed="false">{{ t('চাষীবন্ধুতে', 'With ChashiBondhu') }}</button>
-          </div>
-          <ol class="cb-chain is-bad" data-chain="before">
-            <li class="ends"><i class="fa-solid fa-tractor"></i>{{ t('কৃষক', 'Farmer') }}<small>{{ t('কম দাম পান', 'gets a low price') }}</small></li>
-            <li class="mid"><i class="fa-solid fa-user-tie"></i>{{ t('মধ্যস্বত্বভোগী', 'Middleman') }}</li>
-            <li class="mid"><i class="fa-solid fa-truck"></i>{{ t('পাইকার', 'Wholesaler') }}</li>
-            <li class="mid"><i class="fa-solid fa-store"></i>{{ t('খুচরা দোকান', 'Retailer') }}</li>
-            <li class="ends"><i class="fa-solid fa-user"></i>{{ t('আপনি', 'You') }}<small>{{ t('বেশি দাম দেন', 'pay a high price') }}</small></li>
-          </ol>
-          <ol class="cb-chain is-good" data-chain="after" hidden>
-            <li class="ends"><i class="fa-solid fa-tractor"></i>{{ t('কৃষক', 'Farmer') }}<small>{{ t('নিজের দাম ঠিক করেন', 'sets own price') }}</small></li>
-            <li class="hub"><i class="fa-solid fa-seedling"></i>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}<small>{{ t('সরাসরি যোগাযোগ', 'direct link') }}</small></li>
-            <li class="ends"><i class="fa-solid fa-user"></i>{{ t('আপনি', 'You') }}<small>{{ t('সরাসরি কেনেন', 'buy directly') }}</small></li>
-          </ol>
-        </div>
-
-        <div class="cb-calc" data-calc>
-          <h3>{{ t('দামের পার্থক্য হিসাব করে দেখুন', 'See the price gap') }}</h3>
-          <p>{{ t('একটি উদাহরণ: কৃষক কত পান আর শহরে ক্রেতা কত দেন, লিখুন।', 'An example: enter what a farmer gets and what a city buyer pays.') }}</p>
-          <div class="cb-calc-row">
-            <div class="cb-field"><label for="cFarmer">{{ t('কৃষক পান (৳/কেজি)', 'Farmer gets (৳/kg)') }}</label><input class="cb-input" id="cFarmer" name="farmer" inputmode="decimal" value="30"></div>
-            <div class="cb-field"><label for="cCity">{{ t('ক্রেতা দেন (৳/কেজি)', 'Buyer pays (৳/kg)') }}</label><input class="cb-input" id="cCity" name="city" inputmode="decimal" value="60"></div>
-            <div class="cb-field"><label for="cKg">{{ t('পরিমাণ (কেজি)', 'Quantity (kg)') }}</label><input class="cb-input" id="cKg" name="kg" inputmode="decimal" value="100"></div>
-          </div>
-          <div class="cb-calc-bar" data-calc-bar aria-hidden="true"><i></i></div>
-          <div class="cb-calc-out" data-calc-out aria-live="polite"></div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -130,7 +73,7 @@
     </nav>
 
     {% if listings %}
-    <div class="cb-grid">{% for l in listings %}{% include "_listing_card.html" %}{% endfor %}</div>
+    <div class="cb-grid">{% for l in listings %}{% include "market/_card.html" %}{% endfor %}</div>
     {% elif f.q or f.type or f.crop %}
     <div class="cb-empty-box"><i class="fa-solid fa-magnifying-glass"></i>{{ t('এই খোঁজে কোনো পণ্য পাওয়া যায়নি। অন্য কিছু খুঁজুন বা "মুছুন" চাপুন।', 'No products match this search. Try something else or press "Reset".') }}</div>
     {% else %}
@@ -172,47 +115,9 @@
   <div class="cb-wrap">
     <h2 class="cb-h2">{{ t('কৃষক কীভাবে ব্যবহার করবেন', 'How farmers use ChashiBondhu') }}</h2>
     <div class="cb-steps">
-      <div class="cb-step cb-reveal"><h3>{{ t('পরামর্শ নিন', 'Get advice') }}</h3><p>{{ t('প্রশ্ন করুন বা ছবি দিন। উত্তর বই থেকে।', 'Ask or send a photo. Answers from the handbook.') }}</p></div>
-      <div class="cb-step cb-reveal"><h3>{{ t('খামারের হিসাব রাখুন', 'Track your farm') }}</h3><p>{{ t('কোন জমিতে কী লাগালেন, কবে তুলবেন।', 'What you planted where, and when to harvest.') }}</p></div>
-      <div class="cb-step cb-reveal"><h3>{{ t('সরাসরি বিক্রি করুন', 'Sell directly') }}</h3><p>{{ t('পণ্য বা আগাম ফসল তালিকায় দিন, দাম আপনার।', 'List produce or an expected harvest at your own price.') }}</p></div>
-    </div>
-  </div>
-</section>
-
-{# ---------- mission ---------- #}
-<section class="cb-wrap" style="padding-top:8px">
-  <div class="cb-mission cb-reveal">
-    <p class="cb-pill">{{ t('আমাদের লক্ষ্য', 'Our mission') }}</p>
-    <h2>{{ t('কৃষক ন্যায্য দাম পাবেন, ক্রেতা টাটকা পণ্য পাবেন।', 'Farmers get a fair price, buyers get fresh produce.') }}</h2>
-    <p>{{ t('আমরা চাই কৃষক ও ক্রেতা সরাসরি যুক্ত হোন, দামে স্বচ্ছতা থাকুক, আর প্রতিটি কৃষক হাতের কাছে বাংলায় চাষের পরামর্শ পান। চাষীবন্ধু শুধু একটি বাজার নয় — যাঁরা আমাদের খাওয়ান, তাঁদের পাশে দাঁড়ানোর একটি উদ্যোগ।', 'We want farmers and buyers connected directly, prices to be transparent, and every farmer to have farming advice in Bangla close at hand. ChashiBondhu is not just a market — it is an effort to stand beside the people who feed us.') }}</p>
-  </div>
-</section>
-
-{# ---------- FAQ ---------- #}
-<section class="cb-sec">
-  <div class="cb-wrap">
-    <div class="cb-center-head cb-reveal">
-      <p class="cb-pill">{{ t('সাধারণ প্রশ্ন', 'FAQ') }}</p>
-      <h2 class="cb-h2">{{ t('আপনার মনে যে প্রশ্নগুলো আসতে পারে', 'Questions you may have') }}</h2>
-    </div>
-    <div class="cb-faq cb-reveal">
-      <details><summary>{{ t('যোগ দিতে কি টাকা লাগে?', 'Does it cost anything to join?') }}</summary><p>{{ t('না। কৃষক হিসেবে যোগ দেওয়া বিনা খরচে।', 'No. Joining as a farmer is free.') }}</p></details>
-      <details><summary>{{ t('পণ্যের দাম কে ঠিক করেন?', 'Who sets the price?') }}</summary><p>{{ t('কৃষক নিজেই নিজের পণ্যের দাম ঠিক করেন।', 'The farmer sets the price of their own produce.') }}</p></details>
-      <details><summary>{{ t('ক্রেতা কীভাবে কিনবেন?', 'How does a buyer order?') }}</summary><p>{{ t('ক্রেতা অ্যাকাউন্ট খুলে পণ্য কার্টে দিন, তারপর অর্ডার করুন। অ্যাকাউন্ট খুলতে ক্রেতা নিবন্ধনে যান।', 'Create a customer account, add produce to your cart and place the order.') }} <a href="/register/customer" style="color:var(--cb-paddy);font-weight:700">{{ t('ক্রেতা অ্যাকাউন্ট খুলুন', 'Create a customer account') }}</a></p></details>
-      <details><summary>{{ t('কৃষি সহকারীর উত্তর কি সবসময় ঠিক?', 'Is the farm assistant always right?') }}</summary><p>{{ t('না। এআই-এর উত্তর ভুল হতে পারে। ওষুধ বা সার ব্যবহারের আগে স্থানীয় কৃষি অফিসে জিজ্ঞেস করুন।', 'No. AI answers can be wrong. Ask your local agriculture office before using any pesticide or fertilizer.') }}</p></details>
-    </div>
-  </div>
-</section>
-
-{# ---------- contact call ---------- #}
-<section class="cb-wrap" style="padding-bottom:20px">
-  <div class="cb-band cb-reveal">
-    <div>
-      <h2>{{ t('কিছু জানতে চান?', 'Have a question?') }}</h2>
-      <p>{{ t('আমাদের লিখুন — আমরা সাহায্য করব।', 'Write to us — we are happy to help.') }}</p>
-    </div>
-    <div class="cb-hero-links">
-      <a class="cb-btn cb-btn-gold" href="/contact"><i class="fa-solid fa-envelope"></i>{{ t('যোগাযোগ করুন', 'Contact us') }}</a>
+      <div class="cb-step"><h3>{{ t('পরামর্শ নিন', 'Get advice') }}</h3><p>{{ t('প্রশ্ন করুন বা ছবি দিন। উত্তর বই থেকে।', 'Ask or send a photo. Answers from the handbook.') }}</p></div>
+      <div class="cb-step"><h3>{{ t('খামারের হিসাব রাখুন', 'Track your farm') }}</h3><p>{{ t('কোন জমিতে কী লাগালেন, কবে তুলবেন।', 'What you planted where, and when to harvest.') }}</p></div>
+      <div class="cb-step"><h3>{{ t('সরাসরি বিক্রি করুন', 'Sell directly') }}</h3><p>{{ t('পণ্য বা আগাম ফসল তালিকায় দিন, দাম আপনার।', 'List produce or an expected harvest at your own price.') }}</p></div>
     </div>
   </div>
 </section>
@@ -232,4 +137,3 @@
 </section>
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/home.js?v=1"></script>{% endblock %}

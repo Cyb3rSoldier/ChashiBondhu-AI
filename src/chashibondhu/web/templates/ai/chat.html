@@ -46,7 +46,7 @@
 {% endif %}
 {% block title %}{{ A.name }} — চাষীবন্ধু{% endblock %}
 {% block body_class %}cb-ai-page{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/ai_chat.css?v=3">{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/ai_chat.css?v=4">{% endblock %}
 {% block content %}
 <div class="aic" id="aiApp" data-assistant="{{ assistant }}" data-ask="{{ A.ask }}" data-new="{{ A.new }}"
      data-images="{{ A.images }}" data-start="{{ start_q }}" data-conv="{{ conv_id }}">
@@ -88,6 +88,14 @@
         <option value="{{ home_area }}" data-en="{{ 'My registered area' if home_area else '— choose a district —' }}">{{ 'আমার নিবন্ধিত এলাকা' if home_area else '— জেলা বেছে নিন —' }}</option>
         {% for d in districts %}<option value="{{ d.code }}" data-en="{{ d.name_en }}">{{ d.name_bn }}</option>{% endfor %}
       </select>
+      {% if crops %}
+      <i class="fa-solid fa-seedling" aria-hidden="true" style="margin-left:8px"></i>
+      <label for="aiCrop">{{ t('ছবির ফসল', 'Crop in photo') }}</label>
+      <select id="aiCrop" data-ai-crop>
+        <option value="" data-en="Let AI find it">এআই চিনে নিক</option>
+        {% for c in crops %}<option value="{{ c.id }}" data-en="{{ c.en }}">{{ c.bn }}</option>{% endfor %}
+      </select>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -125,9 +133,9 @@
         <button class="aic-send" type="submit" aria-label="{{ 'পাঠান / Send' }}"><i class="fa-solid fa-paper-plane"></i></button>
       </form>
       <p class="aic-status" data-ai-status role="status"></p>
-      <p class="aic-fine">{{ t('এআই ভুল করতে পারে। ওষুধ বা সার দেওয়ার আগে কৃষি অফিসে নিশ্চিত হোন।', 'AI can be wrong. Check with the agriculture office before using any medicine or fertilizer.') }}</p>
+      <p class="aic-fine">{{ t('এআই ভুল করতে পারে। ওষুধের নাম ও মাত্রা শুধু হাতবই থেকে দেখানো হয়; ব্যবহারের আগে বোতলের লেবেল পড়ুন। কৃষি কল সেন্টার: ১৬১২৩', 'AI can be wrong. Medicine names and doses are shown only from the handbook; read the label before use. Krishi Call Centre: 16123') }}</p>
     </div>
   </section>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/ai_chat.js?v=3" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/ai_chat.js?v=4" defer></script>{% endblock %}

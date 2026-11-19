@@ -28,7 +28,7 @@ from chashibondhu.assistant.llm.gemini import LLMError, RateLimited
 from chashibondhu.assistant.retrieval.index import RagIndex, normalize_text
 
 # Bump when search behaviour changes, so old cached answers are not reused.
-RETRIEVAL_VERSION = "7b.2"   # 7b.2: mixed Bangla + Banglish questions are rewritten too
+RETRIEVAL_VERSION = "8.0"    # 8.0: natural answers (no fixed sections), follow-up questions use the chat
 
 LABELS = {
     "bn": {"advice": "পরামর্শ:",
@@ -48,54 +48,65 @@ TERM_NOTE = ("Advice sentences naming fertilizers, nutrients or chemicals were r
              "(these must come from a source).")
 SOURCE_LABEL = "BARI Krishi Projukti Hatboi, 10th ed."
 
-SYSTEM_PROMPT = """You are the farming assistant of ChashiBondhu, helping farmers in Bangladesh.
-Most farmers read slowly. Write very short, simple sentences in everyday words.
-The farmer comes to you BECAUSE they do not know the problem. Always try to help, and be
-honest: if you are not sure, say what it may be, not what it is.
-Write your reply in exactly two sections:
+SYSTEM_PROMPT = """You are Fosholi (ফসলি), the farming knowledge assistant of ChashiBondhu for farmers in Bangladesh.
+Answer like a knowledgeable agricultural expert talking to a farmer: natural, simple, everyday Bangla
+(Bangla script and Bangla words, for example "কাণ্ড", not "স্টেম"), short clear sentences.
+The numbered handbook passages (Sources) are your main knowledge.
 
-VERIFIED:
-Only what the numbered sources say that answers the question, and only about the SAME
-crop the farmer asked about (for example, sweet potato is not potato).
-If the farmer describes signs (for example yellow leaves, spots, rot, wilting) and the
-sources describe problems of that crop with matching signs, name each one as a POSSIBLE
-cause (in Bangla: "... হতে পারে") and say how to recognise it, using only the sources.
-At most 4 sentences. End every sentence with its source number, like [1].
-Never add anything that is not written in the sources.
-If the sources do not answer the question, write only: NONE
+How to answer:
+- Answer exactly what the farmer asked, directly, in normal paragraphs (usually one to three short ones).
+  No introduction, no closing summary, no repeated points.
+- Use only the parts of the sources that answer THIS question. Do not add other topics just because they
+  are in the sources. Do not copy whole passages: explain in simple words.
+- Keep the handbook's facts exactly: numbers, distances, amounts, dates, months, varieties and terms as written.
+  End every sentence that uses a source with its source number, like [1].
+- Use a short list (lines starting with "- ") only when naming several items, and numbered steps ("1. ")
+  only for work done in order. Use a heading (a line starting with "### ") only in a long answer.
+- If the farmer describes signs (yellow leaves, spots, rot, wilting) and the sources describe problems of that
+  crop with matching signs, say what it MAY be ("... হতে পারে") and how to recognise it, from the sources.
+- If the sources do not contain what was asked, say that in one plain sentence (for example
+  "হাতবইয়ে এ বিষয়ে নির্দিষ্ট তথ্য পাওয়া যায়নি।"), then you may add a little general, safe guidance.
+- General guidance that is not from the sources: no [n], no numbers, doses, amounts, dates or month names,
+  and no fertilizer, nutrient, pesticide, chemical, product or variety names. Never say a cause is certain.
+- Same crop only: answer about the crop the farmer asked about (sweet potato is not potato).
+- Never tell the farmer to cut, pull out, burn or destroy plants. Do not write a line about the agriculture
+  office or a hotline: the app shows that help itself.
+- Ask the farmer a question only when the answer really depends on something they did not say. Most answers
+  need no question.
+- "Conversation so far" (if given) is the earlier chat. The new question may continue it (for example
+  "how much distance?" after a potato question is about potato). Do not repeat what was already said.
+- A "Farmer:" line gives the district and month. Use it only to fit general guidance to the season and place;
+  never invent local facts, prices or weather.
+- If the question is in English, answer in simple English with the same rules."""
 
-ADVICE:
-General help that the sources do not already give. Do not repeat VERIFIED.
-Length: at most 3 sentences if VERIFIED has an answer; at most 4 if VERIFIED is NONE.
-Content: the likely possible causes for THIS crop and how to tell them apart by looking
-(old lower leaves or new top leaves, spots or no spots, whole field or a few plants),
-and safe steps for the crop that is in the field NOW, for example: drain standing water,
-do not over-irrigate, keep weeds away, watch whether the problem spreads.
-Strict rules for ADVICE:
-- No numbers, doses, amounts or dates.
-- No names of fertilizers, nutrients (for example nitrogen), pesticides, chemicals,
-  products or varieties. Say "পুষ্টির অভাব" (lack of nutrients) instead of a nutrient name.
-- Never say a cause is certain: say "হতে পারে" (may be).
-- Never tell the farmer to cut, pull out, burn or destroy leaves or plants. Yellow or
-  old leaves can be normal; removing plants is a decision for the agriculture officer.
-- No advice for the next season (for example choosing seed).
-- Do not write a line about the agriculture office; the app adds it.
-Follow-up question: at the end, ask at most ONE short, clear question, only if the answer
-really depends on it, and only about something the advice did not already cover.
-Ask about signs in the field (leaves, spots, rot) ONLY when the farmer describes a problem in a crop.
-For "how to start / which variety / when to sow" questions, never ask about leaves or spots.
-Never ask for anything the farmer already said (for example the crop name).
-Never ask the farmer to name the disease or the cause - that is your job. Ask only about
-things the farmer can see or knows, for example: are the old lower leaves or the new top
-leaves yellow, are there spots, is the whole field affected or only some plants, how many
-days old is the crop, was there heavy rain or too much irrigation.
-If nothing useful can be added, write only: NONE
+FOLLOWUP_PROMPT = """The farmer's new message may continue the earlier conversation. Write ONE short standalone
+Bangla search query in Bangla script (crop name + topic) for the new message, using the conversation to fill in
+what the new message leaves out (for example the crop). Keep signs the farmer describes. If the farmer asks
+which seed or variety, use the word জাত. Output only the query, nothing else."""
 
-Language and format: if the question is in Bangla script or Banglish (Bangla written with
-English letters), write both sections in simple Bangla script with Bangla words only
-(for example "কাণ্ড", not "স্টেম"). If it is in English, use simple English.
-Put each sentence on its own line. No bullet marks, no numbering, no bold, no headings
-other than VERIFIED: and ADVICE:."""
+SECTIONS = ("cause", "now", "fix", "care", "extra")
+TAG_RE = re.compile(r"^\s*[{\[(]\s*(cause|now|fix|care|extra)\s*[}\])]\s*:?\s*", re.I)
+_ANY_TAG_RE = re.compile(r"[{\[(]\s*(?:cause|now|fix|care|extra)\s*[}\])]\s*:?\s*", re.I)
+
+
+def split_tag(sentence: str) -> tuple[str, str]:
+    """'{now} পানি সরান।' -> ('now', 'পানি সরান।'). No tag -> ('', sentence)."""
+    m = TAG_RE.match(sentence)
+    return (m.group(1).lower(), sentence[m.end():]) if m else ("", sentence)
+
+
+def strip_tags(text: str) -> str:
+    return _ANY_TAG_RE.sub("", text)
+
+
+def needs_safety(question: str, verified: str) -> bool:
+    """The 'confirm before buying medicine / fertilizer' line only when the topic is medicine or fertilizer
+    (asked by the farmer, or a dose / spray step in the book text) - not under every answer."""
+    return bool(_MEDICINE_TOPIC.search(question)) or needs_safety_line(question) or needs_safety_line(verified)
+
+
+_MEDICINE_TOPIC = re.compile(r"সার|ওষুধ|ঔষধ|কীটনাশক|ছত্রাকনাশক|বালাইনাশক|স্প্রে|\b(?:sar|osudh|oshudh|aushadh|spray|"
+                             r"fertili[sz]er|pesticide|fungicide|insecticide|urea|tsp|mop)\b", re.I)
 
 REWRITE_PROMPT = """Rewrite the farmer's question as a short Bangla search query in Bangla
 script: crop name + the problem or topic. Keep the signs the farmer describes (for example
@@ -183,13 +194,13 @@ class Assistant:
 
     # ------------------------------------------------------------ cache
     # The key includes prompts and retrieval version: changing either never returns old answers.
-    def _key(self, kind: str, text: str) -> str:
+    def _key(self, kind: str, text: str, context: str = "") -> str:
         model = getattr(self.llm, "model", "llm")
         built = getattr(self.index, "meta", {}).get("built_utc", "")
-        prompt = hashlib.sha256((SYSTEM_PROMPT + REWRITE_PROMPT).encode()).hexdigest()[:8]
+        prompt = hashlib.sha256((SYSTEM_PROMPT + REWRITE_PROMPT + FOLLOWUP_PROMPT).encode()).hexdigest()[:8]
         search = f"{RETRIEVAL_VERSION}:{self._search_mode}"
         raw = (f"{kind}|{model}|{built}|{prompt}|{search}|"
-               f"{' '.join(normalize_text(text).split())}")
+               f"{' '.join(normalize_text(text).split())}|{context}")
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def _cache_get(self, key: str):
@@ -205,92 +216,23 @@ class Assistant:
                 tmp.replace(self.cache_path)
 
     # ------------------------------------------------------------ main
-    def ask(self, question: str) -> dict:
+    def ask(self, question: str, context: str = "", history: list | None = None) -> dict:
+        """Whole answer at once (old /assistant page, scripts). Same pipeline and guards as fosholi.ask_stream."""
+        from chashibondhu.assistant.fosholi import ask_stream
         q = " ".join(question.split())
         if not 2 <= len(q) <= 500:
             raise ValueError("question must be 2-500 characters")
-        bangla = has_bangla(q)
-        key = self._key("answer", q)
-        cached = self._cache_get(key)
-        if cached:
-            return {**cached, "cached": True, "llm_requests": 0}
-
-        calls = 0
-        search_q = q
-        if needs_rewrite(q) and self.rewrite_latin_queries:
-            rkey = self._key("rewrite", q)
-            search_q = self._cache_get(rkey) or ""
-            if not search_q:
-                try:
-                    search_q = self.llm.generate(REWRITE_PROMPT, q).strip()[:200]
-                    calls += 1
-                except RateLimited:
-                    return self._rate_limited(q, calls + 1)
-                except LLMError:
-                    search_q = q        # fall back to the original text
-                if search_q != q:
-                    self._cache_put(rkey, search_q)
-
-        hits = self._search(search_q, k=self.k)
-        if hits:
-            sources = "\n\n".join(
-                f"[{i}] (page {h.chunk.get('printed_page') or h.chunk['pdf_page']})\n"
-                f"{h.chunk['text']}" for i, h in enumerate(hits, start=1))
-        else:
-            sources = "(no matching passages found)"
-        user = f"Sources:\n{sources}\n\nQuestion: {q}"
-        try:
-            raw = self.llm.generate(SYSTEM_PROMPT, user)
-            calls += 1
-        except RateLimited:
-            return self._rate_limited(q, calls + 1)
-
-        verified, advice = parse_sections(raw)
-        removed: list[str] = []
-        notes: list[str] = []
-        if verified:
-            verified, gone = guard_numbers(verified, "\n".join(h.chunk["text"] for h in hits))
-            removed += gone
-            if gone:
-                notes.append(GUARD_NOTE)
-        if advice:
-            advice, gone = drop_numbered_sentences(advice)
-            removed += gone
-            if gone:
-                notes.append(ADVICE_NOTE)
-
-        cited = sorted({int(m) for m in _MARK_RE.findall(verified) if 1 <= int(m) <= len(hits)})
-        verified = _MARK_RE.sub(lambda m: m.group(0) if 1 <= int(m.group(1)) <= len(hits)
-                                else "", verified).strip()
-        if verified and not cited:          # a "verified" claim without a source is advice
-            advice, verified = (verified + "\n" + advice).strip(), ""
-            advice, gone = drop_numbered_sentences(advice)
-            removed += gone
-        if advice:                          # fertilizer / nutrient / chemical names
-            advice, gone = drop_blocked_sentences(advice)
-            removed += gone
-            if gone:
-                notes.append(TERM_NOTE)
-        refs = [self._source(n, hits[n - 1]) for n in cited]
-
-        lang = "bn" if bangla or not _looks_english(q) else "en"
-        L = LABELS[lang]
-        # Farmer text: plain answer first, then "পরামর্শ:". No labels, no [n] marks.
-        # The verified / advice split and the pages stay in their own fields for admins.
-        blocks = []
-        if verified:
-            text = re.sub(r"\s+।", "।", _MARK_RE.sub("", verified)).strip()
-            if not advice and needs_safety_line(verified):   # book dose/spray step
-                text += "\n" + L["safety"]
-            blocks.append(text)
-        if advice:
-            blocks.append(f"{L['advice']}\n{advice}\n{L['safety']}")
-        if not blocks:
-            blocks.append(L["fallback"])
-        status = ("verified_and_advice" if verified and advice else
-                  "verified" if verified else "advice_only" if advice else "need_more_info")
-        return self._finish(key, q, search_q, status, "\n\n".join(blocks), refs, removed,
-                            calls, verified=verified, advice=advice, notes=notes)
+        done, calls = None, 0
+        for ev in ask_stream(self, q, context, history):
+            if ev["t"] == "error":
+                return self._rate_limited(q, 1) if ev["code"] == "ai_busy" else \
+                    {**self._rate_limited(q, 1), "status": "error", "answer": LABELS["bn"]["fallback"]}
+            if ev["t"] == "done":
+                done = ev
+        result = dict(done.get("result") or {})
+        if done.get("cached"):
+            result.update(cached=True, llm_requests=calls)
+        return result
 
     # ------------------------------------------------------------ helpers
     @staticmethod
@@ -307,12 +249,12 @@ class Assistant:
                 "cached": False, "llm_requests": calls}
 
     def _finish(self, key, q, search_q, status, answer, refs, removed, calls,
-                verified="", advice="", notes=None) -> dict:
+                verified="", advice="", notes=None, lines=None) -> dict:
         result = {"question": q, "status": status, "answer": answer,
                   "verified": verified, "advice": advice, "sources": refs,
                   "removed_sentences": removed, "notes": notes or [],
                   "search_query": search_q, "model": getattr(self.llm, "model", ""),
-                  "cached": False, "llm_requests": calls}
+                  "cached": False, "llm_requests": calls, "lines": lines or []}
         self._cache_put(key, result)
         return result
 

@@ -98,8 +98,10 @@ def _stream_lines(llm, system: str, user: str, guard: Guard, info: dict) -> Iter
 def answer(question: str, *, llm, intents: list[str], history: list[dict] | None = None,
            image_jpeg: bytes | None = None, vision=None, weather_fn: Callable | None = None,
            climate_fn: Callable | None = None, area: dict | None = None,
-           numbers_of: Callable | None = None) -> Iterator[dict]:
-    """Events: start, diagnosis (photo), card (weather / climate / note), s (checked sentences), done, error."""
+           numbers_of: Callable | None = None, catalogue=None, crop_hint: str | None = None,
+           book=None) -> Iterator[dict]:
+    """Events: start, diagnosis (photo), treat (handbook treatment sentences), card (weather / climate / note),
+    s (checked sentences), done, error. catalogue = crop list + problem lists; book = Fosholi assistant."""
     q = " ".join((question or "").split())
     yield {"t": "start", "intents": intents}
     allowed = set(numbers_in(q))
@@ -114,12 +116,14 @@ def answer(question: str, *, llm, intents: list[str], history: list[dict] | None
             yield {"t": "error", "code": "ai_down"}
             return
         from chashibondhu.assistant import diagnosis as dx
+        crop_hint = crop_hint or crop_from_text(q, catalogue)
         ctx = _context(history)
         text = (f"Conversation so far:\n{ctx}\n\n" if ctx else "") + f"Farmer's question: {q or '(no text, only the photo)'}"
+        system = dx.build_prompt(catalogue or _NoCatalogue(), crop_hint)
         data = None
         for _ in range(2):                         # one retry if the model's JSON is broken
             try:
-                raw = vision.analyze(dx.VISION_SYSTEM, text, image_jpeg)
+                raw = vision.analyze(system, text, image_jpeg)
                 model = getattr(vision, "model", None)
             except RateLimited:
                 yield {"t": "error", "code": "ai_busy"}
@@ -135,19 +139,29 @@ def answer(question: str, *, llm, intents: list[str], history: list[dict] | None
         if data is None:
             yield {"t": "error", "code": "ai_error"}
             return
-        payload = dx.check(data, q)
+        payload = dx.check(data, q, catalogue, crop_hint)
         yield {"t": "diagnosis", "data": payload}
-        yield {"t": "done", "safety": SAFETY_BN if payload["status"] == "possible" else "", "model": model,
-               "removed": payload.get("removed", 0), "answer": dx.as_text(payload), "payload": payload}
+        text_out = dx.as_text(payload)
+        if payload["status"] == "possible" and payload.get("diagnosis") and book is not None:
+            treat = yield from _book_treatment(book, payload)
+            payload["treatment"] = treat
+            if treat["lines"]:
+                text_out += "\nচিকিৎসা (হাতবই থেকে):\n" + "\n".join(treat["lines"])
+            else:
+                payload["support"] = True
+        yield {"t": "done", "safety": SAFETY_BN if payload.get("treatment", {}).get("lines") else "", "model": model,
+               "removed": payload.get("removed", 0), "answer": text_out, "payload": payload,
+               "support": bool(payload.get("support"))}
         return
 
     # ---------------------------------------------------------- tools for text questions
+    pre = _prefetch(intents, area, weather_fn, climate_fn)
     if "weather" in intents:
         if not area:
             yield {"t": "card", "kind": "note", "code": "need_area"}
         else:
             try:
-                w = weather_fn(area["lat"], area["lon"])
+                w = pre["weather"]()
                 from chashibondhu.web.drkrishi_tools import farm_tips
                 tips = farm_tips(w)
                 yield {"t": "card", "kind": "weather", "area": {"bn": area["name_bn"], "en": area["name_en"]},
@@ -159,7 +173,7 @@ def answer(question: str, *, llm, intents: list[str], history: list[dict] | None
             except Exception:  # noqa: BLE001 - WeatherUnavailable or network
                 yield {"t": "card", "kind": "note", "code": "weather_down"}
     if "climate" in intents and area:
-        c = climate_fn(area["code"]) if climate_fn else None
+        c = pre["climate"]() if climate_fn else None
         if c:
             yield {"t": "card", "kind": "climate", "data": c}
             allowed |= numbers_of(c)
@@ -190,3 +204,76 @@ def answer(question: str, *, llm, intents: list[str], history: list[dict] | None
     yield {"t": "done", "safety": SAFETY_BN if g.removed or "general" in intents else "",
            "model": info.get("model") or getattr(llm, "model", None), "removed": len(g.removed),
            "answer": "\n".join(g.kept)}
+
+
+class _NoCatalogue:
+    crops: dict = {}
+
+    def for_crop(self, crop_id):
+        return []
+
+
+_TEXT_CROP = {"potato": "potato", "maize": "maize", "tomato": "tomato", "mustard": "mustard",
+              "mungbean": "mung_bean", "lentil": "lentil", "onion": "onion", "watermelon": "watermelon"}
+
+
+def crop_from_text(q: str, catalogue) -> str | None:
+    """The farmer's own words name ONE catalogue crop ("আলুর পাতায় দাগ") -> use it as the crop hint.
+    Rice is skipped (Aman or Boro cannot be told from the word)."""
+    if not q or catalogue is None:
+        return None
+    from chashibondhu.assistant.diagnosis import crops_in
+    found = {_TEXT_CROP[k] for k in crops_in(q) if k in _TEXT_CROP}
+    found = {c for c in found if c in getattr(catalogue, "crops", {})}
+    return next(iter(found)) if len(found) == 1 else None
+
+
+def _prefetch(intents, area, weather_fn, climate_fn) -> dict:
+    """Start the weather (network) and climate (database) look-ups at the same time; each result is
+    read with pre[...]() which waits only if it is not ready yet. Errors surface when read."""
+    from concurrent.futures import ThreadPoolExecutor
+    out = {"weather": lambda: None, "climate": lambda: None}
+    jobs = {}
+    if "weather" in intents and area and weather_fn:
+        jobs["weather"] = lambda: weather_fn(area["lat"], area["lon"])
+    if "climate" in intents and area and climate_fn:
+        jobs["climate"] = lambda: climate_fn(area["code"])
+    if not jobs:
+        return out
+    ex = ThreadPoolExecutor(max_workers=len(jobs))
+    futs = {k: ex.submit(f) for k, f in jobs.items()}
+    ex.shutdown(wait=False)
+    for k, fut in futs.items():
+        out[k] = fut.result
+    return out
+
+
+TREAT_NONE_BN = "হাতবইয়ে এই সমস্যার চিকিৎসা খুঁজে পাওয়া যায়নি। নিচের কৃষি কল সেন্টারে ফোন করে নিশ্চিত হোন।"
+
+
+def _book_treatment(book, payload: dict):
+    """Ask the BARI handbook (Fosholi: verified pages + checked advice) how to manage THIS problem.
+    Sends {"t": "treat", ...} events; returns {"lines", "sources", "query"} for saving."""
+    from chashibondhu.assistant.fosholi import ask_stream
+    d, crop = payload["diagnosis"], payload["crop"]
+    query = d.get("search_bn") or f"{crop['bn']} {d['bn']} দমন"
+    if crop["bn"] not in query:
+        query = f"{crop['bn']} {query}"
+    yield {"t": "treat_start", "query": query}
+    lines, sources, verified = [], [], 0
+    try:
+        for ev in ask_stream(book, query):
+            if ev["t"] == "s" and ev["part"] != "head":
+                lines.append(ev["text"])
+                verified += ev["part"] == "verified"
+                yield {"t": "treat", "part": ev["part"], "text": ev["text"]}
+            elif ev["t"] == "done":
+                sources = ev.get("sources") or []
+            elif ev["t"] == "error":
+                break
+    except Exception:  # noqa: BLE001 - the diagnosis is still shown without the book part
+        pass
+    if not verified:                     # no page-backed treatment: say so, do not pretend
+        yield {"t": "treat", "part": "note", "text": TREAT_NONE_BN}
+    yield {"t": "treat_done", "sources": sources}
+    return {"lines": lines, "sources": sources, "query": query, "verified": verified}

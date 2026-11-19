@@ -1,4 +1,4 @@
-"""Fosholi answer-quality fixes (7b.2): mixed Bangla + Banglish questions are rewritten before searching,
+"""Fosholi answer-quality fixes (7c.1): mixed Bangla + Banglish questions are rewritten before searching,
 advice may not contain month names (dates), follow-up questions not about leaves for 'how to start' questions."""
 from __future__ import annotations
 
@@ -71,4 +71,5 @@ def test_advice_with_month_is_not_shown(tmp_path):
 
 def test_prompt_rules():
     from chashibondhu.assistant.service import REWRITE_PROMPT, RETRIEVAL_VERSION, SYSTEM_PROMPT
-    assert "never ask about leaves" in SYSTEM_PROMPT and "জাত" in REWRITE_PROMPT and RETRIEVAL_VERSION == "7b.2"
+    assert "Answer exactly what the farmer asked" in SYSTEM_PROMPT and "Most answers\n  need no question" in SYSTEM_PROMPT
+    assert "জাত" in REWRITE_PROMPT and RETRIEVAL_VERSION == "8.0"

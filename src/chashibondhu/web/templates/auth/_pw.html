@@ -1,0 +1,8 @@
+{# password input with show / hide. Needs: pid, pname, pauto, plabel_bn, plabel_en; optional same (id of the first password), pmin #}
+<div class="cb-fl">
+  <label for="{{ pid }}">{{ t(plabel_bn, plabel_en) }}</label>
+  <div class="cb-inwrap"><i class="fa-solid fa-lock" aria-hidden="true"></i>
+    <input class="cb-input" id="{{ pid }}" name="{{ pname }}" type="password" autocomplete="{{ pauto }}" required{% if pmin %} minlength="{{ pmin }}"{% endif %}{% if same %} data-cb-same="{{ same }}"{% endif %} data-cb-pw>
+    <button class="cb-eye" type="button" data-cb-eye="{{ pid }}" aria-pressed="false" aria-label="{{ 'পাসওয়ার্ড দেখুন / Show password' }}"><i class="fa-solid fa-eye"></i></button>
+  </div>
+</div>

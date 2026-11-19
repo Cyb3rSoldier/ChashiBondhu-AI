@@ -11,7 +11,7 @@
     <small class="cb-cat-name">{{ t(L.CA.get(l.category, ('অন্যান্য', 'Others'))[0], L.CA.get(l.category, ('অন্যান্য', 'Others'))[1]) }}</small>
     <div class="cb-price"><b>৳{{ num(l.price_now) }}</b><small>/ {{ t(L.UN.get(l.unit, (l.unit, l.unit))[0], L.UN.get(l.unit, (l.unit, l.unit))[1]) }}</small>
       {% if l.discount_price %}<s>৳{{ num(l.price_per_unit) }}</s><span class="cb-save">{{ t('সাশ্রয়', 'Save') }} ৳{{ num(l.price_per_unit - l.discount_price) }}</span>{% endif %}</div>
-    <div class="cb-who"><i class="fa-solid fa-user"></i> {{ l.farmer_name }}{% if l.district_code %} · <span data-area-name="{{ l.district_code }}">{{ l.district_code }}</span>{% endif %}</div>
+    <div class="cb-who"><i class="fa-solid fa-user"></i> {{ l.farmer_name }}{% if l.district_bn %} · {{ t(l.district_bn, l.district_en) }}{% elif l.district_code %} · <span data-area-name="{{ l.district_code }}">{{ l.district_code }}</span>{% endif %}</div>
     <div class="cb-who"><i class="fa-solid fa-box"></i>
       {% if l.listing_type == 'expected' %}{{ t('ফসল উঠবে', 'Harvest') }} {{ l.available_from }}
       {% elif l.quantity > 0 %}{{ t('আছে', 'In stock') }} {{ num(l.quantity) }}{% else %}{{ t('স্টক শেষ', 'Out of stock') }}{% endif %}</div>

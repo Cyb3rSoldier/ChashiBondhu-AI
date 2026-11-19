@@ -57,6 +57,8 @@ def mount_website(app: FastAPI) -> None:
 
     @app.exception_handler(LoginRequired)
     async def _to_login(request: Request, exc: LoginRequired):
+        if exc.next_url.startswith("/admin"):          # admin pages: the admin sign-in at /admin, never the public one
+            return RedirectResponse(f"/admin?next={quote(exc.next_url)}", status_code=303)
         return RedirectResponse(f"/login?next={quote(exc.next_url)}", status_code=303)
 
     @app.exception_handler(StarletteHTTPException)

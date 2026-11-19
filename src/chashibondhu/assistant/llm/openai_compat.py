@@ -40,6 +40,11 @@ class OpenAICompatClient:
         body = {"model": self.model,
                 "messages": [{"role": "system", "content": system},
                              {"role": "user", "content": user}]}
+        if os.environ.get("LLM_FAST_GENERATE", "1") != "0":
+            from chashibondhu.assistant.llm.streaming import reasoning_effort
+            effort = reasoning_effort(self.model)
+            if effort:          # gpt-oss thinks before answering; "low" cuts that wait (FOSHOLI_REASONING)
+                body["reasoning_effort"] = effort
         try:
             r = self._session.post(self._url, json=body, timeout=self.timeout,
                                    headers={"Authorization": f"Bearer {self._key}"})

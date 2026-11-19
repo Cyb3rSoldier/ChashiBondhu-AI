@@ -1,35 +1,67 @@
 {% extends "customer/_layout.html" %}
 {% block title %}{{ 'আমার অ্যাকাউন্ট — চাষীবন্ধু' }}{% endblock %}
 {% block page %}
-<section class="cb-fhead">
-  <div class="cb-avatar">{% if me.avatar_path %}<img src="{{ me.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
-  <div class="cb-fhead-txt"><p class="cb-greet">{{ t('স্বাগতম', 'Welcome') }}</p><h1>{{ me.full_name }}</h1>
-    <p class="cb-hint"><i class="fa-solid fa-location-dot"></i> {% if me.upazila_code or me.district_code %}<span data-area-name="{{ me.upazila_code or me.district_code }}">{{ me.upazila_code or me.district_code }}</span>{% else %}<a href="/customer/settings">{{ t('এলাকা যোগ করুন', 'Add your area') }}</a>{% endif %}</p></div>
-  <a class="cb-btn cb-btn-main" href="/market"><i class="fa-solid fa-store"></i>{{ t('বাজারে যান', 'Go to market') }}</a>
+{# Every number here is the customer's real data (repo.customer_stats, request_summary). #}
+<section class="cb-banner customer" aria-label="welcome">
+  <div>
+    <p class="cb-kicker">{{ t('ক্রেতা ড্যাশবোর্ড', 'Customer dashboard') }}</p>
+    <h1>{{ t('স্বাগতম,', 'Welcome,') }} <span>{{ me.full_name }}</span></h1>
+    <p class="cb-meta"><span><i class="fa-solid fa-location-dot"></i>{% if me.upazila_code or me.district_code %}<span data-area-name="{{ me.upazila_code or me.district_code }}">{{ me.upazila_code or me.district_code }}</span>{% else %}<a href="/customer/settings">{{ t('এলাকা যোগ করুন', 'Add your area') }}</a>{% endif %}</span>
+      <span><i class="fa-solid fa-leaf"></i>{{ t('কৃষকের কাছ থেকে সরাসরি টাটকা পণ্য', 'Fresh produce straight from farmers') }}</span></p>
+    <div class="cb-banner-cta">
+      <a class="cb-btn cb-btn-white" href="/market"><i class="fa-solid fa-store"></i>{{ t('বাজারে যান', 'Go to market') }}</a>
+      <a class="cb-btn cb-btn-ghost" href="/cart"><i class="fa-solid fa-cart-shopping"></i>{{ t('কার্ট', 'Cart') }} ({{ num(cart_n or 0) }})</a>
+    </div>
+  </div>
+  <div class="cb-idcard">
+    <div class="cb-idcard-top">
+      <div class="cb-avatar">{% if me.avatar_path %}<img src="{{ me.avatar_path }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+      <div><b>{{ me.full_name }}</b><small>{{ t('ক্রেতা', 'Customer') }}</small></div>
+    </div>
+    <div class="cb-idcard-nums">
+      <a href="/customer/orders"><b>{{ num(stats.total_orders or 0) }}</b><span>{{ t('মোট অর্ডার', 'Orders') }}</span></a>
+      <a href="/customer/notifications"><b>{{ num(unread) }}</b><span>{{ t('নতুন খবর', 'New alerts') }}</span></a>
+    </div>
+  </div>
 </section>
-<section class="cb-stats">
-  <a class="cb-stat" href="/customer/orders"><i class="fa-solid fa-receipt"></i><b>{{ num(stats.total_orders or 0) }}</b><span>{{ t('মোট অর্ডার', 'Total orders') }}</span></a>
-  <a class="cb-stat warn" href="/customer/orders"><i class="fa-solid fa-hourglass-half"></i><b>{{ num(stats.pending_orders or 0) }}</b><span>{{ t('চলমান অর্ডার', 'Pending orders') }}</span></a>
-  <a class="cb-stat" href="/customer/orders"><i class="fa-solid fa-circle-check"></i><b>{{ num(stats.completed_orders or 0) }}</b><span>{{ t('সম্পন্ন অর্ডার', 'Completed orders') }}</span></a>
-  <a class="cb-stat" href="/customer/notifications"><i class="fa-solid fa-bell"></i><b>{{ num(unread) }}</b><span>{{ t('নতুন নোটিফিকেশন', 'New notifications') }}</span></a>
+
+<section class="cb-kpis" aria-label="summary">
+  <a class="cb-kpi t-teal" href="/customer/orders"><div><small>{{ t('মোট অর্ডার', 'Total orders') }}</small><b>{{ num(stats.total_orders or 0) }}</b></div><span class="ic"><i class="fa-solid fa-receipt"></i></span></a>
+  <a class="cb-kpi t-amber" href="/customer/orders"><div><small>{{ t('চলমান অর্ডার', 'Pending orders') }}</small><b>{{ num(stats.pending_orders or 0) }}</b></div><span class="ic"><i class="fa-solid fa-hourglass-half"></i></span></a>
+  <a class="cb-kpi t-green" href="/customer/orders"><div><small>{{ t('সম্পন্ন অর্ডার', 'Completed orders') }}</small><b>{{ num(stats.completed_orders or 0) }}</b></div><span class="ic"><i class="fa-solid fa-circle-check"></i></span></a>
+  <a class="cb-kpi t-violet" href="/customer/notifications"><div><small>{{ t('নতুন নোটিফিকেশন', 'New notifications') }}</small><b>{{ num(unread) }}</b></div><span class="ic"><i class="fa-solid fa-bell"></i></span></a>
 </section>
-<section class="cb-box">
-  <div class="cb-head-row" style="margin:0 0 8px"><h2 style="margin:0">{{ t('আগাম চাহিদা ও মিল', 'Demand requests & matches') }}</h2>
-    <a class="cb-mini" href="/requests">{{ t('সব দেখুন', 'See all') }}</a></div>
-  <section class="cb-stats" style="margin:0">
-    <a class="cb-stat" href="/requests"><i class="fa-solid fa-handshake"></i><b>{{ num(req.open_requests or 0) }}</b><span>{{ t('খোলা চাহিদা', 'Open requests') }}</span></a>
-    <a class="cb-stat warn" href="/requests"><i class="fa-solid fa-reply"></i><b>{{ num(req.need_answer or 0) }}</b><span>{{ t('আপনার উত্তর দরকার', 'Your answer needed') }}</span></a>
-    <a class="cb-stat" href="/requests"><i class="fa-solid fa-seedling"></i><b>{{ num(req.waiting_harvest or 0) }}</b><span>{{ t('ফসলের অপেক্ষা', 'Awaiting harvest') }}</span></a>
-    <a class="cb-stat" href="/requests"><i class="fa-solid fa-cart-plus"></i><b>{{ num(req.can_order or 0) }}</b><span>{{ t('অর্ডার করা যাবে', 'Available for order') }}</span></a>
+
+<section class="cb-panel">
+  <div class="cb-panel-head"><h2>{{ t('দ্রুত কাজ', 'Quick actions') }}</h2><p>{{ t('কেনাকাটা সহজে', 'Shopping made easy') }}</p></div>
+  <div class="cb-quick">
+    <a class="cb-qa t-green" href="/market"><span class="ic"><i class="fa-solid fa-basket-shopping"></i></span><b>{{ t('বাজার দেখুন', 'Browse market') }}</b><span>{{ t('এলাকা অনুযায়ী টাটকা পণ্য', 'Fresh produce by area') }}</span><em>{{ t('দেখুন', 'Browse') }} →</em></a>
+    <a class="cb-qa t-violet" href="/shop-assistant"><span class="ic"><i class="fa-solid fa-wand-magic-sparkles"></i></span><b>{{ t('কেনাকাটা সহায়ক', 'Shopping helper') }}</b><span>{{ t('কী কিনবেন, খুঁজে দিতে সাহায্য', 'Help finding what to buy') }}</span><em>{{ t('জিজ্ঞেস করুন', 'Ask') }} →</em></a>
+    <a class="cb-qa t-amber" href="/cart"><span class="ic"><i class="fa-solid fa-cart-shopping"></i></span><b>{{ t('আমার কার্ট', 'My cart') }}</b><span>{{ num(cart_n or 0) }} {{ t('টি পণ্য', 'items') }}</span><em>{{ t('দেখুন', 'Open') }} →</em></a>
+    <a class="cb-qa t-blue" href="/customer/orders"><span class="ic"><i class="fa-solid fa-truck-fast"></i></span><b>{{ t('আমার অর্ডার', 'My orders') }}</b><span>{{ t('অর্ডারের অবস্থা দেখুন', 'Track your orders') }}</span><em>{{ t('দেখুন', 'View') }} →</em></a>
+    <a class="cb-qa t-rose" href="/customer/saved"><span class="ic"><i class="fa-solid fa-heart"></i></span><b>{{ t('সংরক্ষিত ও প্রিয়', 'Saved & favourites') }}</b><span>{{ t('পছন্দের পণ্য ও কৃষক', 'Products and farmers you like') }}</span><em>{{ t('দেখুন', 'View') }} →</em></a>
+    <a class="cb-qa t-teal" href="/requests"><span class="ic"><i class="fa-solid fa-handshake"></i></span><b>{{ t('আগাম চাহিদা', 'Demand requests') }}</b><span>{{ t('ফসল ওঠার আগেই জানান', 'Ask before the harvest') }}</span><em>{{ t('দেখুন', 'Open') }} →</em></a>
+  </div>
+</section>
+
+<div class="cb-dash-cols">
+  <section class="cb-panel">
+    <div class="cb-panel-head"><h2>{{ t('সাম্প্রতিক কেনাকাটা', 'Recent purchases') }}</h2><a class="cb-mini" href="/customer/orders">{{ t('সব অর্ডার', 'All orders') }}</a></div>
+    {% if recent %}
+    <ul class="cb-list">{% for r in recent %}
+      <li class="cb-row"><span class="cb-thumb"><i class="fa-solid fa-bag-shopping"></i></span>
+        <div><b>{{ r.title }}</b><small>{{ num(r.quantity) }} {{ r.unit }} × ৳{{ num(r.unit_price) }} · <a href="/customer/orders/{{ r.order_number }}">{{ r.order_number }}</a></small></div>
+        {% if r.listing_id %}<a class="cb-mini" href="/market/{{ r.listing_id }}">{{ t('আবার দেখুন', 'View again') }}</a>{% endif %}</li>{% endfor %}</ul>
+    {% else %}<div class="cb-empty-box"><i class="fa-solid fa-bag-shopping"></i>{{ t('এখনো কিছু কেনেননি।', 'No purchases yet.') }}<br><br><a class="cb-btn cb-btn-main" href="/market">{{ t('বাজারে যান', 'Go to market') }}</a></div>{% endif %}
   </section>
-</section>
-<section class="cb-box">
-  <h2>{{ t('সাম্প্রতিক কেনাকাটা', 'Recent purchases') }}</h2>
-  {% if recent %}
-  <ul class="cb-list">{% for r in recent %}
-    <li class="cb-row"><span class="cb-thumb"><i class="fa-solid fa-bag-shopping"></i></span>
-      <div><b>{{ r.title }}</b><small>{{ num(r.quantity) }} {{ r.unit }} × ৳{{ num(r.unit_price) }} · <a href="/customer/orders/{{ r.order_number }}">{{ r.order_number }}</a></small></div>
-      {% if r.listing_id %}<a class="cb-mini" href="/market/{{ r.listing_id }}">{{ t('আবার দেখুন', 'View again') }}</a>{% endif %}</li>{% endfor %}</ul>
-  {% else %}<p class="cb-hint">{{ t('এখনো কিছু কেনেননি।', 'No purchases yet.') }}</p>{% endif %}
-</section>
+  <section class="cb-panel">
+    <div class="cb-panel-head"><h2>{{ t('আগাম চাহিদা ও মিল', 'Demand requests & matches') }}</h2><a class="cb-mini" href="/requests">{{ t('সব দেখুন', 'See all') }}</a></div>
+    <div class="cb-kpis six" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:0">
+      <a class="cb-kpi t-teal" href="/requests"><div><small>{{ t('খোলা চাহিদা', 'Open requests') }}</small><b>{{ num(req.open_requests or 0) }}</b></div></a>
+      <a class="cb-kpi t-amber" href="/requests"><div><small>{{ t('আপনার উত্তর দরকার', 'Your answer needed') }}</small><b>{{ num(req.need_answer or 0) }}</b></div></a>
+      <a class="cb-kpi t-green" href="/requests"><div><small>{{ t('ফসলের অপেক্ষা', 'Awaiting harvest') }}</small><b>{{ num(req.waiting_harvest or 0) }}</b></div></a>
+      <a class="cb-kpi t-blue" href="/requests"><div><small>{{ t('অর্ডার করা যাবে', 'Ready to order') }}</small><b>{{ num(req.can_order or 0) }}</b></div></a>
+    </div>
+  </section>
+</div>
 {% endblock %}

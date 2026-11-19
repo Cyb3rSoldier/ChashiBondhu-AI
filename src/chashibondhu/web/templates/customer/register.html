@@ -1,21 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ 'ক্রেতা অ্যাকাউন্ট — চাষীবন্ধু' }}{% endblock %}
+{% block body_class %}cb-auth-body{% endblock %}
 {% block content %}
-<div class="cb-wrap"><section class="cb-auth">
-  <h1>{{ t('নতুন ক্রেতা অ্যাকাউন্ট', 'New customer account') }}</h1>
-  <p class="cb-sub">{{ t('কৃষকের কাছ থেকে সরাসরি কিনতে অ্যাকাউন্ট খুলুন। কৃষক হলে', 'Open an account to buy directly from farmers. If you are a farmer,') }} <a href="/register" style="color:var(--cb-paddy);font-weight:700">{{ t('এখানে যোগ দিন', 'join here') }}</a>.</p>
-  {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
-  <form class="cb-form" method="post" action="/register/customer"><input type="hidden" name="csrf" value="{{ csrf }}">
-    <div class="cb-field"><label for="full_name">{{ t('নাম', 'Name') }}</label><input class="cb-input" id="full_name" name="full_name" required maxlength="100" value="{{ form.full_name or '' }}"></div>
-    <div class="cb-field"><label for="email">{{ t('ইমেইল', 'Email') }}</label><input class="cb-input" id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required maxlength="254" value="{{ form.email or '' }}" placeholder="name@gmail.com"><p class="cb-hint">{{ t('এই ইমেইল দিয়েই লগইন করবেন। পাসওয়ার্ড ভুলে গেলে এখানে লিংক যাবে।', 'You will log in with this email. Password reset links are sent here.') }}</p></div>
-    <div class="cb-field"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label><input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"><p class="cb-hint">{{ t('ডেলিভারির জন্য দরকার। একই নম্বর একাধিক অ্যাকাউন্টে দেওয়া যায়।', 'Needed for delivery. The same number can be used on more than one account.') }}</p></div>
-    {% with code=form.upazila_code, label=form.upazila_label %}{% include "_upazila_picker.html" %}{% endwith %}
-    <div class="cb-field"><label for="address">{{ t('ঠিকানা (ইচ্ছামতো)', 'Address (optional)') }}</label><textarea class="cb-textarea" id="address" name="address" maxlength="300">{{ form.address or '' }}</textarea></div>
-    <div class="cb-field"><label for="password">{{ t('পাসওয়ার্ড', 'Password') }}</label><input class="cb-input" id="password" name="password" type="password" autocomplete="new-password" required></div>
-    <div class="cb-field"><label for="password2">{{ t('আবার পাসওয়ার্ড', 'Password again') }}</label><input class="cb-input" id="password2" name="password2" type="password" autocomplete="new-password" required></div>
-    <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('অ্যাকাউন্ট খুলুন', 'Create account') }}</button>
-  </form>
-  <p class="cb-hint" style="margin-top:14px">{{ t('অ্যাকাউন্ট আছে?', 'Have an account?') }} <a href="/login?as=customer">{{ t('লগইন', 'Log in') }}</a></p>
-</section></div>
+{# Customer sign-up. Same form fields and server checks as before; only the look changed. #}
+<div class="cb-auth-page">
+  <div class="cb-auth2 is-wide">
+    {% with who='customer', mode='join' %}{% include "auth/_brand.html" %}{% endwith %}
+    <section class="cb-formside">
+      <span class="cb-portal">{{ t('ক্রেতা নিবন্ধন', 'CUSTOMER REGISTRATION') }}</span>
+      <h1>{{ t('নতুন ক্রেতা অ্যাকাউন্ট', 'Create your account') }}</h1>
+      <p class="cb-sub">{{ t('কৃষকের কাছ থেকে সরাসরি কিনতে অ্যাকাউন্ট খুলুন।', 'Open an account to buy directly from farmers.') }}</p>
+      {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
+      <form class="cb-f2" method="post" action="/register/customer"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="cb-row2">
+          <div class="cb-fl"><label for="full_name">{{ t('নাম', 'Full name') }}</label>
+            <div class="cb-inwrap"><i class="fa-solid fa-user" aria-hidden="true"></i><input class="cb-input" id="full_name" name="full_name" required maxlength="100" autocomplete="name" value="{{ form.full_name or '' }}"></div></div>
+          <div class="cb-fl"><label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
+            <div class="cb-inwrap"><i class="fa-solid fa-phone" aria-hidden="true"></i><input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+            <p class="cb-hint">{{ t('ডেলিভারির জন্য দরকার।', 'Needed for delivery.') }}</p></div>
+        </div>
+        <div class="cb-fl"><label for="email">{{ t('ইমেইল', 'Email') }}</label>
+          <div class="cb-inwrap"><i class="fa-solid fa-envelope" aria-hidden="true"></i><input class="cb-input" id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" required maxlength="254" value="{{ form.email or '' }}" placeholder="name@gmail.com"></div>
+          <p class="cb-hint">{{ t('এই ইমেইল দিয়েই লগইন করবেন। পাসওয়ার্ড ভুলে গেলে এখানে লিংক যাবে।', 'You will log in with this email. Password reset links are sent here.') }}</p></div>
+        {% with code=form.upazila_code, label=form.upazila_label %}{% include "_upazila_picker.html" %}{% endwith %}
+        <div class="cb-fl"><label for="address">{{ t('ঠিকানা (ইচ্ছামতো)', 'Address (optional)') }}</label><textarea class="cb-textarea" id="address" name="address" maxlength="300" rows="2">{{ form.address or '' }}</textarea></div>
+        <div class="cb-row2">
+          {% with pid='password', pname='password', pauto='new-password', plabel_bn='পাসওয়ার্ড', plabel_en='Password' %}{% include "auth/_pw.html" %}{% endwith %}
+          {% with pid='password2', pname='password2', pauto='new-password', plabel_bn='আবার পাসওয়ার্ড', plabel_en='Confirm password', same='password' %}{% include "auth/_pw.html" %}{% endwith %}
+        </div>
+        <button class="cb-btn cb-btn-main cb-btn-block" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('অ্যাকাউন্ট খুলুন', 'Create account') }}</button>
+      </form>
+      <p class="cb-auth-alt">{{ t('অ্যাকাউন্ট আছে?', 'Already have an account?') }} <a href="/login?as=customer" data-cb-fade>{{ t('লগইন করুন', 'Log in') }}</a></p>
+      <p class="cb-or">{{ t('অথবা', 'or') }}</p>
+      <div class="cb-switch"><a href="/register" data-cb-fade><i class="fa-solid fa-tractor"></i>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a></div>
+    </section>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}<script src="/static/upazila.js?v=1"></script>{% endblock %}

@@ -71,14 +71,29 @@ def home(request: Request, q: str = "", crop: str = "",
         counts = repo.public_counts()
     except Exception:  # noqa: BLE001 - home page still opens if the database is down
         listings, counts = [], None
-    return render(request, "home.html", {"listings": listings, "counts": counts, "f": f})
+    return render(request, "home.html", {"listings": with_area_names(listings), "counts": counts, "f": f})
+
+
+def with_area_names(rows: list[dict]) -> list[dict]:
+    """Add district_bn / district_en so a card shows "ঢাকা", not a code, without any page script."""
+    from chashibondhu.web import geo_points
+    for r in rows:
+        try:
+            p = geo_points.point(r.get("district_code"))
+        except Exception:  # noqa: BLE001 - names are a nice-to-have; the card still shows
+            p = None
+        if p:
+            r["district_bn"], r["district_en"] = p["name_bn"], p["name_en"]
+    return rows
 
 
 @router.get("/login")
 def login_page(request: Request, next: str = "", as_role: Annotated[str, Query(alias="as")] = "farmer"):
     if current_user(request):
         return RedirectResponse(home_for(current_user(request)), status_code=303)
-    role = as_role if as_role in LOGIN_ROLES else "farmer"
+    if as_role == "admin":                     # admin sign-in lives only at /admin (not linked anywhere public)
+        return RedirectResponse("/admin", status_code=303)
+    role = as_role if as_role in ("customer", "farmer") else "farmer"
     return render(request, "login.html", {"next": next if next.startswith("/") else "", "as_role": role})
 
 
@@ -125,8 +140,9 @@ def login_submit(request: Request, password: Annotated[str, Form()], phone: Anno
         error = ("এই অ্যাকাউন্ট এখন বন্ধ আছে। অ্যাডমিনের সাথে যোগাযোগ করুন।",
                  "This account is not active. Please contact the admin.")
     if error:
-        return render(request, "login.html", {"error": error, "phone": phone, "email": email, "next": next,
-                                              "as_role": role}, status_code=400)
+        page = "admin/login.html" if role == "admin" else "login.html"
+        return render(request, page, {"error": error, "phone": phone, "email": email, "next": next,
+                                      "as_role": role}, status_code=400)
     repo.record_login(user["id"], ok=True)
     login_session(request, user)
     if role == "admin":

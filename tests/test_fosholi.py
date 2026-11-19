@@ -172,9 +172,10 @@ def test_all_busy_and_mid_stream_failure(tmp_path):
 
 def test_no_markers_means_advice_rules(tmp_path):
     a = make_assistant(TextOnly("পাতা হলুদ হলে নাবি ধসা হতে পারে [1]। ২ গ্রাম ঔষধ দিন।"), tmp_path)
-    ev = events(a)                                  # without VERIFIED: everything is advice, like the old answer:
-    assert [e for e in ev if e["t"] == "s"] == []   # "[1]" and "২" are numbers -> removed
-    assert ev[-1]["fallback"] and ev[-1]["status"] == "need_more_info"
+    ev = events(a)                                  # v8: no section markers; each sentence is judged alone:
+    said = [(e["part"], e["text"]) for e in ev if e["t"] == "s"]
+    assert said == [("verified", "পাতা হলুদ হলে নাবি ধসা হতে পারে।")]   # cited + in the book -> kept
+    assert ev[-1]["status"] == "verified"                               # uncited dose sentence -> removed
 
 
 # ================================================================ routes (no database)

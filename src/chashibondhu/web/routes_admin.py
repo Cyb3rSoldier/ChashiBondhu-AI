@@ -12,7 +12,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from chashibondhu.web import repo_admin as ra
-from chashibondhu.web.deps import check_csrf, flash, render, require_role
+from chashibondhu.web.deps import check_csrf, current_user, flash, render, require_role
 
 router = APIRouter(include_in_schema=False)
 
@@ -80,7 +80,12 @@ def _page(v) -> int:
 
 # ================================================================ command center
 @router.get("/admin")
-def dashboard(request: Request, span: str = "30d"):
+def dashboard(request: Request, span: str = "30d", next: str = ""):
+    if not current_user(request):
+        # Nobody logged in: show the admin sign-in here (the only admin entrance; nothing public links to it).
+        # The login form posts to /login with as_role=admin; every admin page still checks role + permission.
+        safe_next = next if next.startswith("/admin") and not next.startswith("//") else ""
+        return render(request, "admin/login.html", {"next": safe_next, "as_role": "admin"})
     admin = require_perm(request, "dashboard")
     span = span if span in ra.SPANS else "30d"
     ser, b = ra.series(span), ra.breakdowns()

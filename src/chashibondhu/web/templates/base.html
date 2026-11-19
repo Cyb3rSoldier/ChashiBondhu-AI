@@ -14,8 +14,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="icon" type="image/png" href="/static/img/logo.png">
-<link rel="stylesheet" href="/static/cb.css?v=7">
+<link rel="stylesheet" href="/static/cb.css?v=6">
+<link rel="stylesheet" href="/static/cb-ui.css?v=1">
+<link rel="icon" type="image/png" href="/static/img/favicon.png">
 {% if user %}<meta name="csrf-token" content="{{ csrf }}"><meta name="cb-user" content="{{ user.id }}" data-role="{{ user.role }}">{% endif %}
 {% block head %}{% endblock %}
 </head>
@@ -24,7 +25,7 @@
 {% set ai_ok = (not user) or role in ('farmer', 'admin') %}{# the farm assistant is for farmers + admins (server checks too) #}
 <header class="cb-nav" data-cb-nav>
   <div class="cb-nav-in">
-    <a class="cb-logo" href="/"><img class="cb-logo-img" src="/static/img/logo.png" alt="" width="40" height="40">{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+    <a class="cb-logo" href="/"><span class="cb-logo-img"><img src="/static/img/logo-mark.png" alt="" width="32" height="32"></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
     <ul class="cb-links">
       <li><a href="/"{% if active == 'home' %} aria-current="page"{% endif %}>{{ t('হোম', 'Home') }}</a></li>
       <li><a href="/market"{% if active == 'market' %} aria-current="page"{% endif %}>{{ t('বাজার', 'Market') }}</a></li>
@@ -67,7 +68,6 @@
         <ul class="cb-menu-list">
           <li><a href="/login?as=customer"><i class="fa-solid fa-user cb-ic-paddy"></i>{{ t('ক্রেতা হিসেবে লগইন', 'Login as customer') }}</a></li>
           <li><a href="/login?as=farmer"><i class="fa-solid fa-tractor cb-ic-paddy"></i>{{ t('কৃষক হিসেবে লগইন', 'Login as farmer') }}</a></li>
-          <li><a href="/login?as=admin"><i class="fa-solid fa-user-shield cb-ic-muted"></i>{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a></li>
           <li class="cb-menu-sep" aria-hidden="true"></li>
           <li class="cb-menu-note">{{ t('অ্যাকাউন্ট নেই?', "Don't have an account?") }}</li>
           <li class="cb-menu-join">
@@ -119,7 +119,6 @@
   {% else %}
   <a href="/login?as=customer"><i class="fa-solid fa-user"></i>{{ t('ক্রেতা হিসেবে লগইন', 'Login as customer') }}</a>
   <a href="/login?as=farmer"><i class="fa-solid fa-tractor"></i>{{ t('কৃষক হিসেবে লগইন', 'Login as farmer') }}</a>
-  <a href="/login?as=admin"><i class="fa-solid fa-user-shield"></i>{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a>
   <a href="/register"><i class="fa-solid fa-user-plus"></i>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a>
   <a href="/register/customer"><i class="fa-solid fa-user-plus"></i>{{ t('ক্রেতা অ্যাকাউন্ট খুলুন', 'Create a customer account') }}</a>
   {% endif %}
@@ -139,7 +138,7 @@
 <footer class="cb-foot cb-foot-green">
   <div class="cb-wrap cb-foot-grid">
     <div id="about">
-      <a class="cb-logo" href="/"><img class="cb-logo-img" src="/static/img/logo.png" alt="" width="40" height="40">{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+      <a class="cb-logo" href="/"><span class="cb-logo-img"><img src="/static/img/logo-mark.png" alt="" width="32" height="32"></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
       <p style="margin-top:12px">{{ t('কৃষক ও ক্রেতার মাঝে সরাসরি সেতু। চাষের পরামর্শ থেকে সরাসরি বিক্রি পর্যন্ত — বাংলাদেশের কৃষকের পাশে।', 'A direct bridge between farmers and buyers. From farming advice to direct sales — beside the farmers of Bangladesh.') }}</p>
     </div>
     <div>
@@ -160,7 +159,7 @@
         <li><a href="/login?as=customer">{{ t('ক্রেতা লগইন', 'Customer login') }}</a></li>
         <li><a href="/login?as=farmer">{{ t('কৃষক লগইন', 'Farmer login') }}</a></li>
         <li><a href="/register">{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</a></li>
-        <li><a href="/login?as=admin">{{ t('অ্যাডমিন লগইন', 'Admin login') }}</a></li>
+        <li><a href="/register/customer">{{ t('ক্রেতা অ্যাকাউন্ট খুলুন', 'Create a customer account') }}</a></li>
       </ul>
     </div>
     <div id="contact">
@@ -183,6 +182,7 @@
 </a>
 {% endif %}
 <script src="/static/cb.js?v=3"></script>
+<script src="/static/cb-ui.js?v=1" defer></script>
 {% if role == 'farmer' %}<script src="/static/offline.js?v=1"></script>
 {% else %}<script>/* not a farmer session: remove saved farmer pages from this device (drafts stay, per account) */
 if (window.caches) { caches.keys().then(function (k) { k.forEach(function (n) { if (n.indexOf("cb-pages-") === 0) caches.delete(n); }); }); }

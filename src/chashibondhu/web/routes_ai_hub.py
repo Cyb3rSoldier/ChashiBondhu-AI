@@ -207,13 +207,23 @@ async def fosholi_ask(request: Request):
     from chashibondhu.web.deps import current_user
     user = current_user(request)
     conv = conversation(request, user, "fosholi", create=True)
+    context = farmer_context(user)
+    try:                                   # earlier turns of THIS chat, so follow-up questions are understood
+        history = repo_ai2.messages(conv, int(user["id"]), "fosholi", limit=4) if conv else []
+    except Exception:  # noqa: BLE001
+        history = []
 
     def events():
         from chashibondhu.assistant.fosholi import ask_stream
+        lines = []
         try:
-            for ev in ask_stream(assistant, q):
+            for ev in ask_stream(assistant, q, context, history):
+                if ev["t"] == "s":
+                    lines.append({"part": ev["part"], "blk": ev.get("blk", "p"), "new": bool(ev.get("new", True)),
+                                  "text": ev["text"]})
                 if ev["t"] == "done":
-                    ev["message_id"] = _save(conv, q, ev)
+                    ev.pop("result", None)          # internal: never sent to the browser
+                    ev["message_id"] = _save(conv, q, ev, lines)
                     ev["conv_id"] = conv
                 yield json.dumps(ev, ensure_ascii=False, default=str) + "\n"
         except Exception:  # noqa: BLE001 - never leave the browser waiting
@@ -224,16 +234,43 @@ async def fosholi_ask(request: Request):
                              headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
-def _save(conv: int | None, q: str, done: dict) -> int | None:
+def _save(conv: int | None, q: str, done: dict, lines: list | None = None) -> int | None:
     if conv is None:
         return None
     try:
         repo.add_ai_message(conv, "user", q)
-        return repo.add_ai_message(conv, "assistant", done.get("answer") or "", status=done.get("status"),
-                                   sources=done.get("sources"), model=done.get("model"))
+        mid = repo.add_ai_message(conv, "assistant", done.get("answer") or "", status=done.get("status"),
+                                  sources=done.get("sources"), model=done.get("model"))
+        if lines and mid:            # layout drawn again after reload (optional: the text is already saved)
+            try:
+                repo_ai2.set_payload(mid, {"fosholi": lines, "safety": done.get("safety") or "",
+                                           "support": bool(done.get("support")), "general": bool(done.get("general"))})
+            except Exception:  # noqa: BLE001
+                log.exception("could not save the answer layout")
+        return mid
     except Exception:  # noqa: BLE001
         log.exception("could not save Fosholi message")
         return None
+
+
+MONTHS_EN = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+             "November", "December")
+
+
+def farmer_context(user: dict | None) -> str:
+    """'district Rangpur; month November' for the farmer's registered area (only real stored data)."""
+    from datetime import datetime, timedelta, timezone
+    month = MONTHS_EN[(datetime.now(timezone.utc) + timedelta(hours=6)).month - 1]       # Bangladesh time
+    district = ""
+    try:
+        code = repo_ai2.user_area(int(user["id"])) if user else None
+        if code:
+            from chashibondhu.web import geo_points
+            p = geo_points.point(code[:6])
+            district = p["name_en"] if p else ""
+    except Exception:  # noqa: BLE001 - context is optional
+        district = ""
+    return (f"district {district}; " if district else "") + f"month {month}"
 
 
 # ================================================================ Dr. Krishi (AI-2)
@@ -246,6 +283,28 @@ def load_vision():
         from chashibondhu.assistant.vision.client import VisionClient
         _vision_cache["v"] = VisionClient.from_env()
     return _vision_cache["v"]
+
+
+def load_catalogue():
+    """Crop catalogue + per-crop problem lists (data/reference). None if the files are missing."""
+    if "cat" not in _vision_cache:
+        try:
+            from chashibondhu.assistant.vision.problems import ProblemCatalogue
+            from chashibondhu.web.db import _root
+            _vision_cache["cat"] = ProblemCatalogue.load(_root() / "data" / "reference")
+        except Exception:  # noqa: BLE001
+            log.exception("crop catalogue not available")
+            _vision_cache["cat"] = None
+    return _vision_cache["cat"]
+
+
+def load_book():
+    """The Fosholi handbook assistant, used for treatment pages. None if it cannot load."""
+    try:
+        return _routes_ai().load_assistant()
+    except Exception:  # noqa: BLE001
+        log.exception("handbook not available for treatment")
+        return None
 
 
 def load_text_llm():
@@ -268,7 +327,9 @@ def drkrishi_page(request: Request, q: str = "", c: str = ""):
         home = repo_ai2.user_area(int(user["id"]))
     except Exception:  # noqa: BLE001
         home = None
-    return _chat_page(request, "drkrishi", q, c, {"home_area": home or "", "districts": _districts()})
+    cat = load_catalogue()
+    crops = [{"id": k, "bn": v.name_bn, "en": v.name_en} for k, v in cat.crops.items()] if cat else []
+    return _chat_page(request, "drkrishi", q, c, {"home_area": home or "", "districts": _districts(), "crops": crops})
 
 
 @router.post("/app/drkrishi/new")
@@ -313,6 +374,9 @@ async def drkrishi_ask(request: Request):
             code = ""
     area = geo_points.point(code) if code else None
     found = tools.intents(q, has_image)
+    catalogue = load_catalogue() if has_image else None
+    crop = str(form.get("crop") or "")
+    crop = crop if catalogue and crop in catalogue.crops else None
     try:
         llm = load_text_llm()
         vision = load_vision() if has_image else None
@@ -330,7 +394,8 @@ async def drkrishi_ask(request: Request):
         try:
             for ev in answer(q, llm=llm, intents=found, history=history, image_jpeg=jpeg, vision=vision,
                              weather_fn=tools.weather, climate_fn=tools.climate, area=area,
-                             numbers_of=tools.numbers_of):
+                             numbers_of=tools.numbers_of, catalogue=catalogue, crop_hint=crop,
+                             book=load_book() if has_image else None):
                 if ev["t"] == "done":
                     ev["message_id"] = _save_dr(conv, q, has_image, ev)
                     ev["conv_id"] = conv

@@ -228,6 +228,8 @@ def client(monkeypatch):
     m(drkrishi_tools, "weather", lambda la, lo: WEATHER)
     m(routes_ai_hub, "load_text_llm", lambda: FakeLLM("আগামীকাল বৃষ্টির সম্ভাবনা ৭০%।\n"))
     m(routes_ai_hub, "load_vision", lambda: FakeVision(GOOD))
+    m(routes_ai_hub, "load_catalogue", lambda: None)          # old free-text path (catalogue: test_ai_v4.py)
+    m(routes_ai_hub, "load_book", lambda: None)
     m(routes_ai_hub.repo_ai2, "set_payload", lambda mid, p: saved.append(("payload", mid, p, {})))
     m(routes_ai_hub.repo_ai2, "retitle", lambda conv, old, new: saved.append(("title", conv, new, {})))
     from chashibondhu.web.app import mount_website

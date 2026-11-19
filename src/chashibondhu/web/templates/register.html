@@ -1,61 +1,67 @@
 {% extends "base.html" %}
 {% block title %}{{ 'কৃষক নিবন্ধন — চাষীবন্ধু' }}{% endblock %}
+{% block body_class %}cb-auth-body{% endblock %}
 {% block content %}
-<div class="cb-wrap">
-  <section class="cb-auth" style="max-width:640px">
-    <h1>{{ t('কৃষক হিসেবে যোগ দিন', 'Join as a farmer') }}</h1>
-    <p class="cb-sub">{{ t('শুধু নাম, মোবাইল নম্বর আর পাসওয়ার্ড লাগবে। বাকিটা পরে দিলেও চলবে।', 'Only name, mobile number and password are needed. The rest can be added later.') }}</p>
-    {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
-    <form class="cb-form" method="post" action="/register">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <div class="cb-field">
-        <label for="full_name">{{ t('আপনার নাম', 'Your name') }}</label>
-        <input class="cb-input" id="full_name" name="full_name" required maxlength="100" autocomplete="name" value="{{ form.full_name or '' }}">
-      </div>
-      <div class="cb-field">
-        <label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
-        <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX">
-        <p class="cb-hint">{{ t('এই নম্বর দিয়েই লগইন করবেন। একটি নম্বরে একটিই কৃষক অ্যাকাউন্ট।', 'You will log in with this number. One farmer account per number.') }}</p>
-      </div>
-      <div class="cb-row2">
-        <div class="cb-field">
-          <label for="password">{{ t('পাসওয়ার্ড', 'Password') }}</label>
-          <input class="cb-input" id="password" name="password" type="password" minlength="6" required autocomplete="new-password">
-          <p class="cb-hint">{{ t('অন্তত ৬ অক্ষর', 'At least 6 characters') }}</p>
+{# Farmer sign-up. Same form fields and server checks as before; only the look changed. #}
+<div class="cb-auth-page">
+  <div class="cb-auth2 is-wide">
+    {% with who='farmer', mode='join' %}{% include "auth/_brand.html" %}{% endwith %}
+    <section class="cb-formside">
+      <span class="cb-portal">{{ t('কৃষক নিবন্ধন', 'FARMER REGISTRATION') }}</span>
+      <h1>{{ t('নতুন অ্যাকাউন্ট খুলুন', 'Create your account') }}</h1>
+      <p class="cb-sub">{{ t('শুধু নাম, মোবাইল নম্বর আর পাসওয়ার্ড লাগবে। বাকিটা পরে দিলেও চলবে।', 'Only name, mobile number and password are needed. The rest can be added later.') }}</p>
+      {% if errors %}<div class="cb-errors" role="alert">{% for bn, en in errors %}<p>{{ t(bn, en) }}</p>{% endfor %}</div>{% endif %}
+      <form class="cb-f2" method="post" action="/register">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="cb-row2">
+          <div class="cb-fl">
+            <label for="full_name">{{ t('আপনার নাম', 'Your name') }}</label>
+            <div class="cb-inwrap"><i class="fa-solid fa-user" aria-hidden="true"></i>
+              <input class="cb-input" id="full_name" name="full_name" required maxlength="100" autocomplete="name" value="{{ form.full_name or '' }}"></div>
+          </div>
+          <div class="cb-fl">
+            <label for="phone">{{ t('মোবাইল নম্বর', 'Mobile number') }}</label>
+            <div class="cb-inwrap"><i class="fa-solid fa-phone" aria-hidden="true"></i>
+              <input class="cb-input" id="phone" name="phone" type="tel" inputmode="tel" required value="{{ form.phone or '' }}" data-ph-bn="০১৭XXXXXXXX" data-ph-en="017XXXXXXXX"></div>
+            <p class="cb-hint">{{ t('এই নম্বর দিয়েই লগইন করবেন। একটি নম্বরে একটিই কৃষক অ্যাকাউন্ট।', 'You will log in with this number. One farmer account per number.') }}</p>
+          </div>
         </div>
-        <div class="cb-field">
-          <label for="password2">{{ t('আবার পাসওয়ার্ড', 'Password again') }}</label>
-          <input class="cb-input" id="password2" name="password2" type="password" minlength="6" required autocomplete="new-password">
+        <div class="cb-row2">
+          {% with pid='password', pname='password', pauto='new-password', plabel_bn='পাসওয়ার্ড (অন্তত ৬ অক্ষর)', plabel_en='Password (at least 6 characters)', pmin=6 %}{% include "auth/_pw.html" %}{% endwith %}
+          {% with pid='password2', pname='password2', pauto='new-password', plabel_bn='আবার পাসওয়ার্ড', plabel_en='Password again', pmin=6, same='password' %}{% include "auth/_pw.html" %}{% endwith %}
         </div>
-      </div>
-      {% with code=form.upazila_code, label=form.upazila_label %}{% include "_upazila_picker.html" %}{% endwith %}
-      <div class="cb-row2">
-        <div class="cb-field">
-          <label for="land">{{ t('জমির পরিমাণ (ইচ্ছামতো)', 'Land size (optional)') }}</label>
-          <input class="cb-input" id="land" name="land" inputmode="decimal" value="{{ form.land or '' }}">
+        {% with code=form.upazila_code, label=form.upazila_label %}{% include "_upazila_picker.html" %}{% endwith %}
+        <div class="cb-row2">
+          <div class="cb-fl">
+            <label for="land">{{ t('জমির পরিমাণ (ইচ্ছামতো)', 'Land size (optional)') }}</label>
+            <div class="cb-inwrap"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i>
+              <input class="cb-input" id="land" name="land" inputmode="decimal" value="{{ form.land or '' }}"></div>
+          </div>
+          <div class="cb-fl">
+            <label for="land_unit">{{ t('একক', 'Unit') }}</label>
+            <select class="cb-select" id="land_unit" name="land_unit">
+              <option value="decimal" {% if form.land_unit == 'decimal' %}selected{% endif %}>{{ 'শতাংশ / decimal' }}</option>
+              <option value="bigha" {% if form.land_unit == 'bigha' %}selected{% endif %}>{{ 'বিঘা / bigha' }}</option>
+              <option value="acre" {% if form.land_unit == 'acre' %}selected{% endif %}>{{ 'একর / acre' }}</option>
+            </select>
+          </div>
         </div>
-        <div class="cb-field">
-          <label for="land_unit">{{ t('একক', 'Unit') }}</label>
-          <select class="cb-select" id="land_unit" name="land_unit">
-            <option value="decimal" {% if form.land_unit == 'decimal' %}selected{% endif %}>{{ 'শতাংশ / decimal' }}</option>
-            <option value="bigha" {% if form.land_unit == 'bigha' %}selected{% endif %}>{{ 'বিঘা / bigha' }}</option>
-            <option value="acre" {% if form.land_unit == 'acre' %}selected{% endif %}>{{ 'একর / acre' }}</option>
-          </select>
+        <p class="cb-hint" style="margin:-6px 0 0">{{ t('হিসাবে ১ বিঘা = ৩৩ শতাংশ, ১ একর = ১০০ শতাংশ ধরা হয়েছে। আপনার এলাকায় বিঘা আলাদা হলে শতাংশে লিখুন।', 'We count 1 bigha = 33 decimal and 1 acre = 100 decimal. If your bigha is different, write the size in decimal.') }}</p>
+        <div class="cb-fl">
+          <span class="cb-label">{{ t('কোন কোন ফসল চাষ করেন (ইচ্ছামতো)', 'Which crops do you grow (optional)') }}</span>
+          <div class="cb-checks">
+            {% for c in crops %}
+            <label class="cb-check"><input type="checkbox" name="main_crops" value="{{ c.crop_id }}" {% if c.crop_id in form.main_crops %}checked{% endif %}><span>{{ t(c.name_bn, c.name_en) }}</span></label>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-      <p class="cb-hint">{{ t('হিসাবে ১ বিঘা = ৩৩ শতাংশ, ১ একর = ১০০ শতাংশ ধরা হয়েছে। আপনার এলাকায় বিঘা আলাদা হলে শতাংশে লিখুন।', 'We count 1 bigha = 33 decimal and 1 acre = 100 decimal. If your bigha is different, write the size in decimal.') }}</p>
-      <div class="cb-field">
-        <span class="cb-label">{{ t('কোন কোন ফসল চাষ করেন (ইচ্ছামতো)', 'Which crops do you grow (optional)') }}</span>
-        <div class="cb-checks">
-          {% for c in crops %}
-          <label class="cb-check"><input type="checkbox" name="main_crops" value="{{ c.crop_id }}" {% if c.crop_id in form.main_crops %}checked{% endif %}><span>{{ t(c.name_bn, c.name_en) }}</span></label>
-          {% endfor %}
-        </div>
-      </div>
-      <button class="cb-btn cb-btn-main" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('অ্যাকাউন্ট খুলুন', 'Create account') }}</button>
-    </form>
-    <p class="cb-hint" style="margin-top:16px">{{ t('আগেই অ্যাকাউন্ট আছে?', 'Already have an account?') }} <a href="/login" style="color:var(--cb-paddy);font-weight:700">{{ t('লগইন করুন', 'Log in') }}</a></p>
-  </section>
+        <button class="cb-btn cb-btn-main cb-btn-block" type="submit"><i class="fa-solid fa-user-plus"></i>{{ t('অ্যাকাউন্ট খুলুন', 'Create account') }}</button>
+      </form>
+      <p class="cb-auth-alt">{{ t('আগেই অ্যাকাউন্ট আছে?', 'Already have an account?') }} <a href="/login?as=farmer" data-cb-fade>{{ t('লগইন করুন', 'Log in') }}</a></p>
+      <p class="cb-or">{{ t('অথবা', 'or') }}</p>
+      <div class="cb-switch"><a href="/register/customer" data-cb-fade><i class="fa-solid fa-user"></i>{{ t('ক্রেতা অ্যাকাউন্ট খুলুন', 'Create a customer account') }}</a></div>
+    </section>
+  </div>
 </div>
 {% endblock %}
 {% block scripts %}<script src="/static/upazila.js?v=1"></script>{% endblock %}

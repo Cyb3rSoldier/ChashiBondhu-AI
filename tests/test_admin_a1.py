@@ -204,7 +204,7 @@ def test_suspended_staff_is_logged_out(world, web):
     assert c.get("/admin-products").status_code == 200
     ra.set_user_status(world["boss"], world["staff"], ("admin",), True, "left the team")
     r = c.get("/admin-products", follow_redirects=False)
-    assert r.status_code == 303 and "/login" in r.headers["location"]
+    assert r.status_code == 303 and r.headers["location"].startswith("/admin?next=")   # admin sign-in lives at /admin
     c.cookies.clear()
     tok = _tok(c, "/login?as=admin")
     r = c.post("/login", data={"csrf": tok, "phone": world["phones"]["staff"], "password": PW, "as_role": "admin"})

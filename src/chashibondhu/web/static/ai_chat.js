@@ -194,8 +194,54 @@
     this.bubble.insertBefore(this.wait, this.main);
   };
   Bot.prototype.unwait = function () { if (this.wait) { this.wait.remove(); this.wait = null; } };
+  var SEC = {
+    cause: ["আপনার সমস্যার কারণ", "Why it happens", "fa-magnifying-glass", "#1e6fb8"],
+    now: ["এখনই যা করবেন", "Do this now", "fa-bolt", "#2e7d32"],
+    fix: ["কীভাবে সমাধান করবেন", "How to solve it", "fa-seedling", "#0e7a4b"],
+    care: ["কী কী বিষয়ে সতর্ক থাকবেন", "Be careful about", "fa-triangle-exclamation", "#c77700"],
+    extra: ["অতিরিক্ত পরামর্শ", "More tips", "fa-lightbulb", "#6a4fb3"]
+  };
+  var SEC_ORDER = ["cause", "now", "fix", "care", "extra"];
+  function sectionsBox() {
+    var box = el("div", "aic-secs"), slots = {};
+    SEC_ORDER.forEach(function (k, i) {
+      var c = el("section", "aic-sec aic-sec-" + k); c.hidden = true; c.style.setProperty("--tone", SEC[k][3]);
+      var h = el("h5"), ic = el("span", "ic"); ic.appendChild(icon(SEC[k][2])); h.appendChild(ic);
+      h.appendChild(tt((i + 1) + ". " + SEC[k][0], SEC[k][1])); c.appendChild(h);
+      var list = el(k === "now" ? "ol" : "ul"); c.appendChild(list); box.appendChild(c); slots[k] = { card: c, list: list, n: 0 };
+    });
+    // number only the sections that are shown (1, 2, 3 ...)
+    box.renumber = function () {
+      var n = 0;
+      SEC_ORDER.forEach(function (k) {
+        var sl = slots[k]; if (sl.card.hidden) return; n++;
+        var bn = sl.card.querySelector("h5 .lang-bn"); if (bn) bn.textContent = bnDigits(n) + ". " + SEC[k][0];
+      });
+    };
+    box.add = function (sec, text, verified) {
+      var sl = slots[sec]; if (!sl) return false;
+      var li = el("li", verified ? "is-book" : null, text);
+      if (verified) { li.title = "হাতবই থেকে / From the handbook"; }
+      sl.list.appendChild(li); if (sl.card.hidden) { sl.card.hidden = false; box.renumber(); }
+      return true;
+    };
+    return box;
+  }
   Bot.prototype.sentence = function (ev) {
     this.unwait(); this.sentences.push(ev.text);
+    if (ev.blk) {                    // Fosholi: natural answer with its own layout (paragraph / list / heading)
+      var b = this.blk;
+      if (ev.blk === "h") { var h = el("h4", "aic-h", ev.text); this.main.appendChild(h); this.blk = null; toBottom(); return; }
+      if (ev.blk === "p") {
+        if (ev.new || !b || b.tag !== "p") { b = this.blk = { tag: "p", node: el("p") }; this.main.appendChild(b.node); }
+        b.node.appendChild(document.createTextNode((b.node.textContent ? " " : "") + ev.text));
+      } else {
+        if (!b || b.tag !== ev.blk) { b = this.blk = { tag: ev.blk, node: el(ev.blk, "aic-list") }; this.main.appendChild(b.node); }
+        if (ev.new || !b.li) { b.li = el("li"); b.node.appendChild(b.li); }
+        b.li.appendChild(document.createTextNode((b.li.textContent ? " " : "") + ev.text));
+      }
+      toBottom(); return;
+    }
     if (ev.part === "advice" && !/[?？]\s*$/.test(ev.text)) {
       if (!this.adv) {
         this.adv = el("div", "aic-adv"); var h = el("h4"); h.appendChild(icon("fa-lightbulb")); h.appendChild(document.createTextNode(" "));
@@ -223,10 +269,27 @@
     }
     this.bubble.insertBefore(c, this.main); toBottom();
   };
-  Bot.prototype.diagnosis = function (p, file) {
+  Bot.prototype.diagnosis = function (p, file, q) {
     this.unwait();
     this.bubble.classList.add("aic-bare");
-    this.main.appendChild(drawDiagnosis(p, file)); toBottom();
+    var d = drawDiagnosis(p, file, q); this.treatBox = d.treatBox; this.main.appendChild(d); toBottom();
+    if (p.treatment) {                                   // saved chat: draw the handbook part again
+      (p.treatment.lines || []).forEach(function (t) { this.treat({ part: "advice", text: t }); }, this);
+      this.treatDone({ sources: p.treatment.sources || [] }, !p.treatment.verified);
+    }
+  };
+  Bot.prototype.treat = function (ev) {
+    var tb = this.treatBox; if (!tb) return;
+    tb.wait.hidden = true;
+    if (ev.part === "note") { var n = el("p", "aic-note"); n.appendChild(icon("fa-circle-info")); n.appendChild(el("span", null, ev.text)); tb.card.appendChild(n); return; }
+    if (/[?？]\s*$/.test(ev.text)) return;
+    tb.list.appendChild(el("li", ev.part === "verified" ? "is-book" : null, ev.text)); toBottom();
+  };
+  Bot.prototype.treatDone = function (ev, none) {
+    var tb = this.treatBox; if (!tb) return;
+    tb.wait.hidden = true;
+    if (!tb.list.children.length && none) { tb.card.hidden = !tb.card.querySelector(".aic-note"); }
+    var tf = answerFooter(ev.sources, false); if (tf) tb.card.appendChild(tf);
   };
   Bot.prototype.done = function (ev) {
     this.unwait();
@@ -234,7 +297,11 @@
     if (ev.fallback) { this.main.appendChild(el("p", null, ev.fallback)); this.sentences.push(ev.fallback); }
     if (ev.note) { var n = el("p", "aic-note"); n.appendChild(icon("fa-circle-info")); n.appendChild(el("span", null, ev.note)); this.bubble.appendChild(n); }
     if (ev.safety) { var s = el("p", "aic-safe"); s.appendChild(icon("fa-triangle-exclamation")); s.appendChild(el("span", null, ev.safety)); this.body.appendChild(s); }
-    if (ev.sources && ev.sources.length) sourcesTo(this.bubble, ev.sources);
+    if (A === "fosholi") { var ft = answerFooter(ev.sources, ev.support, ev.general); if (ft) this.bubble.appendChild(ft); }
+    else {
+      if (ev.sources && ev.sources.length) sourcesTo(this.bubble, ev.sources);
+      if (ev.support && !this.body.querySelector(".aic-help")) this.body.appendChild(supportCard());
+    }
     this.actions(ev.message_id); this.body.appendChild(timeEl(this.at));
   };
   Bot.prototype.fail = function (code, retry) {
@@ -277,6 +344,60 @@
       chip.appendChild(tt("হাতবই · পৃ. " + bnDigits(pg), "Handbook · p. " + pg)); src.appendChild(chip);
     });
     node.appendChild(src);
+  }
+
+  /* ---------- answer footer: real sources used + (only when useful) the hotline. Small, grey, watermark-like. */
+  var SOURCE_NAMES = {   // only sources that exist in the system; publisher site = official home page
+    // title, edition and page link exactly as in data/reference/sources.csv (BARI_KPH)
+    kph10: { bn: "কৃষি প্রযুক্তি হাতবই (১০ম সংস্করণ, ২০২৪)", en: "Krishi Projukti Hatboi (10th ed., 2024)", pub_bn: "বারি", pub_en: "BARI",
+             url: "http://www.bari.gov.bd/site/page/841c811d-14ad-4796-97a4-41cd602d3cfa/%E0%A6%95%E0%A7%83%E0%A6%B7%E0%A6%BF-%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%AF%E0%A7%81%E0%A6%95%E0%A7%8D%E0%A6%A4%E0%A6%BF-%E0%A6%B9%E0%A6%BE%E0%A6%A4%E0%A6%AC%E0%A6%87" }
+  };
+  function sourceGroups(sources) {
+    var g = {}, order = [];
+    (sources || []).forEach(function (x) {
+      var id = /kph/i.test(x.source_id || "") || /Hatboi/i.test(x.source || "") ? "kph10" : (x.source_id || x.source || "");
+      if (!id) return;
+      if (!g[id]) { g[id] = { info: SOURCE_NAMES[id] || { bn: x.source || id, en: x.source || id }, pages: [] }; order.push(id); }
+      var pg = x.printed_page || x.pdf_page;
+      if (pg && g[id].pages.indexOf(pg) < 0) g[id].pages.push(pg);
+    });
+    return order.map(function (id) { g[id].pages.sort(function (a, b) { return a - b; }); return g[id]; });
+  }
+  function answerFooter(sources, support, general) {
+    var groups = sourceGroups(sources);
+    if (!groups.length && !support && !general) return null;
+    var f = el("footer", "aic-foot");
+    if (groups.length) {
+      var r = el("p", "aic-foot-row"); r.appendChild(icon("fa-book")); var lab = el("span", "aic-foot-lab"); lab.appendChild(tt("তথ্যসূত্র:", "Sources:")); r.appendChild(lab);
+      groups.forEach(function (g, i) {
+        if (i) r.appendChild(document.createTextNode(" · "));
+        var name = el("span"); name.appendChild(tt(g.info.bn, g.info.en)); r.appendChild(name);
+        if (g.info.pub_bn) {
+          r.appendChild(document.createTextNode(" – "));
+          var pub = g.info.url ? el("a") : el("span"); if (g.info.url) { pub.href = g.info.url; pub.target = "_blank"; pub.rel = "noopener"; }
+          pub.appendChild(tt(g.info.pub_bn, g.info.pub_en)); r.appendChild(pub);
+        }
+        if (g.pages.length) { var pp = el("span", "aic-foot-pg"); pp.appendChild(tt(", পৃ. " + g.pages.map(bnDigits).join(", "), ", p. " + g.pages.join(", "))); r.appendChild(pp); }
+      });
+      if (general) { var gn = el("span", "aic-foot-gen"); gn.appendChild(tt(" · কিছু অংশ সাধারণ কৃষি জ্ঞান থেকে", " · part of the answer is general farming knowledge")); r.appendChild(gn); }
+      f.appendChild(r);
+    } else if (general) {
+      var r0 = el("p", "aic-foot-row"); r0.appendChild(icon("fa-circle-info"));
+      r0.appendChild(tt("হাতবইয়ে নির্দিষ্ট তথ্য পাওয়া যায়নি; উত্তরটি সাধারণ কৃষি জ্ঞান থেকে।", "Not found in the handbook; this answer is general farming knowledge."));
+      f.appendChild(r0);
+    }
+    if (support) {
+      var s2 = el("p", "aic-foot-row"); s2.appendChild(icon("fa-headset")); var l2 = el("span", "aic-foot-lab"); l2.appendChild(tt("কৃষি সহায়তা", "Farm help")); s2.appendChild(l2);
+      s2.appendChild(document.createTextNode(" | "));
+      var a = el("a", "aic-foot-tel"); a.href = "tel:16123"; a.appendChild(tt("কৃষি কল সেন্টার: ১৬১২৩", "Krishi Call Centre: 16123")); s2.appendChild(a);
+      var cp = el("button", "aic-foot-copy"); cp.type = "button"; cp.setAttribute("aria-label", "নম্বর কপি / Copy number"); cp.title = "কপি / Copy"; cp.appendChild(icon("fa-copy"));
+      cp.addEventListener("click", function () { if (navigator.clipboard) navigator.clipboard.writeText("16123").then(function () { cp.classList.add("on"); }).catch(function () {}); });
+      s2.appendChild(cp);
+      s2.appendChild(document.createTextNode(" | "));
+      var o = el("a"); o.href = "https://dae.gov.bd"; o.target = "_blank"; o.rel = "noopener"; o.appendChild(tt("উপজেলা কৃষি অফিস (DAE)", "Upazila agriculture office (DAE)")); s2.appendChild(o);
+      f.appendChild(s2);
+    }
+    return f;
   }
 
   /* ============================================================ weather / climate cards (real numbers only) */
@@ -328,80 +449,162 @@
     var h = el("h5"), i = el("span", "ic"); i.appendChild(icon(ic)); h.appendChild(i); h.appendChild(tt(bn, en)); c.appendChild(h); return c;
   }
   function bullets(c, items, ic) { var ul = el("ul"); items.forEach(function (t) { var li = el("li"); li.appendChild(icon(ic)); li.appendChild(el("span", null, t)); ul.appendChild(li); }); c.appendChild(ul); }
-  function drawDiagnosis(p, file) {
+  /* ---------- expert help (real numbers only: Krishi Call Centre 16123, run by AIS) */
+  function supportCard() {
+    var c = el("section", "aic-help"), h = el("h5"), ic = el("span", "ic"); ic.appendChild(icon("fa-headset")); h.appendChild(ic);
+    h.appendChild(tt("কৃষি বিশেষজ্ঞের সহায়তা", "Help from agriculture experts")); c.appendChild(h);
+    var row = el("div", "aic-help-row"), a = el("a", "aic-hotline"); a.href = "tel:16123";
+    a.appendChild(icon("fa-phone")); a.appendChild(document.createTextNode(" ")); a.appendChild(tt("কৃষি কল সেন্টার: ১৬১২৩", "Krishi Call Centre: 16123"));
+    var cp = el("button", "aic-copy"); cp.type = "button"; cp.setAttribute("aria-label", "নম্বর কপি / Copy number"); cp.appendChild(icon("fa-copy"));
+    cp.addEventListener("click", function () { if (navigator.clipboard) navigator.clipboard.writeText("16123").then(function () { cp.classList.add("on"); }).catch(function () {}); });
+    row.appendChild(a); row.appendChild(cp); c.appendChild(row);
+    var p = el("p", "aic-mini-note");
+    p.appendChild(tt("উপজেলা কৃষি অফিসের ঠিকানা ও ফোন নম্বর কৃষি সম্প্রসারণ অধিদপ্তরের ওয়েবসাইটে (dae.gov.bd) পাওয়া যায়। বড় ক্ষতি বা অনিশ্চিত রোগে আক্রান্ত গাছের নমুনা নিয়ে যান।",
+      "Your upazila agriculture office address and phone are on the DAE website (dae.gov.bd). For big losses or unclear problems, take a sample plant there."));
+    c.appendChild(p); return c;
+  }
+
+  var KIND = { fungal: ["ছত্রাকজনিত", "Fungal", "#7b5ea7"], bacterial: ["ব্যাকটেরিয়াজনিত", "Bacterial", "#b23a48"],
+    viral: ["ভাইরাসজনিত", "Viral", "#c2410c"], pest: ["পোকামাকড়", "Pest", "#8a6d1d"], nutrient: ["পুষ্টির অভাব", "Nutrient shortage", "#2563eb"],
+    water_weather: ["পানি / আবহাওয়াজনিত", "Water / weather", "#0e7490"], healthy: ["সুস্থ", "Healthy", "#2e7d32"], unknown: ["ধরন অনিশ্চিত", "Type unclear", "#6b7280"] };
+  var SAFETY_TIPS = [
+    ["ওষুধের নাম ও মাত্রা শুধু হাতবই বা কৃষি অফিস থেকে নিন; বোতলের লেবেল পড়ে তবেই ব্যবহার করুন।", "Take medicine names and doses only from the handbook or the agriculture office; read the label first."],
+    ["স্প্রে করার সময় মাস্ক, হাতমোজা ও লম্বা জামা পরুন; বাতাসের উল্টো দিকে দাঁড়িয়ে স্প্রে করবেন না।", "Wear a mask, gloves and long clothes; never spray against the wind."],
+    ["বৃষ্টির আগে বা প্রখর রোদে স্প্রে করবেন না; শিশু ও গবাদিপশুকে দূরে রাখুন।", "Do not spray before rain or in strong sun; keep children and animals away."],
+    ["স্প্রের পর হাত-মুখ সাবান দিয়ে ধুয়ে ফেলুন; খালি বোতল পুকুরে বা মাঠে ফেলবেন না।", "Wash hands and face with soap after spraying; do not throw empty bottles in ponds or fields."]
+  ];
+  function cropChips(p, file, q, wrap) {
+    var c = dcard("", "fa-seedling", "কোন ফসলের ছবি?", "Which crop is this?", "#0e7a4b"), fu = el("div", "aic-fu");
+    (p.pick_crop || []).forEach(function (o) {
+      var b = el("button", "aic-chip"); b.type = "button"; b.appendChild(tt(o.bn, o.en));
+      if (!file) { b.disabled = true; b.title = "ছবি সংরক্ষণ করা হয় না: আবার ছবি দিন / Photos are not stored: send it again"; }
+      b.addEventListener("click", function () {
+        if (busy || !file) return;
+        if (cropSel) cropSel.value = o.id;
+        send(q || "", file, o.id);
+      });
+      fu.appendChild(b);
+    });
+    c.appendChild(fu);
+    if (!file) { var n = el("p", "aic-mini-note"); n.appendChild(tt("পুরোনো চ্যাটে ছবি থাকে না; ফসল বেছে আবার ছবি দিন।", "Old chats keep no photo; choose the crop and send the photo again.")); c.appendChild(n); }
+    wrap.appendChild(c);
+  }
+  function drawDiagnosis(p, file, q) {
     var wrap = el("div", "aic-dx");
-    // 1. overview
     var top = el("section", "aic-dc aic-dx-top"), pic;
     if (file) { pic = el("img", "aic-dx-img"); pic.alt = "আপনার পাঠানো ছবি"; pic.src = URL.createObjectURL(file); }
     else { pic = el("div", "aic-dx-img"); pic.appendChild(icon("fa-image")); pic.appendChild(el("br")); pic.appendChild(tt("ছবি সংরক্ষণ করা হয় না", "Photos are not stored")); }
     top.appendChild(pic);
     var info = el("div"), k = el("p", "aic-kicker"); k.appendChild(tt("ছবি দেখে ফলাফল", "Photo check result")); info.appendChild(k);
-    if (p.status === "not_plant" || p.status === "poor_image") {
-      var h0 = el("h4"); h0.appendChild(tt(p.status === "not_plant" ? "ছবিটি কৃষি-সমস্যা দেখার উপযোগী নয়" : "আরও পরিষ্কার ছবি দরকার",
-        p.status === "not_plant" ? "This photo is not suitable for a crop check" : "A clearer photo is needed")); info.appendChild(h0);
-      info.appendChild(el("p", null, p.message));
-      if (p.crop && p.crop.key) { var cf = el("div", "aic-facts"), f0 = el("span", "aic-fact"); f0.appendChild(icon("fa-seedling")); f0.appendChild(document.createTextNode(" " + p.crop.bn)); cf.appendChild(f0); info.appendChild(cf); }
-      top.appendChild(info); wrap.appendChild(top);
+    top.appendChild(info); wrap.appendChild(top);
+    function head(bn, en) { var h = el("h4"); h.appendChild(tt(bn, en)); info.appendChild(h); }
+    function facts() { var f = el("div", "aic-facts"); info.appendChild(f); return f; }
+    function fact(f, ic, bn, en, cls, tone) {
+      var x = el("span", "aic-fact" + (cls ? " " + cls : "")); if (tone) x.style.setProperty("--tone", tone);
+      x.appendChild(icon(ic)); x.appendChild(document.createTextNode(" ")); x.appendChild(tt(bn, en)); f.appendChild(x); return x;
+    }
+    function cropFact(f) {
+      if (!p.crop) return;
+      var by = p.crop_from === "farmer" ? ["(আপনি বলেছেন)", "(you said)"] : p.crop.key ? ["(ছবি দেখে)", "(from the photo)"] : ["", ""];
+      fact(f, "fa-seedling", "ফসল: " + p.crop.bn + (p.crop.key && p.crop.en ? " / " + p.crop.en : "") + " " + by[0],
+        "Crop: " + (p.crop.en || p.crop.bn) + " " + by[1], "is-crop");
+    }
+
+    if (p.status === "not_plant" || p.status === "poor_image" || p.status === "pick_crop" || p.status === "crop_mismatch") {
+      var T = { not_plant: ["ছবিটি কৃষি-সমস্যা দেখার উপযোগী নয়", "This photo is not suitable for a crop check"],
+        poor_image: ["আরও পরিষ্কার ছবি দরকার", "A clearer photo is needed"],
+        pick_crop: ["ফসলটি বেছে দিন", "Please choose the crop"], crop_mismatch: ["ফসলের নাম মিলছে না", "The crop does not match"] }[p.status];
+      head(T[0], T[1]); info.appendChild(el("p", null, p.message));
+      if (p.crop && p.crop.key) cropFact(facts());
+      if (p.status === "pick_crop" || p.status === "crop_mismatch") cropChips(p, file, q, wrap);
       if (p.observed_symptoms && p.observed_symptoms.length) { var o0 = dcard("", "fa-eye", "ছবিতে যা দেখা যাচ্ছে", "Seen in the photo", "#1e6fb8"); bullets(o0, p.observed_symptoms, "fa-circle"); wrap.appendChild(o0); }
-      var nx = dcard("", "fa-camera", "পরবর্তী পদক্ষেপ", "Next step", "#b8860b"); nx.appendChild(el("p", null, p.next_step)); wrap.appendChild(nx);
+      if (p.next_step) { var nx = dcard("", "fa-camera", "ভালো ছবি তোলার নিয়ম", "How to take a good photo", "#b8860b"); nx.appendChild(el("p", null, p.next_step)); wrap.appendChild(nx); }
       return wrap;
     }
-    var crop = el("div", "aic-facts"), fc = el("span", "aic-fact"); fc.appendChild(icon("fa-seedling"));
-    fc.appendChild(tt(" ফসল: " + p.crop.bn + (p.crop.key && p.crop.en ? " (" + p.crop.en + ")" : ""), " Crop: " + (p.crop.key ? (p.crop.en || p.crop.bn) : p.crop.en)));
-    crop.appendChild(fc);
-    if (p.diagnosis) {
-      var h1 = el("h4"); h1.appendChild(tt("সম্ভাব্য সমস্যা: " + p.diagnosis.bn, "Possible problem: " + (p.diagnosis.en || p.diagnosis.bn))); info.appendChild(h1);
-      if (p.diagnosis.en) info.appendChild(el("span", "en lang-bn", p.diagnosis.en));
-      var lv = p.diagnosis.confidence, fl = el("span", "aic-fact lvl-" + lv); fl.appendChild(icon("fa-gauge-simple"));
-      fl.appendChild(tt(" এআই-এর অনুমান: " + LVL[lv][0], " AI's own guess: " + LVL[lv][1])); fl.title = "এটি শতাংশ নয়, শুধু এআই-এর নিজের অনুমান / Not a percentage, only the AI's own guess";
-      crop.appendChild(fl);
-      info.appendChild(crop);
-      if (p.diagnosis.scientific_name) { var sc = el("p", "aic-sci"); sc.appendChild(tt("জীবাণু/কারণ (বৈজ্ঞানিক নাম): ", "Cause (scientific name): ")); sc.appendChild(el("i", null, p.diagnosis.scientific_name)); info.appendChild(sc); }
+    var f1 = facts();
+    if (p.status === "healthy") {
+      head("গাছটি সুস্থ মনে হচ্ছে", "The plant looks healthy"); cropFact(f1);
+      info.appendChild(el("p", null, p.message));
+    } else if (p.diagnosis) {
+      var d = p.diagnosis;
+      head("সম্ভাব্য সমস্যা: " + d.bn, "Possible problem: " + (d.en || d.bn));
+      if (d.en) info.appendChild(el("span", "en lang-bn", d.en));
+      cropFact(f1);
+      var kd = KIND[d.kind] || KIND.unknown; fact(f1, "fa-tag", kd[0], kd[1], "is-kind", kd[2]);
+      var lv = d.confidence, fl = fact(f1, "fa-gauge-simple", "এআই-এর অনুমান: " + LVL[lv][0], "AI's own guess: " + LVL[lv][1], "lvl-" + lv);
+      fl.title = "এটি শতাংশ নয়, শুধু এআই-এর নিজের অনুমান / Not a percentage, only the AI's own guess";
+      if (d.scientific_name) { var sc = el("p", "aic-sci"); sc.appendChild(tt("জীবাণু/কারণ (বৈজ্ঞানিক নাম): ", "Cause (scientific name): ")); sc.appendChild(el("i", null, d.scientific_name)); info.appendChild(sc); }
     } else {
-      var h2 = el("h4"); h2.appendChild(tt("রোগ নিশ্চিতভাবে বলা যাচ্ছে না", "The problem is not clear")); info.appendChild(h2); info.appendChild(crop);
+      head("রোগ নিশ্চিতভাবে বলা যাচ্ছে না", "The problem is not clear"); cropFact(f1);
       if (p.message) info.appendChild(el("p", null, p.message));
-      if (p.other_possibilities && p.other_possibilities.length) {
-        var po = el("div", "aic-facts"); p.other_possibilities.forEach(function (o) { var f = el("span", "aic-fact"); f.appendChild(tt(o.bn, o.en || o.bn)); po.appendChild(f); }); info.appendChild(po);
-      }
+    }
+    if ((p.other_possibilities || []).length) {
+      var po = el("div", "aic-facts"), lab = el("span", "aic-mini-note"); lab.appendChild(tt("অন্য সম্ভাবনা:", "Other possibilities:")); po.appendChild(lab);
+      p.other_possibilities.forEach(function (o) { var f = el("span", "aic-fact"); f.appendChild(tt(o.bn, o.en || o.bn)); po.appendChild(f); }); info.appendChild(po);
     }
     if (p.summary) info.appendChild(el("p", null, p.summary));
-    top.appendChild(info); wrap.appendChild(top);
-    // 2. symptoms (seen vs usual kept apart)
-    if ((p.observed_symptoms || []).length || (p.typical_symptoms || []).length) {
-      var s = dcard("", "fa-magnifying-glass", "কী কী লক্ষণ দেখা যাচ্ছে?", "What signs are there?", "#1e6fb8");
-      if (p.observed_symptoms.length) { var s1 = el("p", "sub"); s1.appendChild(tt("এই ছবিতে দেখা যাচ্ছে", "Seen in this photo")); s.appendChild(s1); bullets(s, p.observed_symptoms, "fa-eye"); }
-      if (p.typical_symptoms.length) { var s2 = el("p", "sub"); s2.appendChild(tt("এই সমস্যায় সাধারণত যা হয় (ছবিতে দেখা যায়নি)", "Usually seen with this problem (not seen in the photo)")); s.appendChild(s2); bullets(s, p.typical_symptoms, "fa-circle"); }
-      wrap.appendChild(s);
+    var n = 0; function num() { n++; return bnDigits(n) + ". "; } function nume() { return n + ". "; }
+    // 1. about the problem
+    if (p.about || (p.possible_causes || []).length) {
+      var c1 = dcard("", "fa-book-open", num() + "রোগের পরিচিতি", nume() + "About the problem", "#6a4fb3");
+      if (p.about) c1.appendChild(el("p", null, p.about));
+      if ((p.possible_causes || []).length) { var sub = el("p", "sub"); sub.appendChild(tt("কেন হতে পারে", "Why it may happen")); c1.appendChild(sub); bullets(c1, p.possible_causes, "fa-circle"); }
+      wrap.appendChild(c1);
     }
-    // 3. causes
-    if ((p.possible_causes || []).length) { var c3 = dcard("", "fa-circle-question", "কেন এই সমস্যা হতে পারে?", "Why may this happen?", "#b8860b"); bullets(c3, p.possible_causes, "fa-circle"); wrap.appendChild(c3); }
-    // 4. what to do now (most visible)
+    // 2. signs (seen vs usual kept apart)
+    if ((p.observed_symptoms || []).length || (p.typical_symptoms || []).length) {
+      var s2 = dcard("", "fa-magnifying-glass", num() + "ছবিতে যে লক্ষণ দেখা যাচ্ছে", nume() + "Signs in the photo", "#1e6fb8");
+      if (p.observed_symptoms.length) bullets(s2, p.observed_symptoms, "fa-eye");
+      if ((p.typical_symptoms || []).length) { var s2b = el("p", "sub"); s2b.appendChild(tt("এই সমস্যায় সাধারণত যা হয় (ছবিতে দেখা যায়নি)", "Usually seen with this problem (not seen in the photo)")); s2.appendChild(s2b); bullets(s2, p.typical_symptoms, "fa-circle"); }
+      wrap.appendChild(s2);
+    }
+    // 3. do now (most visible)
     if ((p.immediate_actions || []).length) {
-      var d4 = dcard("aic-do", "fa-list-check", "এখন আপনার করণীয়", "What to do now"), ol = el("ol");
-      p.immediate_actions.forEach(function (t) { ol.appendChild(el("li", null, t)); }); d4.appendChild(ol); wrap.appendChild(d4);
+      var d3 = dcard("aic-do", "fa-list-check", num() + "এখনই করণীয়", nume() + "What to do now"), ol = el("ol");
+      p.immediate_actions.forEach(function (t) { ol.appendChild(el("li", null, t)); }); d3.appendChild(ol); wrap.appendChild(d3);
+    }
+    // 4. treatment from the BARI handbook (filled by the stream, or from the saved chat)
+    var tb = null;
+    if (p.status === "possible" && p.diagnosis) {
+      var c4 = dcard("aic-treat", "fa-prescription-bottle-medical", num() + "রোগের চিকিৎসা (বারি হাতবই থেকে)", nume() + "Treatment (from the BARI handbook)", "#0e7a4b");
+      var w4 = el("div", "aic-analyze"), sk = el("div", "aic-sk"); sk.appendChild(el("i")); sk.appendChild(el("i"));
+      var wt = el("p", "aic-mini-note"); wt.appendChild(tt("হাতবই থেকে চিকিৎসা খোঁজা হচ্ছে...", "Looking up the treatment in the handbook..."));
+      var wcol = el("div"); wcol.style.flex = "1"; wcol.appendChild(wt); wcol.appendChild(sk); w4.appendChild(wcol); c4.appendChild(w4);
+      var l4 = el("ul", "aic-treat-list"); c4.appendChild(l4);
+      var more = el("a", "aic-chip aic-more"); more.href = "/assistant/fosholi?q=" + encodeURIComponent(p.diagnosis.search_bn || (p.crop.bn + " " + p.diagnosis.bn + " দমন"));
+      more.appendChild(icon("fa-book")); more.appendChild(document.createTextNode(" ")); more.appendChild(tt("ফসলি-তে বিস্তারিত দেখুন", "See details in Fosholi"));
+      c4.appendChild(more); wrap.appendChild(c4); tb = { card: c4, list: l4, wait: w4 };
     }
     // 5. prevention
-    if ((p.prevention || []).length) { var c5 = dcard("", "fa-shield-halved", "ভবিষ্যতে রোগ প্রতিরোধের উপায়", "How to prevent it", "#2e7d32"); bullets(c5, p.prevention, "fa-check"); wrap.appendChild(c5); }
-    // 6. risk + next step (risk only when the server allowed it)
+    if ((p.prevention || []).length) { var c5 = dcard("", "fa-shield-halved", num() + "প্রতিরোধের উপায়", nume() + "How to prevent it", "#2e7d32"); bullets(c5, p.prevention, "fa-check"); wrap.appendChild(c5); }
+    // 6. safety (fixed, general rules - no product names)
+    if (p.status === "possible") {
+      var c6 = dcard("aic-warn", "fa-triangle-exclamation", num() + "সতর্কতা", nume() + "Safety", "#c77700"), ul6 = el("ul");
+      SAFETY_TIPS.forEach(function (x) { var li = el("li"); li.appendChild(icon("fa-circle-exclamation")); var sp = el("span"); sp.appendChild(tt(x[0], x[1])); li.appendChild(sp); ul6.appendChild(li); });
+      c6.appendChild(ul6); wrap.appendChild(c6);
+    }
+    // risk + next step (risk only when the server allowed it)
     if (p.risk_level || p.next_step) {
-      var c6 = dcard("", "fa-route", p.risk_level ? "ঝুঁকি ও পরবর্তী পদক্ষেপ" : "পরবর্তী পদক্ষেপ", p.risk_level ? "Risk and next step" : "Next step", "#d0661c");
+      var c7 = dcard("", "fa-route", p.risk_level ? "ঝুঁকি ও পরবর্তী পদক্ষেপ" : "পরবর্তী পদক্ষেপ", p.risk_level ? "Risk and next step" : "Next step", "#d0661c");
       if (p.risk_level) {
         var rk = el("div", "aic-risk"), mt = el("span", "aic-meter " + p.risk_level); mt.appendChild(el("i")); mt.appendChild(el("i")); mt.appendChild(el("i"));
         rk.appendChild(mt); var rb = el("b"); rb.appendChild(tt(RISK[p.risk_level][0], RISK[p.risk_level][1])); rk.appendChild(rb);
-        var rn = el("small", "aic-muted"); rn.appendChild(tt(" (এআই-এর অনুমান)", " (AI's estimate)")); rk.appendChild(rn); c6.appendChild(rk);
+        var rn = el("small", "aic-muted"); rn.appendChild(tt(" (এআই-এর অনুমান)", " (AI's estimate)")); rk.appendChild(rn); c7.appendChild(rk);
       }
-      if (p.next_step) c6.appendChild(el("p", null, p.next_step));
-      wrap.appendChild(c6);
+      if (p.next_step) c7.appendChild(el("p", null, p.next_step));
+      wrap.appendChild(c7);
     }
-    (p.limitations || []).forEach(function (l) { var n = el("p", "aic-note"); n.appendChild(icon("fa-circle-info")); n.appendChild(el("span", null, l)); wrap.appendChild(n); });
-    // 7. follow-up questions made from THIS diagnosis
+    (p.limitations || []).forEach(function (l) { var nn = el("p", "aic-note"); nn.appendChild(icon("fa-circle-info")); nn.appendChild(el("span", null, l)); wrap.appendChild(nn); });
+    // 7. expert help
+    wrap.appendChild(supportCard());
     if ((p.follow_up_questions || []).length) {
-      var c7 = dcard("", "fa-comments", "আরও জানতে চাইলে", "Ask more", "#6a4fb3"), fu = el("div", "aic-fu");
-      p.follow_up_questions.forEach(function (q) {
-        var b = el("button", "aic-chip", q); b.type = "button"; b.addEventListener("click", function () { if (!busy) send(q, null); }); fu.appendChild(b);
+      var c8 = dcard("", "fa-comments", "আরও জানতে চাইলে", "Ask more", "#6a4fb3"), fu = el("div", "aic-fu");
+      p.follow_up_questions.forEach(function (qq) {
+        var b = el("button", "aic-chip", qq); b.type = "button"; b.addEventListener("click", function () { if (!busy) send(qq, null); }); fu.appendChild(b);
       });
-      c7.appendChild(fu); wrap.appendChild(c7);
+      c8.appendChild(fu); wrap.appendChild(c8);
     }
+    wrap.treatBox = tb;
     return wrap;
   }
 
@@ -411,20 +614,23 @@
     try { var sv = localStorage.getItem(areaKey); if (sv && areaSel.querySelector('option[value="' + sv + '"]')) areaSel.value = sv; } catch (e) { /* ignore */ }
     areaSel.addEventListener("change", function () { try { localStorage.setItem(areaKey, areaSel.value); } catch (e) { /* ignore */ } });
   }
-  function send(q, file) {
+  var cropSel = app.querySelector("[data-ai-crop]");
+  function send(q, file, crop) {
     if (busy) return;
     showWelcome(false); stopSpeaking(); say("");
-    userRow(q, { file: file });
-    run(q, file);
+    userRow(q, { file: file, crop: crop });
+    run(q, file, crop);
   }
-  function run(q, file) {
+  function run(q, file, crop) {
+    crop = crop || (file && cropSel ? cropSel.value : "");
     busy = true; sendBtn.disabled = true;
     var bot = new Bot(); bot.waiting(file); toBottom();
-    var req, got = false, retry = function () { run(q, file); };
+    var req, got = false, retry = function () { run(q, file, crop); };
     if (IMAGES) {
       var fd = new FormData(); fd.append("question", q);
       if (areaSel && areaSel.value) fd.append("area", areaSel.value);
       if (file) fd.append("image", file, file.name || "photo.jpg");
+      if (file && crop) fd.append("crop", crop);
       req = { method: "POST", credentials: "same-origin", headers: { "X-CSRF-Token": CSRF, "Accept": "application/x-ndjson" }, body: fd };
     } else {
       req = { method: "POST", credentials: "same-origin", body: JSON.stringify({ question: q }),
@@ -438,7 +644,9 @@
         var ev; try { ev = JSON.parse(line); } catch (e) { return; }
         if (ev.t === "s") { got = true; bot.sentence(ev); }
         else if (ev.t === "card") { got = true; bot.card(ev); }
-        else if (ev.t === "diagnosis") { got = true; bot.diagnosis(ev.data, file); }
+        else if (ev.t === "diagnosis") { got = true; bot.diagnosis(ev.data, file, q); }
+        else if (ev.t === "treat") { bot.treat(ev); }
+        else if (ev.t === "treat_done") { bot.treatDone(ev, false); }
         else if (ev.t === "done") {
           got = true; bot.done(ev);
           if (ev.conv_id && ev.conv_id !== CONV) { CONV = ev.conv_id; app.dataset.conv = CONV; }
@@ -566,9 +774,17 @@
   hist.forEach(function (m) {
     if (m.role === "user") { userRow(m.content === "ছবি পাঠানো হয়েছে" ? "" : m.content, { photo: m.kind === "photo", at: m.at }); return; }
     var b = new Bot(m.at);
-    if (m.payload) { b.diagnosis(m.payload, null); b.sentences = (m.content || "").split("\n"); }
+    if (m.payload && m.payload.fosholi) {
+      m.payload.fosholi.forEach(function (x) { b.sentence(x); });
+      if (m.payload.safety) { var sf = el("p", "aic-safe"); sf.appendChild(icon("fa-triangle-exclamation")); sf.appendChild(el("span", null, m.payload.safety)); b.body.appendChild(sf); }
+      var hf = answerFooter(m.sources, m.payload.support, m.payload.general); if (hf) b.bubble.appendChild(hf);
+    }
+    else if (m.payload) { b.diagnosis(m.payload, null, ""); b.sentences = (m.content || "").split("\n"); }
     else { (m.content || "").split("\n").forEach(function (line) { if (line.trim()) b.sentence({ part: "main", text: line.trim() }); }); }
-    if (m.sources && m.sources.length) sourcesTo(b.bubble, m.sources);
+    if (m.sources && m.sources.length && !(m.payload && m.payload.fosholi)) {
+      var of = A === "fosholi" ? answerFooter(m.sources, false) : null;
+      if (of) b.bubble.appendChild(of); else sourcesTo(b.bubble, m.sources);
+    }
     b.actions(m.id); b.body.appendChild(timeEl(m.at));
   });
   loadList();

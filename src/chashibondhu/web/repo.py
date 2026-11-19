@@ -190,19 +190,14 @@ def archive_listing(farmer_id: int, listing_id: int) -> int:
 
 
 def public_listings(limit: int = 8) -> list[dict]:
-    return fetch_all("SELECT l.id, l.title, l.crop_id, l.unit, l.price_per_unit, l.quantity, l.listing_type, "
-                     "l.available_from, l.image_path, l.is_organic, l.district_code, u.full_name AS farmer_name "
-                     "FROM listings l JOIN users u ON u.id = l.farmer_id "
-                     "WHERE l.status = 'active' AND u.status = 'active' ORDER BY l.created_at DESC LIMIT %s",
-                     (limit,))
+    """Newest active products for the home page. Same columns and rules as the bazar (MARKET_COLS / MARKET_FROM),
+    so the home page and the bazar always show the same price, discount, stock and district."""
+    return fetch_all(f"SELECT {MARKET_COLS} {MARKET_FROM} ORDER BY l.created_at DESC LIMIT %s", (limit,))
 
 
 def market_listings(q: str, crop_id: str | None, listing_type: str | None, limit: int = 24) -> list[dict]:
-    """Active listings filtered by search text (title), crop and type. Same columns as public_listings."""
-    sql = ("SELECT l.id, l.title, l.crop_id, l.unit, l.price_per_unit, l.quantity, l.listing_type, "
-           "l.available_from, l.image_path, l.is_organic, l.district_code, u.full_name AS farmer_name "
-           "FROM listings l JOIN users u ON u.id = l.farmer_id "
-           "WHERE l.status = 'active' AND u.status = 'active'")
+    """Home-page search: active products filtered by title text, crop and type (same columns as the bazar)."""
+    sql = f"SELECT {MARKET_COLS} {MARKET_FROM}"
     params: list = []
     if q:
         safe = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
