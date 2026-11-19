@@ -4,9 +4,9 @@
    - order/earnings/complaint pages are NEVER saved (they hold customer or private data)
    - everything else: normal network; offline navigation shows a small offline page */
 "use strict";
-const SHELL = "cb-shell-v1";
+const SHELL = "cb-shell-v2";
 const META = "cb-meta";
-const SHELL_URLS = ["/static/cb.css?v=5", "/static/cb.js?v=3", "/static/farmer.js?v=2", "/static/offline.js?v=1",
+const SHELL_URLS = ["/static/cb.css?v=7", "/static/cb.js?v=3", "/static/farmer.js?v=2", "/static/offline.js?v=1",
                     "/static/upazila.js?v=1"];
 const PAGE_RE = [/^\/farmer$/, /^\/farmer\/listings$/, /^\/farmer\/listings\/new$/, /^\/farmer\/forecasts$/,
                  /^\/farmer\/forecasts\/new$/, /^\/farmer\/forecasts\/\d+$/, /^\/farmer\/forecasts\/\d+\/edit$/,

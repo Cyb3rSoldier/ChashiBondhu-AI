@@ -14,7 +14,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="/static/cb.css?v=6">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="stylesheet" href="/static/cb.css?v=7">
 {% if user %}<meta name="csrf-token" content="{{ csrf }}"><meta name="cb-user" content="{{ user.id }}" data-role="{{ user.role }}">{% endif %}
 {% block head %}{% endblock %}
 </head>
@@ -23,7 +24,7 @@
 {% set ai_ok = (not user) or role in ('farmer', 'admin') %}{# the farm assistant is for farmers + admins (server checks too) #}
 <header class="cb-nav" data-cb-nav>
   <div class="cb-nav-in">
-    <a class="cb-logo" href="/"><span class="cb-logo-ic"><i class="fa-solid fa-seedling"></i></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+    <a class="cb-logo" href="/"><img class="cb-logo-img" src="/static/img/logo.png" alt="" width="40" height="40">{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
     <ul class="cb-links">
       <li><a href="/"{% if active == 'home' %} aria-current="page"{% endif %}>{{ t('হোম', 'Home') }}</a></li>
       <li><a href="/market"{% if active == 'market' %} aria-current="page"{% endif %}>{{ t('বাজার', 'Market') }}</a></li>
@@ -138,7 +139,7 @@
 <footer class="cb-foot cb-foot-green">
   <div class="cb-wrap cb-foot-grid">
     <div id="about">
-      <a class="cb-logo" href="/"><span class="cb-logo-ic"><i class="fa-solid fa-seedling"></i></span>{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
+      <a class="cb-logo" href="/"><img class="cb-logo-img" src="/static/img/logo.png" alt="" width="40" height="40">{{ t('চাষীবন্ধু', 'ChashiBondhu') }}</a>
       <p style="margin-top:12px">{{ t('কৃষক ও ক্রেতার মাঝে সরাসরি সেতু। চাষের পরামর্শ থেকে সরাসরি বিক্রি পর্যন্ত — বাংলাদেশের কৃষকের পাশে।', 'A direct bridge between farmers and buyers. From farming advice to direct sales — beside the farmers of Bangladesh.') }}</p>
     </div>
     <div>
