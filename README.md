@@ -6,7 +6,7 @@ ChashiBondhu AI started as a direct marketplace that connects farmers, customers
 
 > **Competition:** Cloud Camp BD AI Builders Congress. Domain: AgriSphere AI. Challenge: FarmMarket (fair-price market access and demand matching).
 >
-> **Live demo:** `https://chashibondhu-ai-5y1e.onrender.com` | **Demo video:** `<add your YouTube link here>`
+> **Live demo:** `https://chashibondhu-ai-5y1e.onrender.com` | **Demo video:** `<https://youtu.be/gBoiKEE6Q7s?si=BwNOzzv6k2BC3EBj>`
 
 ---
 
